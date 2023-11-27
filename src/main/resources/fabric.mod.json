@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "handbook",
+  "version": "${version}",
+
+  "name": "Handbook 2.0",
+  "description": "Better in-game handbook for Monumenta.",
+  "authors": [
+    "Vladomeme"
+  ],
+  "contact": {
+  },
+
+  "license": "MIT",
+  "icon": "assets/handbook/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "net.handbook.main.HandbookClient"
+    ]
+  },
+  "mixins": [
+    "handbook.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.21",
+    "fabric": "*",
+    "minecraft": "~1.20.1",
+    "java": ">=17"
+  }
+}

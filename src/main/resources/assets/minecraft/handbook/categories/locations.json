@@ -1,0 +1,17 @@
+{
+    "title": "Locations",
+    "entries": [
+        {
+            "title": "Teleport Hub",
+            "text": "Shard: valley\nPosition: -759, 109.0, 34"
+        },
+        {
+            "title": "Forge",
+            "text": "Shard: valley\nPosition: -759, 109.0, 34"
+        },
+        {
+            "title": "Nexus",
+            "text": "Shard: valley\nPosition: -759, 109.0, 34"
+        }
+    ]
+}
