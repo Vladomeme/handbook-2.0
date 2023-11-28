@@ -1,5 +1,6 @@
 package net.handbook.main.mixin;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -21,14 +22,16 @@ public abstract class AdvancementsScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     public void init(CallbackInfo ci) {
-        addDrawableChild(button = new TexturedButtonWidget(this.width - 55, 1, 54, 15, 0, 0, 15,
-                new Identifier("handbook", "textures/button.png"), 54, 30, button -> HandbookClient.openScreen()));
+        addDrawableChild(button = new TexturedButtonWidget(this.width - 51, 1, 50, 11, 0, 0, 11,
+                new Identifier("handbook", "textures/button.png"), 50, 22, button -> HandbookClient.openScreen()));
     }
 
     @Inject(method = "render", at = @At("TAIL"))
     public void render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        RenderSystem.enableBlend();
         button.render(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
+        RenderSystem.disableBlend();
     }
 
     protected AdvancementsScreenMixin(Text title) {

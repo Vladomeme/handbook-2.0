@@ -14,13 +14,19 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class NPCWriter {
 
+    String type = "trader";
     String title = "NPC";
     final List<NPC> entries = new ArrayList<>();
+    private transient int newCount = 0;
 
     @SuppressWarnings("ConstantConditions")
     public void findEntities() {
@@ -41,6 +47,7 @@ public class NPCWriter {
             }
             HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
 
+            newCount++;
             entries.add(new NPC(entity.getCustomName().getString(), world.getRegistryKey().getValue().toString(), entity.getX(), entity.getY(), entity.getZ()));
         });
     }
@@ -54,25 +61,44 @@ public class NPCWriter {
         else return;
 
         for (NPC npc : entries) {
-            if (npc.title.equals(name)) npc.setOffers(offers);
+            if (npc.title.equals(name)) {
+                npc.setOffers(offers);
+                HandbookClient.LOGGER.info("ADDING TRADES TO NPC " + npc.title);
+                return;
+            }
         }
     }
 
     public void write() {
-        HandbookClient.LOGGER.info("DUMPING " + entries.size() + " NPCs INTO \"handbook_npcs.json\" in /config.");
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved handbook_npcs.json in /config with " + entries.size() + " NPCs!"));
+        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"npcs.json\" with " + entries.size() +
+                " NPCs total, " + newCount + " new NPCs."));
         Gson gson = new Gson();
         JsonWriter writer = null;
         try {
-            writer = gson.newJsonWriter(new FileWriter(new File(FabricLoader.getInstance().getConfigDir().toFile(), "handbook_npcs.json")));
+            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "npcs.json");
+            file.getParentFile().mkdirs();
+            writer = gson.newJsonWriter(new FileWriter(file));
             writer.setIndent("    ");
             gson.toJson(this, NPCWriter.class, writer);
+            this.newCount = 0;
         } catch (Exception e) {
-            HandbookClient.LOGGER.error("Couldn't save.");
+            HandbookClient.LOGGER.error("Couldn't save npcs.json.");
             e.printStackTrace();
             throw new RuntimeException(e);
         } finally {
             IOUtils.closeQuietly(writer);
         }
+    }
+
+    public static NPCWriter read() {
+        Gson gson = new Gson();
+        try {
+            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "npcs.json");
+            return gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), NPCWriter.class);
+        }
+        catch (Exception e) {
+            HandbookClient.LOGGER.error("Could not find npcs.json in config/handbook/. A new file will be created when dumping,");
+        }
+        return new NPCWriter();
     }
 }

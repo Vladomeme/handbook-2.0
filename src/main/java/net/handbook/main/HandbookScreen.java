@@ -1,7 +1,7 @@
 package net.handbook.main;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.handbook.main.resources.Category;
+import net.handbook.main.resources.BaseCategory;
 import net.handbook.main.resources.Entry;
 import net.handbook.main.widget.DisplayWidget;
 import net.handbook.main.widget.ListWidget;
@@ -10,8 +10,10 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +26,16 @@ public class HandbookScreen extends Screen {
     public static TextFieldWidget searchBox;
     public static ListWidget optionsWidget;
     public static DisplayWidget displayWidget;
+    public static TexturedButtonWidget shareLocation;
+    public static TexturedButtonWidget openTrades;
 
-    public static final List<Category> categories = new ArrayList<>();
+    public static final List<BaseCategory> categories = new ArrayList<>();
+    public static BaseCategory activeCategory;
 
     static int line1x;
     static int line2x;
-    private int lastKey;
+    private static int lastKey;
+    private static String lastFilter = "";
 
     protected HandbookScreen(Text title) {
         super(title);
@@ -47,7 +53,7 @@ public class HandbookScreen extends Screen {
 
         int maxWidth = 0;
 
-        for (Category category : categories) {
+        for (BaseCategory category : categories) {
             int width = MinecraftClient.getInstance().textRenderer.getWidth(category.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -75,9 +81,24 @@ public class HandbookScreen extends Screen {
                 maxWidth + 6, screenHeight - 70, 31, screenHeight - 10));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
         optionsWidget.setEntries(categories.get(0).getEntries());
+        activeCategory = categories.get(0);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
+
+        this.addDrawableChild(shareLocation = new TexturedButtonWidget(
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 76, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_button.png"),
+                76, 22, button -> displayWidget.shareLocation()));
+        shareLocation.active = false;
+        shareLocation.visible = false;
+
+        this.addDrawableChild(openTrades = new TexturedButtonWidget(
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 65, 11,
+                0, 0, 11, new Identifier("handbook", "textures/trades_button.png"),
+                65, 22, button -> displayWidget.openTrades()));
+        openTrades.active = false;
+        openTrades.visible = false;
 
         this.addDrawableChild(displayWidget = new DisplayWidget(
                 30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20, maxWidth, screenHeight - 40, Text.of("")));
@@ -98,18 +119,28 @@ public class HandbookScreen extends Screen {
         context.getMatrices().pop();
         RenderSystem.disableBlend();
 
+        if (searchBox.getText().equals("") && !searchBox.isFocused()) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 1000);
+            context.drawText(tr, Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
+                    searchBox.getX() + 3, searchBox.getY() + 3, -10197916, false);
+            context.getMatrices().pop();
+        }
+
         context.fill(line1x, 15, line1x + 1, this.height - 10, 100, -1);
         context.fill(line2x, 15, line2x + 1, this.height - 10, 100, -1);
 
+        RenderSystem.enableBlend();
         super.render(context, mouseX, mouseY, delta);
+        RenderSystem.disableBlend();
     }
 
-    public static void setEntries(List<? extends Entry> entries) {
+    public static void setEntries(BaseCategory category) {
         int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
         int screenWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
         int maxWidth = 0;
 
-        for (Entry entry : entries) {
+        for (Entry entry : category.getEntries()) {
             int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -120,7 +151,7 @@ public class HandbookScreen extends Screen {
         optionsWidget.updateSize(maxWidth + 6, screenHeight - 70, 31, screenHeight - 10);
         optionsWidget.listWidth = maxWidth + 6;
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(entries);
+        optionsWidget.setEntries(category.getEntries());
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = screenWidth - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
@@ -128,7 +159,34 @@ public class HandbookScreen extends Screen {
         displayWidget.setWidth(maxWidth);
         displayWidget.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
         displayWidget.setEntry(null);
+
+        shareLocation.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareLocation.active = false;
+        shareLocation.visible = false;
+
+        openTrades.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        openTrades.active = false;
+        openTrades.visible = false;
+
+        activeCategory = category;
+        searchBox.setText("");
         HandbookClient.LOGGER.info("Setting list width: " + maxWidth);
+    }
+
+    public static void filterEntries() {
+        if (!searchBox.getText().equals(lastFilter)) {
+            if (searchBox.getText().equals("")) {
+                optionsWidget.setEntries(activeCategory.getEntries());
+                lastFilter = "";
+                return;
+            }
+
+            optionsWidget.clear();
+            for (Entry entry : activeCategory.getEntries()) {
+                if (entry.getTitle().toLowerCase().contains(searchBox.getText().toLowerCase())) optionsWidget.add(entry);
+            }
+        }
+        lastFilter = searchBox.getText();
     }
 
     @SuppressWarnings("ConstantConditions")

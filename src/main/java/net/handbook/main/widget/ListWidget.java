@@ -47,7 +47,11 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		return this.listWidth;
 	}
 
-	public int getX() {
-		return this.left;
+	public void clear() {
+		clearEntries();
+	}
+
+	public void add(net.handbook.main.resources.Entry entry) {
+		addEntry(new ListWidgetEntry(entry, listWidth));
 	}
 }

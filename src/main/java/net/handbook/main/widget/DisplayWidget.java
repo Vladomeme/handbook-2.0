@@ -1,12 +1,19 @@
 package net.handbook.main.widget;
 
+import net.handbook.main.HandbookClient;
+import net.handbook.main.HandbookScreen;
 import net.handbook.main.resources.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.screen.MerchantScreenHandler;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.util.StringTokenizer;
 
@@ -22,9 +29,18 @@ public class DisplayWidget extends ClickableWidget {
 
     public void setEntry(Entry entry) {
         this.entry = entry;
-        if (entry != null) description = splitText(entry.getText());
-    }
+        if (entry == null) return;
 
+        description = splitText(entry.getText());
+
+        boolean state = entry.getTextFields().get("shard") != null;
+        HandbookScreen.shareLocation.visible = state;
+        HandbookScreen.shareLocation.active = state;
+
+        state = entry.getOffers() != null;
+        HandbookScreen.openTrades.active = state;
+        HandbookScreen.openTrades.visible = state;
+    }
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (entry == null) return;
@@ -36,8 +52,19 @@ public class DisplayWidget extends ClickableWidget {
         context.drawText(tr, entry.getTitle(), 5, 0, 16777215, true);
         context.getMatrices().pop();
 
+        int y = 20;
+        if (entry.getTextFields() != null) {
+            for (String text : entry.getTextFields().values()) {
+                for (String line : splitText(text)) {
+                    context.drawText(tr, line, 10, y, 16777215, false);
+                    y = y + 10;
+                }
+                y = y + 3;
+            }
+        }
+
         for (int i = 0; i < description.length ; i++) {
-            context.drawText(tr, description[i], 10, 20 + i * 10, 16777215, false);
+            context.drawText(tr, description[i], 10, y + i * 10, 16777215, false);
         }
 
         super.render(context, mouseX, mouseY, delta);
@@ -47,7 +74,8 @@ public class DisplayWidget extends ClickableWidget {
         StringTokenizer tokens = new StringTokenizer(text, " ");
         StringBuilder output = new StringBuilder();
         int lineLength = 0;
-        int maxLength = (this.width - 50) / 6;
+        int maxLength = (this.width - 100) / 6;
+        if (maxLength <= 0) maxLength = 100;
         while (tokens.hasMoreTokens()) {
             String word = tokens.nextToken();
 
@@ -67,6 +95,26 @@ public class DisplayWidget extends ClickableWidget {
         }
 
         return output.toString().split("\n");
+    }
+
+    public void shareLocation() {
+        if (MinecraftClient.getInstance().player == null) return;
+        MinecraftClient.getInstance().player.networkHandler.sendChatMessage(
+                entry.getClearTitle() + " (" + entry.getTextFields().get("shard").replace("Shard: ", "")
+                        + ") | [" + entry.getTextFields().get("position") + "]");
+
+        if (MinecraftClient.getInstance().currentScreen == null) return;
+        MinecraftClient.getInstance().currentScreen.close();
+    }
+
+    public void openTrades() {
+        if (MinecraftClient.getInstance().player == null) return;
+        HandbookClient.LOGGER.info("OPENING A PREVIEW TRADE SCREEN");
+        PlayerInventory inventory = MinecraftClient.getInstance().player.getInventory();
+        MerchantScreenHandler screenHandler = new MerchantScreenHandler(0, inventory);
+        screenHandler.setOffers(entry.getOffers());
+        MinecraftClient.getInstance().setScreen(new MerchantScreen(screenHandler, inventory,
+                Text.of(entry.getClearTitle() + " (Preview)").getWithStyle(Style.EMPTY.withColor(Formatting.RED)).get(0)));
     }
 
     @Override

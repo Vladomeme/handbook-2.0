@@ -1,6 +1,7 @@
 package net.handbook.main;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -8,8 +9,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.handbook.main.resources.Category;
-import net.handbook.main.resources.Entry;
+import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.resources.*;
 import net.handbook.main.scanner.LocationWriter;
 import net.handbook.main.scanner.NPCWriter;
 import net.minecraft.client.MinecraftClient;
@@ -23,9 +24,11 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -37,8 +40,8 @@ public class HandbookClient implements ClientModInitializer {
 
     public static KeyBinding openScreen;
 
-    public static final LocationWriter locationWriter = new LocationWriter();
-    public static final NPCWriter npcWriter = new NPCWriter();
+    public static final LocationWriter locationWriter = LocationWriter.read();
+    public static final NPCWriter npcWriter = NPCWriter.read();
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
@@ -50,23 +53,54 @@ public class HandbookClient implements ClientModInitializer {
                 return new Identifier("handbook", "resources");
             }
 
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
             @Override
             public void reload(ResourceManager manager) {
                 Gson gson = new Gson();
 
                 HandbookScreen.categories.clear();
+                dumpAll();
 
-                manager.findResources("handbook", id -> id.getPath().endsWith(".json")).keySet().forEach(id -> {
+                if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook"))) {
                     try {
-                        LOGGER.info("Trying to load category " + id.getPath());
-                        HandbookScreen.categories.add(gson.fromJson(new BufferedReader(new InputStreamReader(manager.getResource(id).get().getInputStream())), Category.class));
+                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook"));
                     } catch (IOException e) {
-                        LOGGER.info("Failed to load category " + id.getPath());
+                        LOGGER.info("Failed to create handbook directory.");
+                        return;
                     }
-                });
-                HandbookScreen.categories.sort(Comparator.comparing(Category::getTitle));
-                for (Category category : HandbookScreen.categories) {
+                }
+
+                File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
+                if (files == null) {
+                    LOGGER.info("No handbook categories found!");
+                    return;
+                }
+
+                for (File file : files) {
+                    try {
+                        String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
+                        switch (type) {
+                            case "positioned" -> {
+                                PositionedCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), PositionedCategory.class);
+                                LOGGER.info("Loading positioned category " + category.getTitle());
+                                HandbookScreen.categories.add(category);
+                            }
+                            case "trader" -> {
+                                TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
+                                LOGGER.info("Loading trader category " + category.getTitle());
+                                HandbookScreen.categories.add(category);
+                            }
+                            default -> {
+                                Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
+                                LOGGER.info("Loading normal category " + category.getTitle());
+                                HandbookScreen.categories.add(category);
+                            }
+                        }
+                    } catch (IOException | JsonSyntaxException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                HandbookScreen.categories.sort(Comparator.comparing(BaseCategory::getTitle));
+                for (BaseCategory category : HandbookScreen.categories) {
                     category.getEntries().sort(Comparator.comparing(Entry::getClearTitle));
                 }
                 LOGGER.info("Loaded " + HandbookScreen.categories.size() + " categories");
@@ -81,6 +115,7 @@ public class HandbookClient implements ClientModInitializer {
                 }
             }
             npcWriter.findEntities();
+            if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
         });
 
         openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
@@ -94,6 +129,10 @@ public class HandbookClient implements ClientModInitializer {
                                 }))
                                 .then(literal("locations").executes(context -> {
                                     locationWriter.write();
+                                    return 1;
+                                }))
+                                .then(literal("all").executes(context -> {
+                                    dumpAll();
                                     return 1;
                                 })))
                         .then(literal("add")
@@ -109,5 +148,10 @@ public class HandbookClient implements ClientModInitializer {
 
     public static void openScreen() {
         MinecraftClient.getInstance().setScreen(new HandbookScreen(Text.of("")));
+    }
+
+    public static void dumpAll() {
+        npcWriter.write();
+        locationWriter.write();
     }
 }

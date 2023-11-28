@@ -1,24 +1,27 @@
 package net.handbook.main.resources;
 
-import net.handbook.main.HandbookScreen;
+import net.minecraft.util.Identifier;
 
 import java.util.List;
 
-public class Category extends Entry {
+public class Category extends BaseCategory {
 
-    private final List<Entry> entries;
+    final String type;
+    final List<Entry> entries;
 
-    public Category(List<Entry> entries) {
-        super(null, null, null);
+    public Category(String title, String text, Identifier image, List<Entry> entries) {
+        super("normal", title, text, image, entries);
+        this.type = "normal";
         this.entries = entries;
+    }
+    @Override
+    public String getType() {
+        return type;
     }
 
     @Override
-    public void mouseClicked() {
-        HandbookScreen.setEntries(this.entries);
-    }
-
     public List<Entry> getEntries() {
         return entries;
     }
+
 }
