@@ -60,22 +60,23 @@ public class HandbookClient implements ClientModInitializer {
                 HandbookScreen.categories.clear();
                 dumpAll();
 
-                if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook"))) {
+                if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"))) {
                     try {
-                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook"));
+                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
                     } catch (IOException e) {
-                        LOGGER.info("Failed to create handbook directory.");
+                        LOGGER.error("Failed to create handbook directories.");
                         return;
                     }
                 }
 
                 File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
                 if (files == null) {
-                    LOGGER.info("No handbook categories found!");
+                    LOGGER.error("No handbook categories found!");
                     return;
                 }
 
                 for (File file : files) {
+                    if (!file.getName().endsWith("json")) continue;
                     try {
                         String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
                         switch (type) {

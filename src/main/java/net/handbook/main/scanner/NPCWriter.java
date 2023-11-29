@@ -12,23 +12,27 @@ import net.minecraft.text.Text;
 import net.minecraft.village.TradeOfferList;
 import org.apache.commons.io.IOUtils;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterOutputStream;
 
-@SuppressWarnings("ResultOfMethodCallIgnored")
+@SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
 public class NPCWriter {
 
     String type = "trader";
     String title = "NPC";
     final List<NPC> entries = new ArrayList<>();
     private transient int newCount = 0;
+    static int x;
+    static int y;
+    static int z;
 
-    @SuppressWarnings("ConstantConditions")
     public void findEntities() {
         ClientWorld world = MinecraftClient.getInstance().world;
         if (world == null) return;
@@ -43,7 +47,8 @@ public class NPCWriter {
             if (!entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) return;
 
             for (NPC npc : entries) {
-                if (npc.title.equals(entity.getCustomName().getString())) return;
+                if (npc.title.equals(entity.getCustomName().getString())
+                        && npc.id.equals(npc.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) return;
             }
             HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
 
@@ -51,7 +56,6 @@ public class NPCWriter {
             entries.add(new NPC(entity.getCustomName().getString(), world.getRegistryKey().getValue().toString(), entity.getX(), entity.getY(), entity.getZ()));
         });
     }
-
 
     public void addOffers(TradeOfferList offers) {
         String name;
@@ -61,12 +65,18 @@ public class NPCWriter {
         else return;
 
         for (NPC npc : entries) {
-            if (npc.title.equals(name)) {
+            if (npc.id.equals(npc.getID(name, x, y, z))) {
                 npc.setOffers(offers);
                 HandbookClient.LOGGER.info("ADDING TRADES TO NPC " + npc.title);
                 return;
             }
         }
+    }
+
+    public static void setCoordinates(double x, double y, double z) {
+        NPCWriter.x = (int) x;
+        NPCWriter.y = (int) y;
+        NPCWriter.z = (int) z;
     }
 
     public void write() {
@@ -88,6 +98,39 @@ public class NPCWriter {
         } finally {
             IOUtils.closeQuietly(writer);
         }
+        (new File(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")).getParentFile().mkdirs();
+        for (NPC npc : entries) {
+            if (npc.offers == null || npc.offers.equals("")) continue;
+            try {
+                if (Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + npc.id + ".txt"))) continue;
+
+                Files.write(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + npc.id + ".txt"), compressTrades(npc.offers));
+                HandbookClient.LOGGER.info("Saving trades file " + npc.id + ".txt");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static byte[] compressTrades(String text) {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try (DeflaterOutputStream outputStream = new DeflaterOutputStream(byteStream)) {
+            outputStream.write(text.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return Base64.getEncoder().encode(byteStream.toByteArray());
+    }
+
+
+    public static String decompressTrades(String text) {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try (OutputStream outputStream = new InflaterOutputStream(byteStream)) {
+            outputStream.write(Base64.getDecoder().decode(text.getBytes()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return byteStream.toString(StandardCharsets.UTF_8);
     }
 
     public static NPCWriter read() {

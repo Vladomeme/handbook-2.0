@@ -12,7 +12,8 @@ public class NPC {
     final String text;
     final String shard;
     final String position;
-    String offers;
+    transient String offers;
+    final String id;
 
     public NPC(String title, String world, double x, double y, double z) {
         this.title = title;
@@ -23,6 +24,7 @@ public class NPC {
                 String.valueOf(y).split("\\.")[0] + ", " +
                 String.valueOf(z).split("\\.")[0];
         this.offers = "";
+        this.id = getID(title, x, y, z);
     }
 
     public void setOffers(TradeOfferList offers) {
@@ -48,5 +50,9 @@ public class NPC {
         item.getCompound("tag").remove("Monumenta");
         item.getCompound("tag").remove("AttributeModifiers");
         return item;
+    }
+
+    public String getID(String title, double x, double y, double z) {
+        return title.toLowerCase().replaceAll("[^A-Za-z0-9]", "") + ((int) x + (int) y + (int) z);
     }
 }

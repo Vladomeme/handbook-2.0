@@ -45,4 +45,8 @@ public class Entry {
     public TradeOfferList getOffers() {
         return null;
     }
+
+    public String getID() {
+        return null;
+    }
 }
