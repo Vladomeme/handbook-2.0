@@ -1,6 +1,6 @@
 package net.handbook.main.resources;
 
-import net.handbook.main.HandbookScreen;
+import net.handbook.main.feature.HandbookScreen;
 import net.minecraft.util.Identifier;
 
 import java.util.List;

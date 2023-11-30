@@ -1,6 +1,7 @@
-package net.handbook.main;
+package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.handbook.main.HandbookClient;
 import net.handbook.main.resources.BaseCategory;
 import net.handbook.main.resources.Entry;
 import net.handbook.main.widget.DisplayWidget;
@@ -26,6 +27,8 @@ public class HandbookScreen extends Screen {
     public static TextFieldWidget searchBox;
     public static ListWidget optionsWidget;
     public static DisplayWidget displayWidget;
+    public static TexturedButtonWidget clearWaypoint;
+    public static TexturedButtonWidget setWaypoint;
     public static TexturedButtonWidget shareLocation;
     public static TexturedButtonWidget openTrades;
 
@@ -37,7 +40,7 @@ public class HandbookScreen extends Screen {
     private static int lastKey;
     private static String lastFilter = "";
 
-    protected HandbookScreen(Text title) {
+    public HandbookScreen(Text title) {
         super(title);
     }
 
@@ -50,6 +53,13 @@ public class HandbookScreen extends Screen {
             MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
             return;
         }
+
+        this.addDrawableChild(clearWaypoint = new TexturedButtonWidget(
+                20, 2 , 76, 11,
+                0, 0, 11, new Identifier("handbook", "textures/clearwaypoint_button.png"),
+                76, 22, button -> Waypoint.setVisibility(false)));
+        clearWaypoint.active = Waypoint.isActive();
+        clearWaypoint.visible = Waypoint.isActive();
 
         int maxWidth = 0;
 
@@ -85,6 +95,13 @@ public class HandbookScreen extends Screen {
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
+
+        this.addDrawableChild(setWaypoint = new TexturedButtonWidget(
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 44, 65, 11,
+                0, 0, 11, new Identifier("handbook", "textures/waypoint_button.png"),
+                65, 22, button -> displayWidget.setWaypoint()));
+        setWaypoint.active = false;
+        setWaypoint.visible = false;
 
         this.addDrawableChild(shareLocation = new TexturedButtonWidget(
                 40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 76, 11,
@@ -159,6 +176,10 @@ public class HandbookScreen extends Screen {
         displayWidget.setWidth(maxWidth);
         displayWidget.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
         displayWidget.setEntry(null);
+
+        setWaypoint.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        setWaypoint.active = false;
+        setWaypoint.visible = false;
 
         shareLocation.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         shareLocation.active = false;

@@ -5,6 +5,8 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "AdvancementsScreenMixin",
+    "AdvancementsScreenMixin$DisplayAccessor",
+    "AdvancementsScreenMixin$WidgetsAccessor",
     "ClientConnectionMixin",
     "ClientPlayerInteractionManagerMixin",
     "MerchantScreenHandlerMixin"

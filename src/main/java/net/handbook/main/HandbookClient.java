@@ -7,9 +7,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.*;
 import net.handbook.main.scanner.LocationWriter;
 import net.handbook.main.scanner.NPCWriter;
@@ -116,7 +119,12 @@ public class HandbookClient implements ClientModInitializer {
                 }
             }
             npcWriter.findEntities();
+            Waypoint.tick();
             if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
+        });
+
+        WorldRenderEvents.AFTER_ENTITIES.register((ctx) -> {
+            if (Waypoint.isActive() && (Waypoint.getDistance() > 30)) Waypoint.renderBeacon(ctx);
         });
 
         openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));

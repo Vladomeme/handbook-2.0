@@ -53,6 +53,7 @@ public class NPC {
     }
 
     public String getID(String title, double x, double y, double z) {
-        return title.toLowerCase().replaceAll("[^A-Za-z0-9]", "") + ((int) x + (int) y + (int) z);
+        return title.toLowerCase().replaceAll("§.", "").replaceAll("[^A-Za-z0-9]", "")
+                + ((int) x + (int) y + (int) z);
     }
 }

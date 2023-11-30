@@ -1,7 +1,8 @@
 package net.handbook.main.widget;
 
 import net.handbook.main.HandbookClient;
-import net.handbook.main.HandbookScreen;
+import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -33,7 +34,9 @@ public class DisplayWidget extends ClickableWidget {
 
         description = splitText(entry.getText());
 
-        boolean state = entry.getTextFields().get("shard") != null;
+        boolean state = (entry.getTextFields() != null && entry.getTextFields().get("shard") != null);
+        HandbookScreen.setWaypoint.visible = state;
+        HandbookScreen.setWaypoint.active = state;
         HandbookScreen.shareLocation.visible = state;
         HandbookScreen.shareLocation.active = state;
 
@@ -79,6 +82,12 @@ public class DisplayWidget extends ClickableWidget {
         while (tokens.hasMoreTokens()) {
             String word = tokens.nextToken();
 
+            if (word.contains("\n")) {
+                output.append(word, 0, word.indexOf("\n") + 1);
+                word = word.substring(word.indexOf("\n") + 1);
+                lineLength = 0;
+            }
+
             while (word.length() > maxLength) {
                 output.append(word, 0, maxLength - lineLength).append("\n");
                 word = word.substring(maxLength - lineLength);
@@ -95,6 +104,21 @@ public class DisplayWidget extends ClickableWidget {
         }
 
         return output.toString().split("\n");
+    }
+
+    public void setWaypoint() {
+        if (MinecraftClient.getInstance().world == null) return;
+
+        String world = MinecraftClient.getInstance().world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
+        if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
+            Waypoint.setPosition(entry.getTextFields().get("position"));
+            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
+        }
+        else {
+            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard."));
+        }
+        if (MinecraftClient.getInstance().currentScreen == null) return;
+        MinecraftClient.getInstance().currentScreen.close();
     }
 
     public void shareLocation() {
