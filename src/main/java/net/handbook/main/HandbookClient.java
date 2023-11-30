@@ -3,6 +3,7 @@ package net.handbook.main;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import dev.xpple.clientarguments.arguments.CEntityArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -147,6 +148,10 @@ public class HandbookClient implements ClientModInitializer {
                         .then(literal("add")
                                 .then(literal("location").then(argument("Name", StringArgumentType.string()).executes(context -> {
                                     locationWriter.addLocation(StringArgumentType.getString(context, "Name"));
+                                    return 1;
+                                })))
+                                .then(literal("NPC").then(argument("Target", CEntityArgumentType.entity()).executes(context -> {
+                                    npcWriter.addNPC(CEntityArgumentType.getCEntity(context, "Target"), true);
                                     return 1;
                                 }))))
 

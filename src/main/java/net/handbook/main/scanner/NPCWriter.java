@@ -7,6 +7,7 @@ import net.handbook.main.HandbookClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.text.Text;
 import net.minecraft.village.TradeOfferList;
@@ -38,23 +39,34 @@ public class NPCWriter {
         if (world == null) return;
 
         world.getEntities().forEach(entity -> {
-            if (!entity.hasCustomName()) return;
-            if (entity.getType().equals(EntityType.ARMOR_STAND)) return;
-            if (entity.getType().equals(EntityType.MARKER)) return;
-            if (entity.getType().equals(EntityType.AREA_EFFECT_CLOUD)) return;
-
-            if (entity.getScoreboardTeam() == null) return;
-            if (!entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) return;
-
-            for (NPC npc : entries) {
-                if (npc.title.equals(entity.getCustomName().getString())
-                        && npc.id.equals(npc.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) return;
-            }
-            HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
-
-            newCount++;
-            entries.add(new NPC(entity.getCustomName().getString(), world.getRegistryKey().getValue().toString(), entity.getX(), entity.getY(), entity.getZ()));
+            if (entity.getType().equals(EntityType.VILLAGER)) addNPC(entity, false);
         });
+    }
+
+    public void addNPC(Entity entity, boolean manual) {
+        ClientWorld world = MinecraftClient.getInstance().world;
+        if (world == null) return;
+        if (!entity.hasCustomName() || entity.getScoreboardTeam() == null || !entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) {
+            if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+                    Text.of("§cERROR: This entity can not be added."));
+            return;
+        }
+
+        for (NPC npc : entries) {
+            if (npc.title.equals(entity.getCustomName().getString())
+                    && npc.id.equals(npc.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
+                if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+                        Text.of("§cERROR: NPC is already added."));
+                return;
+            }
+        }
+        if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+                Text.of("Added new NPC: " + entity.getCustomName().getString()));
+        HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
+
+        newCount++;
+        entries.add(new NPC(entity.getCustomName().getString(), world.getRegistryKey().getValue().toString(),
+                entity.getX(), entity.getY(), entity.getZ()));
     }
 
     public void addOffers(TradeOfferList offers) {

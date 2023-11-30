@@ -1,12 +1,13 @@
 package net.handbook.main.feature;
 
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.handbook.main.HandbookClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -54,9 +55,10 @@ public class Waypoint {
         if (world == null || player == null) return;
 
         distance = Math.sqrt(Math.pow(player.getX() - x, 2) + Math.pow(player.getY() - y, 2) + Math.pow(player.getZ() - z, 2));
-        HandbookClient.LOGGER.info(String.valueOf(distance));
         if (distance < 5) {
             MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("§aWaypoint removed."));
+            MinecraftClient.getInstance().world.playSound(player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
             setVisibility(false);
         }
 
@@ -64,7 +66,9 @@ public class Waypoint {
         double particleY = player.getY() + ((y - player.getY()) / distance) * ((float) tick / 3);
         double particleZ = player.getZ() + ((z - player.getZ()) / distance) * ((float) tick / 3);
 
-        world.addParticle(ParticleTypes.END_ROD, particleX, particleY + 0.5, particleZ, 0, 0, 0);
+        world.addParticle(ParticleTypes.END_ROD, particleX + (Math.random() - Math.random()) * 0.5,
+                particleY + 0.5 + (Math.random() - Math.random()) * 0.5,
+                particleZ + (Math.random() - Math.random()) * 0.5, 0, 0, 0);
     }
 
     public static void renderBeacon(WorldRenderContext context) {
@@ -78,7 +82,7 @@ public class Waypoint {
         context.matrixStack().push();
         context.matrixStack().translate(beaconX, - player.getY(), beaconZ);
         BeaconBlockEntityRenderer.renderBeam(context.matrixStack(), context.consumers(), BEAM_TEXTURE, 0, 1,
-                MinecraftClient.getInstance().world.getTime(), 0, 1024, DyeColor.LIGHT_BLUE.getColorComponents(), 0.3f, 0.3f                                                   // outerRadius
+                MinecraftClient.getInstance().world.getTime(), 0, 1024, DyeColor.LIGHT_BLUE.getColorComponents(), 0.3f, 0.3f
         );
         context.matrixStack().pop();
     }
