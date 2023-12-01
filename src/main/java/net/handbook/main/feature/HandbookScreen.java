@@ -1,7 +1,6 @@
 package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.handbook.main.HandbookClient;
 import net.handbook.main.resources.BaseCategory;
 import net.handbook.main.resources.Entry;
 import net.handbook.main.widget.DisplayWidget;
@@ -191,7 +190,6 @@ public class HandbookScreen extends Screen {
 
         activeCategory = category;
         searchBox.setText("");
-        HandbookClient.LOGGER.info("Setting list width: " + maxWidth);
     }
 
     public static void filterEntries() {

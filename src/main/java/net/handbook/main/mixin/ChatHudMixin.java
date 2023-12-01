@@ -1,6 +1,5 @@
 package net.handbook.main.mixin;
 
-import net.handbook.main.HandbookClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.MessageIndicator;
@@ -34,11 +33,9 @@ public abstract class ChatHudMixin {
 
     @Unique
     public Text injectWaypointClickEvent(Text message) {
-        HandbookClient.LOGGER.info("injecting clickevent");
         Text text = message.getSiblings().size() > 0 ? message.getSiblings().get(message.getSiblings().size() - 1) : message;
 
         int index = text.getString().indexOf("[Pos");
-        HandbookClient.LOGGER.info(String.valueOf(index));
         String prePosition = text.getString().substring(0, index);
         String position = text.getString().substring(index).replace("Position:", "");
 

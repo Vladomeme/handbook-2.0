@@ -1,6 +1,5 @@
 package net.handbook.main.widget;
 
-import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.Entry;
@@ -133,7 +132,6 @@ public class DisplayWidget extends ClickableWidget {
 
     public void openTrades() {
         if (MinecraftClient.getInstance().player == null) return;
-        HandbookClient.LOGGER.info("OPENING A PREVIEW TRADE SCREEN");
         PlayerInventory inventory = MinecraftClient.getInstance().player.getInventory();
         MerchantScreenHandler screenHandler = new MerchantScreenHandler(0, inventory);
         screenHandler.setOffers(entry.getOffers());
