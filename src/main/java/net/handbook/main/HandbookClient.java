@@ -2,6 +2,7 @@ package net.handbook.main;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.xpple.clientarguments.arguments.CEntityArgumentType;
 import net.fabricmc.api.ClientModInitializer;
@@ -154,7 +155,16 @@ public class HandbookClient implements ClientModInitializer {
                                     npcWriter.addNPC(CEntityArgumentType.getCEntity(context, "Target"), true);
                                     return 1;
                                 }))))
-
+                        .then(literal("waypoint")
+                                .then(argument("x", IntegerArgumentType.integer())
+                                        .then(argument("y", IntegerArgumentType.integer())
+                                                .then(argument("z", IntegerArgumentType.integer()).executes(context -> {
+                                                    Waypoint.setPosition(
+                                                            IntegerArgumentType.getInteger(context, "x"),
+                                                            IntegerArgumentType.getInteger(context, "y"),
+                                                            IntegerArgumentType.getInteger(context, "z"));
+                                                    return 1;
+                                                })))))
         ));
 
         LOGGER.info("Handbook 2.0 loaded!");

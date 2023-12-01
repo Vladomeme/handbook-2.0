@@ -31,6 +31,14 @@ public class Waypoint {
         if (tick >= 60) tick = 0;
     }
 
+    public static void setPosition(int x, int y, int z) {
+        Waypoint.x = x;
+        Waypoint.y = y;
+        Waypoint.z = z;
+        setVisibility(true);
+        tick = 0;
+    }
+
     public static void setPosition(String position) {
         String[] coordinates = position.replace("Position:", "").replace(" ", "").split(",", 3);
         x = Integer.parseInt(coordinates[0]);
