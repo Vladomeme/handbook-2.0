@@ -16,6 +16,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.*;
+import net.handbook.main.scanner.AdvancementWriter;
 import net.handbook.main.scanner.LocationWriter;
 import net.handbook.main.scanner.NPCWriter;
 import net.minecraft.client.MinecraftClient;
@@ -142,6 +143,11 @@ public class HandbookClient implements ClientModInitializer {
                                     locationWriter.write();
                                     return 1;
                                 }))
+                                .then(literal("advancements")
+                                        .then(argument("Root", StringArgumentType.string()).executes(context -> {
+                                            AdvancementWriter.dumpAdvancements(StringArgumentType.getString(context, "Root"));
+                                            return 1;
+                                        })))
                                 .then(literal("all").executes(context -> {
                                     dumpAll();
                                     return 1;
