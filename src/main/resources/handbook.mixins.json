@@ -8,6 +8,8 @@
     "ChatHudMixin",
     "ClientConnectionMixin",
     "ClientPlayerInteractionManagerMixin",
+    "FileResourcePackProviderMixin",
+    "ResourceFinderMixin",
     "MerchantScreenHandlerMixin"
   ],
   "injectors": {

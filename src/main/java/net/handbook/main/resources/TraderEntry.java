@@ -5,7 +5,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.scanner.NPCWriter;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 
@@ -17,7 +16,7 @@ public class TraderEntry extends PositionedEntry {
 
     final String id;
 
-    public TraderEntry(String title, String text, Identifier image, String shard, String position, String id) {
+    public TraderEntry(String title, String text, String image, String shard, String position, String id) {
         super(title, text, image, shard, position);
         this.id = id;
     }

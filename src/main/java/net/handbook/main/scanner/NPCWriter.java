@@ -79,7 +79,6 @@ public class NPCWriter {
         for (NPC npc : entries) {
             if (npc.id.equals(npc.getID(name, x, y, z))) {
                 npc.setOffers(offers);
-                HandbookClient.LOGGER.info("ADDING TRADES TO NPC " + npc.title);
                 return;
             }
         }

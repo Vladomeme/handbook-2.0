@@ -1,7 +1,6 @@
 package net.handbook.main.resources;
 
 import net.handbook.main.feature.HandbookScreen;
-import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOfferList;
 
 import java.util.HashMap;
@@ -10,9 +9,9 @@ public class Entry {
 
     final String title;
     final String text;
-    final Identifier image;
+    final String image;
 
-    public Entry(String title, String text, Identifier image) {
+    public Entry(String title, String text, String image) {
         this.title = title;
         this.text = text;
         this.image = image;
@@ -34,8 +33,12 @@ public class Entry {
         return text;
     }
 
-    public Identifier getImage() {
+    public String getImage() {
         return image;
+    }
+
+    public boolean hasImage() {
+        return image != null;
     }
 
     public HashMap<String, String> getTextFields() {

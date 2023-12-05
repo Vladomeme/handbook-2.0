@@ -1,6 +1,5 @@
 package net.handbook.main.scanner;
 
-import net.handbook.main.HandbookClient;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.village.TradeOffer;
@@ -10,6 +9,7 @@ public class NPC {
 
     final String title;
     final String text;
+    final String image;
     final String shard;
     final String position;
     transient String offers;
@@ -18,6 +18,7 @@ public class NPC {
     public NPC(String title, String world, double x, double y, double z) {
         this.title = title;
         this.text = "";
+        this.image = "";
         this.shard = "Shard: " + world.replace("monumenta:", "").split("-")[0];
         this.position = "Position: " +
                 String.valueOf(x).split("\\.")[0] + ", " +
@@ -39,7 +40,6 @@ public class NPC {
             offerList.add(tradeNbt);
         }
         offersNbt.put("Recipes", offerList);
-        HandbookClient.LOGGER.info(offersNbt.toString());
         this.offers = offersNbt.toString()
                 .replace("\\\"", "\"")
                 .replace("\\\"", "\\\\\"")

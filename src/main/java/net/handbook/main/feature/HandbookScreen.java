@@ -231,6 +231,7 @@ public class HandbookScreen extends Screen {
     @Override
     public void close() {
         if (lastKey != 69) {
+            displayWidget.renderImage = false;
             client.player.closeScreen();
             super.close();
         }

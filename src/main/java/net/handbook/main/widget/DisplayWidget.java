@@ -1,5 +1,6 @@
 package net.handbook.main.widget;
 
+import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.Entry;
@@ -14,7 +15,11 @@ import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.StringTokenizer;
 
 public class DisplayWidget extends ClickableWidget {
@@ -22,6 +27,11 @@ public class DisplayWidget extends ClickableWidget {
     private Entry entry;
     private String[] description = new String[]{};
     private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+
+    private Identifier id;
+    private int imageWidth;
+    private int imageHeight;
+    public boolean renderImage = false;
 
     public DisplayWidget(int x, int y, int width, int height, Text message) {
         super(x, y, width, height, message);
@@ -33,6 +43,22 @@ public class DisplayWidget extends ClickableWidget {
 
         description = splitText(entry.getText());
 
+        if (entry.hasImage()) {
+            try {
+                id = new Identifier("handbook", entry.getImage());
+                BufferedImage image = ImageIO.read(MinecraftClient.getInstance().getResourceManager().getResource(id).get().getInputStream());
+                imageWidth = image.getWidth();
+                imageHeight = image.getHeight();
+                renderImage = true;
+            } catch (IOException e) {
+                HandbookClient.LOGGER.error("Invalid image name in entry " + entry.getTitle());
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            renderImage = false;
+        }
+
         boolean state = (entry.getTextFields() != null && entry.getTextFields().get("shard") != null);
         HandbookScreen.setWaypoint.visible = state;
         HandbookScreen.setWaypoint.active = state;
@@ -43,6 +69,7 @@ public class DisplayWidget extends ClickableWidget {
         HandbookScreen.openTrades.active = state;
         HandbookScreen.openTrades.visible = state;
     }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (entry == null) return;
@@ -69,6 +96,21 @@ public class DisplayWidget extends ClickableWidget {
             context.drawText(tr, description[i], 10, y + i * 10, 16777215, false);
         }
 
+        if (renderImage) {
+            float scale = 1;
+            if (imageWidth > this.width * 0.5 - 10) {
+                if (imageHeight > this.height * 0.8) {
+                    scale = (float) Math.min((this.width * 0.5 - 10) / imageWidth, (this.imageHeight * 0.8) / imageHeight);
+                }
+                else scale = (float) (this.width * 0.5 / imageWidth);
+            }
+            context.getMatrices().push();
+            context.getMatrices().scale(scale, scale, 2);
+            context.drawTexture(id, (int) ((this.width * 0.5) / scale), (int) (10 / scale), 0, 0,
+                    imageWidth, imageHeight, imageWidth, imageHeight);
+            context.getMatrices().pop();
+        }
+
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -76,7 +118,7 @@ public class DisplayWidget extends ClickableWidget {
         StringTokenizer tokens = new StringTokenizer(text, " ");
         StringBuilder output = new StringBuilder();
         int lineLength = 0;
-        int maxLength = (this.width - 100) / 6;
+        int maxLength = (this.width / 10);
         if (maxLength <= 0) maxLength = 100;
         while (tokens.hasMoreTokens()) {
             String word = tokens.nextToken();

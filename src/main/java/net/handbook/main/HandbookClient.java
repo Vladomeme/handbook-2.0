@@ -49,6 +49,8 @@ public class HandbookClient implements ClientModInitializer {
     public static final LocationWriter locationWriter = LocationWriter.read();
     public static final NPCWriter npcWriter = NPCWriter.read();
 
+    static boolean firstLoad = false;
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public void onInitializeClient() {
@@ -64,15 +66,17 @@ public class HandbookClient implements ClientModInitializer {
                 Gson gson = new Gson();
 
                 HandbookScreen.categories.clear();
-                dumpAll();
+                if (firstLoad) dumpAll();
+                firstLoad = true;
 
-                if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"))) {
-                    try {
+                try {
+                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")))
                         Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
-                    } catch (IOException e) {
-                        LOGGER.error("Failed to create handbook directories.");
-                        return;
-                    }
+                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/assets/handbook/textures")))
+                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/assets/handbook/textures"));
+                } catch (IOException e) {
+                    LOGGER.error("Failed to create handbook directories.");
+                    return;
                 }
 
                 File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
