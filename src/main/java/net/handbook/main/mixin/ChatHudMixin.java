@@ -27,7 +27,7 @@ public abstract class ChatHudMixin {
             at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V"))
     public void addMessage(ChatHud instance, Text message, MessageSignatureData signature, int ticks, MessageIndicator indicator, boolean refresh) {
-        if (message.getString().contains("[Position:")) message = injectWaypointClickEvent(message);
+        if (message.getString().contains("Position:")) message = injectWaypointClickEvent(message);
         addMessage(message, signature, this.client.inGameHud.getTicks(), indicator, false);
     }
 
@@ -35,12 +35,11 @@ public abstract class ChatHudMixin {
     public Text injectWaypointClickEvent(Text message) {
         Text text = message.getSiblings().size() > 0 ? message.getSiblings().get(message.getSiblings().size() - 1) : message;
 
-        int index = text.getString().indexOf("[Pos");
+        int index = text.getString().indexOf("Position:");
         String prePosition = text.getString().substring(0, index);
-        String position = text.getString().substring(index).replace("Position:", "");
+        String position = text.getString().substring(index).replace("Position: ", "");
 
-        String[] coordinates = position.replace("[Position:", "").replace("]", "")
-                .replace(" ", "").split(",", 3);
+        String[] coordinates = position.replace(" ", "").split(",", 3);
         int x = Integer.parseInt(coordinates[0]);
         int y = Integer.parseInt(coordinates[1]);
         int z = Integer.parseInt(coordinates[2]);

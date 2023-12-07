@@ -1,5 +1,6 @@
 package net.handbook.main.widget;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.Waypoint;
@@ -11,6 +12,7 @@ import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.resource.Resource;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -20,6 +22,7 @@ import net.minecraft.util.Identifier;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.StringTokenizer;
 
 public class DisplayWidget extends ClickableWidget {
@@ -32,6 +35,7 @@ public class DisplayWidget extends ClickableWidget {
     private int imageWidth;
     private int imageHeight;
     public boolean renderImage = false;
+    public boolean invalidImage = false;
 
     public DisplayWidget(int x, int y, int width, int height, Text message) {
         super(x, y, width, height, message);
@@ -46,10 +50,17 @@ public class DisplayWidget extends ClickableWidget {
         if (entry.hasImage()) {
             try {
                 id = new Identifier("handbook", entry.getImage());
-                BufferedImage image = ImageIO.read(MinecraftClient.getInstance().getResourceManager().getResource(id).get().getInputStream());
-                imageWidth = image.getWidth();
-                imageHeight = image.getHeight();
-                renderImage = true;
+                Optional<Resource> resource = MinecraftClient.getInstance().getResourceManager().getResource(id);
+                if (resource.isPresent()) {
+                    BufferedImage image = ImageIO.read(resource.get().getInputStream());
+                    imageWidth = image.getWidth();
+                    imageHeight = image.getHeight();
+                    renderImage = true;
+                    invalidImage = false;
+                }
+                else {
+                    invalidImage = true;
+                }
             } catch (IOException e) {
                 HandbookClient.LOGGER.error("Invalid image name in entry " + entry.getTitle());
                 throw new RuntimeException(e);
@@ -97,6 +108,11 @@ public class DisplayWidget extends ClickableWidget {
         }
 
         if (renderImage) {
+            if (invalidImage) {
+                context.drawText(tr, "Invalid image", (int) (this.width * 0.5), 10, 16777215, false);
+                super.render(context, mouseX, mouseY, delta);
+                return;
+            }
             float scale = 1;
             if (imageWidth > this.width * 0.5 - 10) {
                 if (imageHeight > this.height * 0.8) {
@@ -106,12 +122,12 @@ public class DisplayWidget extends ClickableWidget {
             }
             context.getMatrices().push();
             context.getMatrices().scale(scale, scale, 2);
+            RenderSystem.enableBlend();
             context.drawTexture(id, (int) ((this.width * 0.5) / scale), (int) (10 / scale), 0, 0,
                     imageWidth, imageHeight, imageWidth, imageHeight);
+            RenderSystem.disableBlend();
             context.getMatrices().pop();
         }
-
-        super.render(context, mouseX, mouseY, delta);
     }
 
     public String[] splitText(String text) {
@@ -162,11 +178,32 @@ public class DisplayWidget extends ClickableWidget {
         MinecraftClient.getInstance().currentScreen.close();
     }
 
-    public void shareLocation() {
+    //ugly shit
+    public void showWorldButtons(boolean state) {
+        HandbookScreen.shareGlobal.active = state;
+        HandbookScreen.shareGlobal.visible = state;
+
+        HandbookScreen.shareLocal.active = state;
+        HandbookScreen.shareLocal.visible = state;
+
+        HandbookScreen.shareWorld.active = state;
+        HandbookScreen.shareWorld.visible = state;
+
+        HandbookScreen.shareLFG.active = state;
+        HandbookScreen.shareLFG.visible = state;
+
+        HandbookScreen.shareReply.active = state;
+        HandbookScreen.shareReply.visible = state;
+
+        HandbookScreen.shareCancel.active = state;
+        HandbookScreen.shareCancel.visible = state;
+    }
+
+    public void shareLocation(String command) {
         if (MinecraftClient.getInstance().player == null) return;
-        MinecraftClient.getInstance().player.networkHandler.sendChatMessage(
-                entry.getClearTitle() + " (" + entry.getTextFields().get("shard").replace("Shard: ", "")
-                        + ") | [" + entry.getTextFields().get("position") + "]");
+        MinecraftClient.getInstance().player.networkHandler.sendCommand(command + " "
+                + entry.getClearTitle() + " (" + entry.getTextFields().get("shard").replace("Shard: ", "")
+                        + ") | " + entry.getTextFields().get("position"));
 
         if (MinecraftClient.getInstance().currentScreen == null) return;
         MinecraftClient.getInstance().currentScreen.close();

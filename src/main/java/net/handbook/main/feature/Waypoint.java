@@ -88,7 +88,7 @@ public class Waypoint {
         double beaconZ = distance < 150 ? z - player.getZ() : ((z - player.getZ()) / distance) * 150;
 
         context.matrixStack().push();
-        context.matrixStack().translate(beaconX, - player.getY(), beaconZ);
+        context.matrixStack().translate(beaconX, - (player.getY() + 64), beaconZ);
         BeaconBlockEntityRenderer.renderBeam(context.matrixStack(), context.consumers(), BEAM_TEXTURE, 0, 1,
                 MinecraftClient.getInstance().world.getTime(), 0, 1024, DyeColor.LIGHT_BLUE.getColorComponents(), 0.3f, 0.3f
         );

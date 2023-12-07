@@ -41,10 +41,8 @@ public class HandbookResourcePack extends DirectoryResourcePack {
 
     @Override
     public void findResources(ResourceType type, String namespace, String prefix, ResultConsumer consumer) {
-        if (prefix.equals("font") || prefix.startsWith("entity") || prefix.equals("citresewn")) {
-            HandbookClient.LOGGER.error("CANCELLED RESOURCES WITH PREFIX " + prefix);
-            return;
-        }
+        if (prefix.equals("font") || prefix.startsWith("textures")
+                || prefix.startsWith("citresewn") || prefix.startsWith("mcpatcher") || prefix.startsWith("optifine")) return;
         Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures");
         try (Stream<Path> stream2 = Files.find(path, Integer.MAX_VALUE, (path2, attributes) -> attributes.isRegularFile(), new FileVisitOption[0])){
             stream2.forEach(foundPath -> {

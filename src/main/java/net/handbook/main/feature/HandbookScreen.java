@@ -29,6 +29,12 @@ public class HandbookScreen extends Screen {
     public static TexturedButtonWidget clearWaypoint;
     public static TexturedButtonWidget setWaypoint;
     public static TexturedButtonWidget shareLocation;
+    public static TexturedButtonWidget shareGlobal;
+    public static TexturedButtonWidget shareLocal;
+    public static TexturedButtonWidget shareWorld;
+    public static TexturedButtonWidget shareLFG;
+    public static TexturedButtonWidget shareReply;
+    public static TexturedButtonWidget shareCancel;
     public static TexturedButtonWidget openTrades;
 
     public static final List<BaseCategory> categories = new ArrayList<>();
@@ -105,9 +111,51 @@ public class HandbookScreen extends Screen {
         this.addDrawableChild(shareLocation = new TexturedButtonWidget(
                 40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 76, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_button.png"),
-                76, 22, button -> displayWidget.shareLocation()));
+                76, 22, button -> displayWidget.showWorldButtons(true)));
         shareLocation.active = false;
         shareLocation.visible = false;
+
+        this.addDrawableChild(shareGlobal = new TexturedButtonWidget(
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 80, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_global.png"),
+                36, 22, button -> displayWidget.shareLocation("g")));
+        shareGlobal.active = false;
+        shareGlobal.visible = false;
+
+        this.addDrawableChild(shareLocal = new TexturedButtonWidget(
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 68, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_local.png"),
+                36, 22, button -> displayWidget.shareLocation("l")));
+        shareLocal.active = false;
+        shareLocal.visible = false;
+
+        this.addDrawableChild(shareWorld = new TexturedButtonWidget(
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 56, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_world.png"),
+                36, 22, button -> displayWidget.shareLocation("wc")));
+        shareWorld.active = false;
+        shareWorld.visible = false;
+
+        this.addDrawableChild(shareLFG = new TexturedButtonWidget(
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 44, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_lfg.png"),
+                36, 22, button -> displayWidget.shareLocation("lfg")));
+        shareLFG.active = false;
+        shareLFG.visible = false;
+
+        this.addDrawableChild(shareReply = new TexturedButtonWidget(
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_reply.png"),
+                36, 22, button -> displayWidget.shareLocation("r")));
+        shareReply.active = false;
+        shareReply.visible = false;
+
+        this.addDrawableChild(shareCancel = new TexturedButtonWidget(
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/location_cancel.png"),
+                36, 22, button -> displayWidget.showWorldButtons(false)));
+        shareCancel.active = false;
+        shareCancel.visible = false;
 
         this.addDrawableChild(openTrades = new TexturedButtonWidget(
                 40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 65, 11,
@@ -183,6 +231,25 @@ public class HandbookScreen extends Screen {
         shareLocation.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         shareLocation.active = false;
         shareLocation.visible = false;
+
+        shareGlobal.setX(120 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareGlobal.active = false;
+        shareGlobal.visible = false;
+        shareLocal.setX(120 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareLocal.active = false;
+        shareLocal.visible = false;
+        shareWorld.setX(120 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareWorld.active = false;
+        shareWorld.visible = false;
+        shareLFG.setX(120 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareLFG.active = false;
+        shareLFG.visible = false;
+        shareReply.setX(120 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareReply.active = false;
+        shareReply.visible = false;
+        shareCancel.setX(120 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        shareCancel.active = false;
+        shareCancel.visible = false;
 
         openTrades.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         openTrades.active = false;

@@ -4,9 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import dev.xpple.clientarguments.arguments.CEntityArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -36,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
@@ -72,8 +77,8 @@ public class HandbookClient implements ClientModInitializer {
                 try {
                     if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")))
                         Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
-                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/assets/handbook/textures")))
-                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/assets/handbook/textures"));
+                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures")))
+                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures"));
                 } catch (IOException e) {
                     LOGGER.error("Failed to create handbook directories.");
                     return;
@@ -157,7 +162,8 @@ public class HandbookClient implements ClientModInitializer {
                                     return 1;
                                 })))
                         .then(literal("add")
-                                .then(literal("location").then(argument("Name", StringArgumentType.string()).executes(context -> {
+                                .then(literal("location").then(argument("Name", StringArgumentType.string())
+                                        .suggests(this::getSuggestions).executes(context -> {
                                     locationWriter.addLocation(StringArgumentType.getString(context, "Name"));
                                     return 1;
                                 })))
@@ -187,5 +193,17 @@ public class HandbookClient implements ClientModInitializer {
     public static void dumpAll() {
         npcWriter.write();
         locationWriter.write();
+    }
+
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
+        for (BaseCategory category : HandbookScreen.categories) {
+            if (!category.getTitle().equals("Locations")) continue;
+
+            for (Entry entry : category.getEntries()) {
+                if (entry.getClearTitle().toLowerCase().contains(builder.getInput().toLowerCase()
+                        .replace("/handbook add location ", ""))) builder.suggest(entry.getClearTitle());
+            }
+        }
+        return builder.buildFuture();
     }
 }
