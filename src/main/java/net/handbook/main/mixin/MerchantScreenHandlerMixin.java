@@ -1,6 +1,7 @@
 package net.handbook.main.mixin;
 
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
@@ -16,7 +17,7 @@ public abstract class MerchantScreenHandlerMixin extends ScreenHandler {
 
     @Inject(method = "setOffers", at = @At("TAIL"))
     public void setOffers(TradeOfferList offers, CallbackInfo ci) {
-        HandbookClient.npcWriter.addOffers(offers);
+        if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.enableScanner) HandbookClient.npcWriter.addOffers(offers);
     }
 
     protected MerchantScreenHandlerMixin(@Nullable ScreenHandlerType<?> type, int syncId) {

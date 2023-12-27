@@ -1,5 +1,6 @@
 package net.handbook.main.mixin;
 
+import net.handbook.main.config.HandbookConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.MessageIndicator;
@@ -27,7 +28,7 @@ public abstract class ChatHudMixin {
             at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V"))
     public void addMessage(ChatHud instance, Text message, MessageSignatureData signature, int ticks, MessageIndicator indicator, boolean refresh) {
-        if (message.getString().contains("Position:")) message = injectWaypointClickEvent(message);
+        if (message.getString().contains("Position:") && HandbookConfig.INSTANCE.enabled) message = injectWaypointClickEvent(message);
         addMessage(message, signature, this.client.inGameHud.getTicks(), indicator, false);
     }
 

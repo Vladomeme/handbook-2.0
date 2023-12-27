@@ -38,7 +38,7 @@ public class Entry {
     }
 
     public boolean hasImage() {
-        return image != null;
+        return image != null && !image.equals("");
     }
 
     public HashMap<String, String> getTextFields() {

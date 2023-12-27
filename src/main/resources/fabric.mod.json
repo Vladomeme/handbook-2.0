@@ -18,6 +18,9 @@
   "entrypoints": {
     "client": [
       "net.handbook.main.HandbookClient"
+    ],
+    "modmenu": [
+      "net.handbook.main.config.HandbookModMenu"
     ]
   },
   "mixins": [

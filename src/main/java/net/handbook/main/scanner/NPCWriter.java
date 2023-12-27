@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.config.HandbookConfigScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.world.ClientWorld;
@@ -35,6 +37,7 @@ public class NPCWriter {
     static int z;
 
     public void findEntities() {
+        if (!HandbookConfig.INSTANCE.enableScanner) return;
         ClientWorld world = MinecraftClient.getInstance().world;
         if (world == null) return;
 

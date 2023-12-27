@@ -1,5 +1,6 @@
 package net.handbook.main.mixin;
 
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.scanner.NPCWriter;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.Entity;
@@ -16,6 +17,7 @@ public abstract class ClientPlayerInteractionManagerMixin {
 
     @Inject(method = "interactEntity", at = @At("HEAD"))
     public void interactEntity(PlayerEntity player, Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+        if (!HandbookConfig.INSTANCE.enabled) return;
         NPCWriter.setCoordinates(entity.getX(), entity.getY(), entity.getZ());
     }
 }
