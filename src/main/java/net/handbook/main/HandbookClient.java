@@ -91,7 +91,7 @@ public class HandbookClient implements ClientModInitializer {
                 }
 
                 for (File file : files) {
-                    if (!file.getName().endsWith("json")) continue;
+                    if (!file.getName().endsWith("json") || file.getName().equals("config.json")) continue;
                     try {
                         String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
                         switch (type) {

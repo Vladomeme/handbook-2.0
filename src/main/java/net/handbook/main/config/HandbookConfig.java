@@ -17,7 +17,7 @@ public class HandbookConfig {
     public boolean enabled = true;
     public boolean enableScanner = false;
 
-    private static final File FILE = new File(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook").toFile(), "handbook.json");
+    private static final File FILE = new File(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook").toFile(), "config.json");
 
     public static final HandbookConfig INSTANCE = read();
 

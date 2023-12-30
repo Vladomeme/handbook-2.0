@@ -19,6 +19,7 @@ public class Entry {
 
     public void mouseClicked() {
         HandbookScreen.displayWidget.setEntry(this);
+        HandbookScreen.openDisplay();
     }
 
     public String getTitle() {

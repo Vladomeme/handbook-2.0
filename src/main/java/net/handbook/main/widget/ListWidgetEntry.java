@@ -5,6 +5,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.handbook.main.resources.Entry;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -17,6 +18,8 @@ import java.util.List;
 
 @Environment(EnvType.CLIENT)
 public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
+
+    private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
     public final Entry entry;
 
@@ -34,7 +37,10 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     @Override
     public void render(DrawContext context, int index, int top, int left, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
         this.button.setPosition(left, top);
-        context.drawText(MinecraftClient.getInstance().textRenderer, entry.getTitle(), left + 10, top, 16777215, false);
+        if (tr.getWidth(entry.getTitle()) > 150) {
+            context.drawText(tr, tr.trimToWidth(entry.getTitle(), 147) + "...", left + 10, top, 16777215, false);
+        }
+        else context.drawText(tr, entry.getTitle(), left + 10, top, 16777215, false);
     }
 
     @Override

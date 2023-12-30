@@ -8,15 +8,10 @@ import net.handbook.main.resources.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.resource.Resource;
-import net.minecraft.screen.MerchantScreenHandler;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import javax.imageio.ImageIO;
@@ -83,8 +78,9 @@ public class DisplayWidget extends ClickableWidget {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        if (entry == null) return;
+        if (entry == null || !visible) return;
 
+        context.getMatrices().push();
         context.getMatrices().translate(getX(), getY(), 1);
 
         context.getMatrices().push();
@@ -128,6 +124,7 @@ public class DisplayWidget extends ClickableWidget {
             RenderSystem.disableBlend();
             context.getMatrices().pop();
         }
+        context.getMatrices().pop();
     }
 
     public String[] splitText(String text) {
@@ -178,27 +175,6 @@ public class DisplayWidget extends ClickableWidget {
         MinecraftClient.getInstance().currentScreen.close();
     }
 
-    //ugly shit
-    public void showWorldButtons(boolean state) {
-        HandbookScreen.shareGlobal.active = state;
-        HandbookScreen.shareGlobal.visible = state;
-
-        HandbookScreen.shareLocal.active = state;
-        HandbookScreen.shareLocal.visible = state;
-
-        HandbookScreen.shareWorld.active = state;
-        HandbookScreen.shareWorld.visible = state;
-
-        HandbookScreen.shareLFG.active = state;
-        HandbookScreen.shareLFG.visible = state;
-
-        HandbookScreen.shareReply.active = state;
-        HandbookScreen.shareReply.visible = state;
-
-        HandbookScreen.shareCancel.active = state;
-        HandbookScreen.shareCancel.visible = state;
-    }
-
     public void shareLocation(String command) {
         if (MinecraftClient.getInstance().player == null) return;
         MinecraftClient.getInstance().player.networkHandler.sendCommand(command + " "
@@ -208,14 +184,8 @@ public class DisplayWidget extends ClickableWidget {
         if (MinecraftClient.getInstance().currentScreen == null) return;
         MinecraftClient.getInstance().currentScreen.close();
     }
-
-    public void openTrades() {
-        if (MinecraftClient.getInstance().player == null) return;
-        PlayerInventory inventory = MinecraftClient.getInstance().player.getInventory();
-        MerchantScreenHandler screenHandler = new MerchantScreenHandler(0, inventory);
-        screenHandler.setOffers(entry.getOffers());
-        MinecraftClient.getInstance().setScreen(new MerchantScreen(screenHandler, inventory,
-                Text.of(entry.getClearTitle() + " (Preview)").getWithStyle(Style.EMPTY.withColor(Formatting.RED)).get(0)));
+    public Entry getEntry() {
+        return entry;
     }
 
     @Override

@@ -33,6 +33,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 			int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
 			if (width > maxWidth) maxWidth = width;
 		}
+		maxWidth = Math.min(maxWidth, 150);
 
 		this.width = maxWidth;
 	}
