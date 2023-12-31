@@ -51,6 +51,7 @@ public class HandbookScreen extends Screen {
 
     public static final List<BaseCategory> categories = new ArrayList<>();
     public static BaseCategory activeCategory;
+    public static ListWidgetEntry selectedEntry;
 
     static int line1x;
     static int line2x;
@@ -91,7 +92,8 @@ public class HandbookScreen extends Screen {
         this.addDrawableChild(categoriesWidget = new ListWidget(
                 maxWidth, screenHeight - 40, 31, screenHeight - 10));
         categoriesWidget.setLeftPos(20);
-        categoriesWidget.setEntries(categories);
+        categoriesWidget.setEntries(categories, "category");
+        categoriesWidget.children().get(0).updateHighlight(true);
 
         maxWidth = 0;
 
@@ -108,7 +110,7 @@ public class HandbookScreen extends Screen {
         this.addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 6, screenHeight - 70, 31, screenHeight - 10));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(categories.get(0).getEntries());
+        optionsWidget.setEntries(categories.get(0).getEntries(), "entry");
         activeCategory = categories.get(0);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
@@ -340,7 +342,7 @@ public class HandbookScreen extends Screen {
         optionsWidget.updateSize(maxWidth + 6, screenHeight - 70, 31, screenHeight - 10);
         optionsWidget.listWidth = maxWidth + 6;
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(category.getEntries());
+        optionsWidget.setEntries(category.getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = screenWidth - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
@@ -367,14 +369,14 @@ public class HandbookScreen extends Screen {
     public static void filterEntries() {
         if (!searchBox.getText().equals(lastFilter)) {
             if (searchBox.getText().equals("")) {
-                optionsWidget.setEntries(activeCategory.getEntries());
+                optionsWidget.setEntries(activeCategory.getEntries(), "entry");
                 lastFilter = "";
                 return;
             }
 
             optionsWidget.clear();
             for (Entry entry : activeCategory.getEntries()) {
-                if (entry.getTitle().toLowerCase().contains(searchBox.getText().toLowerCase())) optionsWidget.add(entry);
+                if (entry.getTitle().toLowerCase().contains(searchBox.getText().toLowerCase())) optionsWidget.add(entry, "entry");
             }
             optionsWidget.setScrollAmount(0);
         }

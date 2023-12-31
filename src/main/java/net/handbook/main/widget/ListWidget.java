@@ -22,14 +22,14 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		this.setRenderHeader(false, 0);
 	}
 
-	public void setEntries(List<? extends net.handbook.main.resources.Entry> entries) {
+	public void setEntries(List<? extends net.handbook.main.resources.Entry> entries, String type) {
 		this.clearEntries();
 		this.setScrollAmount(0);
 
 		int maxWidth = 0;
 
 		for (net.handbook.main.resources.Entry entry : entries) {
-			addEntry(new ListWidgetEntry(entry, listWidth));
+			addEntry(new ListWidgetEntry(entry, listWidth, type));
 			int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
 			if (width > maxWidth) maxWidth = width;
 		}
@@ -52,7 +52,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		clearEntries();
 	}
 
-	public void add(net.handbook.main.resources.Entry entry) {
-		addEntry(new ListWidgetEntry(entry, listWidth));
+	public void add(net.handbook.main.resources.Entry entry, String type) {
+		addEntry(new ListWidgetEntry(entry, listWidth, type));
 	}
 }

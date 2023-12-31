@@ -23,6 +23,7 @@ import java.util.StringTokenizer;
 public class DisplayWidget extends ClickableWidget {
 
     private Entry entry;
+    public ListWidgetEntry selectedEntry;
     private String[] description = new String[]{};
     private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
