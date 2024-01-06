@@ -5,12 +5,15 @@ import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.Entry;
+import net.handbook.main.resources.Teleports;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.resource.Resource;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -25,7 +28,8 @@ public class DisplayWidget extends ClickableWidget {
     private Entry entry;
     public ListWidgetEntry selectedEntry;
     private String[] description = new String[]{};
-    private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+    private final MinecraftClient client = MinecraftClient.getInstance();
+    private final TextRenderer tr = client.textRenderer;
 
     private Identifier id;
     private int imageWidth;
@@ -46,7 +50,7 @@ public class DisplayWidget extends ClickableWidget {
         if (entry.hasImage()) {
             try {
                 id = new Identifier("handbook", entry.getImage());
-                Optional<Resource> resource = MinecraftClient.getInstance().getResourceManager().getResource(id);
+                Optional<Resource> resource = client.getResourceManager().getResource(id);
                 if (resource.isPresent()) {
                     BufferedImage image = ImageIO.read(resource.get().getInputStream());
                     imageWidth = image.getWidth();
@@ -162,29 +166,34 @@ public class DisplayWidget extends ClickableWidget {
     }
 
     public void setWaypoint() {
-        if (MinecraftClient.getInstance().world == null) return;
+        if (client.world == null) return;
 
-        String world = MinecraftClient.getInstance().world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
+        String world = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
         if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
             Waypoint.setPosition(entry.getTextFields().get("position"));
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
+            client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
+            client.inGameHud.getChatHud().addMessage(Text.of(Teleports.getFastestPath(entry)));
         }
         else {
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard."));
+            client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")
+                    .getWithStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            Text.of("If you believe the shard is correct, enable `Spoof World Names` in /peb.")))).get(0));
         }
-        if (MinecraftClient.getInstance().currentScreen == null) return;
-        MinecraftClient.getInstance().currentScreen.close();
+        if (client.currentScreen == null) return;
+        client.currentScreen.close();
     }
 
     public void shareLocation(String command) {
-        if (MinecraftClient.getInstance().player == null) return;
-        MinecraftClient.getInstance().player.networkHandler.sendCommand(command + " "
-                + entry.getClearTitle() + " (" + entry.getTextFields().get("shard").replace("Shard: ", "")
-                        + ") | " + entry.getTextFields().get("position"));
+        if (client.player == null) return;
+        client.player.networkHandler.sendCommand(command + " "
+                + entry.getClearTitle().replaceAll(" \\((.*?)\\)", "")
+                + " (" + entry.getTextFields().get("shard").replace("Shard: ", "") + ") | "
+                + entry.getTextFields().get("position"));
 
-        if (MinecraftClient.getInstance().currentScreen == null) return;
-        MinecraftClient.getInstance().currentScreen.close();
+        if (client.currentScreen == null) return;
+        client.currentScreen.close();
     }
+
     public Entry getEntry() {
         return entry;
     }
