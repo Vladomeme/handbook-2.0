@@ -72,17 +72,9 @@ public enum Teleports {
         return teleport;
     }
 
-    public static String getFastestPath(Entry entry) {
+    public static String getFastestPath(String shard, int x, int y, int z) {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player == null) return null;
-
-        String shard = entry.getTextFields().get("shard").replace("Shard: ", "");
-
-        String[] coordinates = entry.getTextFields().get("position").replace("Position:", "")
-                .replace(" ", "").split(",", 3);
-        int x = Integer.parseInt(coordinates[0]);
-        int y = Integer.parseInt(coordinates[1]);
-        int z = Integer.parseInt(coordinates[2]);
 
         Teleport safeTP = getNearestTeleport(shard, x, y, z, true);
         Teleport unsafeTP = getNearestTeleport(shard, x, y, z, false);

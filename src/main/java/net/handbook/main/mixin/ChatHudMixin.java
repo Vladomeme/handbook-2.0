@@ -1,6 +1,10 @@
 package net.handbook.main.mixin;
 
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.resources.BaseCategory;
+import net.handbook.main.resources.PositionedCategory;
+import net.handbook.main.resources.PositionedEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.MessageIndicator;
@@ -28,8 +32,15 @@ public abstract class ChatHudMixin {
             at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V"))
     public void addMessage(ChatHud instance, Text message, MessageSignatureData signature, int ticks, MessageIndicator indicator, boolean refresh) {
-        if (message.getString().contains("Position:") && HandbookConfig.INSTANCE.enabled) message = injectWaypointClickEvent(message);
+        if (HandbookConfig.INSTANCE.enabled && message.getString().contains("Position:"))
+            message = injectWaypointClickEvent(message);
+
         addMessage(message, signature, this.client.inGameHud.getTicks(), indicator, false);
+
+        if (HandbookConfig.INSTANCE.enabled) {
+            if (message.getString().startsWith("Your bounty for"))
+                suggestBountyWaypoint(message.getString());
+        }
     }
 
     @Unique
@@ -61,6 +72,33 @@ public abstract class ChatHudMixin {
                 .withUnderline(true)));
 
         return modifiedText;
+    }
+
+    @Unique
+    private void suggestBountyWaypoint(String message) {
+        String POIName = message.replace("Your bounty for today is ", "").replace("!", "");
+        for (BaseCategory category : HandbookScreen.categories) {
+            if (!category.getClearTitle().startsWith("POI")) continue;
+
+            for (PositionedEntry entry : ((PositionedCategory) category).getEntries()) {
+                if (!entry.getClearTitle().equals(POIName)) continue;
+
+                String[] coordinates = entry.getTextFields().get("position").replace("Position:", "")
+                        .replace(" ", "").split(",", 3);
+                int x = Integer.parseInt(coordinates[0]);
+                int y = Integer.parseInt(coordinates[1]);
+                int z = Integer.parseInt(coordinates[2]);
+
+                MutableText waypointText = Text.literal("[Set waypoint]").setStyle(Style.EMPTY
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint " + x + " " + y + " " + z))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to set a waypoint")))
+                        .withColor(Formatting.AQUA)
+                        .withUnderline(true));
+
+                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(waypointText);
+                return;
+            }
+        }
     }
 
     @Unique

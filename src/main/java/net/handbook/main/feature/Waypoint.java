@@ -1,6 +1,8 @@
 package net.handbook.main.feature;
 
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.handbook.main.resources.Entry;
+import net.handbook.main.resources.Teleports;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
@@ -13,6 +15,8 @@ import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 
 public class Waypoint {
+
+    private static final MinecraftClient client = MinecraftClient.getInstance();
 
     static boolean active = false;
     static int x;
@@ -32,20 +36,26 @@ public class Waypoint {
     }
 
     public static void setPosition(int x, int y, int z) {
+        if (client.world == null) return;
+        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
         Waypoint.x = x;
         Waypoint.y = y;
         Waypoint.z = z;
         setVisibility(true);
         tick = 0;
+        client.inGameHud.getChatHud().addMessage(Text.of(Teleports.getFastestPath(shard, x, y, z)));
     }
 
-    public static void setPosition(String position) {
-        String[] coordinates = position.replace("Position:", "").replace(" ", "").split(",", 3);
+    public static void setPosition(Entry entry) {
+        String[] coordinates = entry.getTextFields().get("position")
+                .replace("Position:", "").replace(" ", "").split(",", 3);
+        String shard = entry.getTextFields().get("shard").replace("Shard: ", "");
         x = Integer.parseInt(coordinates[0]);
         y = Integer.parseInt(coordinates[1]);
         z = Integer.parseInt(coordinates[2]);
         setVisibility(true);
         tick = 0;
+        client.inGameHud.getChatHud().addMessage(Text.of(Teleports.getFastestPath(shard, x, y, z)));
     }
 
     public static void setVisibility(boolean state) {

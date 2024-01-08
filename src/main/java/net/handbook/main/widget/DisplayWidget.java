@@ -5,7 +5,6 @@ import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.Waypoint;
 import net.handbook.main.resources.Entry;
-import net.handbook.main.resources.Teleports;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -170,9 +169,8 @@ public class DisplayWidget extends ClickableWidget {
 
         String world = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
         if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
-            Waypoint.setPosition(entry.getTextFields().get("position"));
             client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
-            client.inGameHud.getChatHud().addMessage(Text.of(Teleports.getFastestPath(entry)));
+            Waypoint.setPosition(entry);
         }
         else {
             client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")
