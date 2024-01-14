@@ -1,4 +1,4 @@
-package net.handbook.main.resources;
+package net.handbook.main.resources.category;
 
 public class CategoryType {
 

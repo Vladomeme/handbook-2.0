@@ -1,7 +1,7 @@
 package net.handbook.main.widget;
 
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.resources.Entry;
+import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;

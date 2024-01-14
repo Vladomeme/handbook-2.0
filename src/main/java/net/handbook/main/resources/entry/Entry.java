@@ -1,6 +1,7 @@
-package net.handbook.main.resources;
+package net.handbook.main.resources.entry;
 
 import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.village.TradeOfferList;
 
 import java.util.HashMap;
@@ -51,6 +52,10 @@ public class Entry {
     }
 
     public String getID() {
+        return null;
+    }
+
+    public Waypoint getWaypoint() {
         return null;
     }
 }

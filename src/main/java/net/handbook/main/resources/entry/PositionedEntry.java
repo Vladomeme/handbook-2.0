@@ -1,4 +1,4 @@
-package net.handbook.main.resources;
+package net.handbook.main.resources.entry;
 
 import java.util.HashMap;
 

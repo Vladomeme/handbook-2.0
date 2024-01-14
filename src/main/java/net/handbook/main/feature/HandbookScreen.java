@@ -1,8 +1,8 @@
 package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.handbook.main.resources.BaseCategory;
-import net.handbook.main.resources.Entry;
+import net.handbook.main.resources.category.BaseCategory;
+import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.widget.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -75,9 +75,9 @@ public class HandbookScreen extends Screen {
         this.addDrawableChild(clearWaypoint = new TexturedButtonWidget(
                 20, 2 , 76, 11,
                 0, 0, 11, new Identifier("handbook", "textures/clearwaypoint_button.png"),
-                76, 22, button -> Waypoint.setVisibility(false)));
-        clearWaypoint.active = Waypoint.isActive();
-        clearWaypoint.visible = Waypoint.isActive();
+                76, 22, button -> WaypointManager.setVisibility(false)));
+        clearWaypoint.active = WaypointManager.isActive();
+        clearWaypoint.visible = WaypointManager.isActive();
 
         int maxWidth = 0;
 

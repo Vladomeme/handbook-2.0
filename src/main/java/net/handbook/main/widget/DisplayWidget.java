@@ -3,8 +3,8 @@ package net.handbook.main.widget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.feature.Waypoint;
-import net.handbook.main.resources.Entry;
+import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -170,7 +170,7 @@ public class DisplayWidget extends ClickableWidget {
         String world = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
         if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
             client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
-            Waypoint.setPosition(entry);
+            WaypointManager.setWaypoint(entry);
         }
         else {
             client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")

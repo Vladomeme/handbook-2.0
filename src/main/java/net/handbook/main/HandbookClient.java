@@ -18,8 +18,11 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.feature.Waypoint;
-import net.handbook.main.resources.*;
+import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.category.*;
+import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.WaypointEntry;
+import net.handbook.main.resources.waypoint.Waypoint;
 import net.handbook.main.scanner.AdvancementWriter;
 import net.handbook.main.scanner.LocationWriter;
 import net.handbook.main.scanner.NPCWriter;
@@ -131,12 +134,12 @@ public class HandbookClient implements ClientModInitializer {
                 }
             }
             npcWriter.findEntities();
-            Waypoint.tick();
+            WaypointManager.tick();
             if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register((ctx) -> {
-            if (Waypoint.isActive() && (Waypoint.getDistance() > 30)) Waypoint.renderBeacon(ctx);
+            if (WaypointManager.isActive() && (WaypointManager.getDistance() > 30)) WaypointManager.renderBeacon(ctx);
         });
 
         openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
@@ -175,10 +178,11 @@ public class HandbookClient implements ClientModInitializer {
                                 .then(argument("x", IntegerArgumentType.integer())
                                         .then(argument("y", IntegerArgumentType.integer())
                                                 .then(argument("z", IntegerArgumentType.integer()).executes(context -> {
-                                                    Waypoint.setPosition(
+                                                    WaypointManager.setWaypoint(new WaypointEntry("Waypoint", null,
+                                                            new Waypoint(
                                                             IntegerArgumentType.getInteger(context, "x"),
                                                             IntegerArgumentType.getInteger(context, "y"),
-                                                            IntegerArgumentType.getInteger(context, "z"));
+                                                            IntegerArgumentType.getInteger(context, "z"))));
                                                     return 1;
                                                 })))))
         ));

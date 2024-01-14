@@ -1,4 +1,6 @@
-package net.handbook.main.resources;
+package net.handbook.main.resources.category;
+
+import net.handbook.main.resources.entry.TraderEntry;
 
 import java.util.List;
 

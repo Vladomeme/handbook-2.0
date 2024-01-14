@@ -2,9 +2,10 @@ package net.handbook.main.mixin;
 
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.resources.BaseCategory;
-import net.handbook.main.resources.PositionedCategory;
-import net.handbook.main.resources.PositionedEntry;
+import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.category.BaseCategory;
+import net.handbook.main.resources.category.PositionedCategory;
+import net.handbook.main.resources.entry.PositionedEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.MessageIndicator;
@@ -83,11 +84,10 @@ public abstract class ChatHudMixin {
             for (PositionedEntry entry : ((PositionedCategory) category).getEntries()) {
                 if (!entry.getClearTitle().equals(POIName)) continue;
 
-                String[] coordinates = entry.getTextFields().get("position").replace("Position:", "")
-                        .replace(" ", "").split(",", 3);
-                int x = Integer.parseInt(coordinates[0]);
-                int y = Integer.parseInt(coordinates[1]);
-                int z = Integer.parseInt(coordinates[2]);
+                int[] coordinates = WaypointManager.getCoordinates(entry);
+                int x = coordinates[0];
+                int y = coordinates[1];
+                int z = coordinates[2];
 
                 MutableText waypointText = Text.literal("[Set waypoint]").setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint " + x + " " + y + " " + z))

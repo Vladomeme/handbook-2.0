@@ -2,7 +2,7 @@ package net.handbook.main.mixin;
 
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.feature.Waypoint;
+import net.handbook.main.feature.WaypointManager;
 import net.minecraft.network.ClientConnection;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,6 +16,6 @@ public abstract class ClientConnectionMixin {
     public void handleDisconnection(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
         HandbookClient.dumpAll();
-        Waypoint.setVisibility(false);
+        WaypointManager.setVisibility(false);
     }
 }
