@@ -13,8 +13,9 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.text.*;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
@@ -26,6 +27,7 @@ public class WaypointManager {
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
     private static final Queue<WaypointEntry> waypoints = new LinkedList<>();
+    private static final List<WaypointEntry> altPath = new ArrayList<>();
     static int tick;
     static double distance;
 
@@ -52,27 +54,27 @@ public class WaypointManager {
         WaypointManager.waypoints.clear();
         WaypointManager.waypoints.add(entry);
 
-        setVisibility(true);
+        setState(true);
         tick = 0;
 
         if (client.world == null) return;
         String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        client.inGameHud.getChatHud().addMessage(Text.of(getFastestPath(shard, entry)));
+        client.inGameHud.getChatHud().addMessage(getFastestPath(shard, entry));
     }
 
     public static void setWaypointChain(List<WaypointEntry> waypoints) {
         WaypointManager.waypoints.clear();
         WaypointManager.waypoints.addAll(waypoints);
 
-        setVisibility(true);
+        setState(true);
         tick = 0;
 
         if (client.world == null) return;
         String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        client.inGameHud.getChatHud().addMessage(Text.of(getFastestPath(shard, waypoints.get(0))));
+        client.inGameHud.getChatHud().addMessage(getFastestPath(shard, waypoints.get(0)));
     }
 
-    public static void setVisibility(boolean state) {
+    public static void setState(boolean state) {
         if (HandbookScreen.clearWaypoint == null) return;
         if (!state) waypoints.clear();
         HandbookScreen.clearWaypoint.visible = state;
@@ -141,12 +143,13 @@ public class WaypointManager {
     private static void onWaypointReached(ClientPlayerEntity player, ClientWorld world) {
         if (waypoints.size() == 1) {
             client.inGameHud.getChatHud().addMessage(Text.of(
-                    waypoints.peek().getText().equals("") ? "" : (waypoints.poll().getText() + " ") + "§aWaypoint removed."));
-            setVisibility(false);
-        }
-        else if (waypoints.size() > 1) {
-            client.inGameHud.getChatHud().addMessage(Text.of(
-                    waypoints.poll().getText() + " Head to " + waypoints.peek().getClearTitle()));
+                    (waypoints.peek().getText().equals("") ? "" : (waypoints.poll().getText() + " ")) + "§aWaypoint removed."));
+            setState(false);
+        } else {
+            if (waypoints.size() > 1) {
+                client.inGameHud.getChatHud().addMessage(Text.of(
+                        waypoints.poll().getText() + " Head to " + waypoints.peek().getClearTitle()));
+            }
         }
         world.playSound(player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
@@ -165,7 +168,7 @@ public class WaypointManager {
         return distance;
     }
 
-    public static String getFastestPath(String shard, WaypointEntry entry) {
+    public static Text getFastestPath(String shard, WaypointEntry entry) {
         ClientPlayerEntity player = client.player;
         if (player == null) return null;
 
@@ -194,32 +197,54 @@ public class WaypointManager {
             straightPath = getDistance(nearestTP.x(), nearestTP.y(), nearestTP.z(), x, y, z);
         }
 
-        //I ate the braces
-        if (safeTP == null)
-            if (unsafeTP == null) return "Fastest way: walk (~" + straightPath + " blocks).";
-            else if (unsafePath > straightPath) return "Fastest way: walk (~" + straightPath + " blocks).";
-            else if (straightPath / unsafePath > 2) return "Fastest way: walk (~" + straightPath + " blocks).";
-            else
-                return "Fastest way: walk (~" + straightPath + " blocks) or " + addHubLocations(nearestTP, unsafeTP, shard, entry)
-                        + " (~" + (unsafePath + distanceToTp) + " blocks).";
-        else if (unsafeTP == null)
-            if (safePath < straightPath) return "Fastest way: "
-                    + addHubLocations(nearestTP, safeTP, shard, entry) + " (~" + (safePath + distanceToTp) + " blocks).";
-            else return "Fastest way: walk (~" + straightPath + " blocks).";
-        else if (safePath < unsafePath)
-            if (safePath < straightPath) return "Fastest way: "
-                    + addHubLocations(nearestTP, safeTP, shard, entry) + " (~" + (safePath + distanceToTp) + " blocks).";
-            else return "Fastest way: walk (~" + straightPath + " blocks).";
-        else if (unsafePath > straightPath) return "Fastest way: walk (~" + straightPath + " blocks).";
-        else if (safePath < straightPath)
-            if (straightPath / unsafePath > 2) return "Fastest way: "
-                    + addHubLocations(nearestTP, safeTP, shard, entry) + " (~" + (safePath + distanceToTp) + " blocks) or "
-                    + addHubLocations(nearestTP, unsafeTP, shard, entry) + " (~" + (unsafePath + distanceToTp) + " blocks).";
-            else return "Fastest way: "
-                    + addHubLocations(nearestTP, safeTP, shard, entry) + " (~" + (safePath + distanceToTp) + " blocks).";
-        else if (safePath / unsafePath > 2) return "Fastest way: walk (~" + straightPath + " blocks) or "
-                + addHubLocations(nearestTP, unsafeTP, shard, entry) + " (~" + (unsafePath + distanceToTp) + " blocks).";
-        else return "Fastest way: walk (~" + straightPath + " blocks).";
+        MutableText text = Text.empty().append("Fastest way: ");
+        if (safeTP == null) {
+            if (unsafeTP == null) text.append("walk (~" + straightPath);
+            else {
+                if (unsafePath > straightPath) text.append("walk (~" + straightPath);
+                else {
+                    if (straightPath / unsafePath > 2) text.append("walk (~" + straightPath);
+                    else text.append("walk (~" + straightPath + " blocks) or ")
+                            .append(addHubLocations(nearestTP, unsafeTP, shard, entry, true))
+                            .append(" (~" + (unsafePath + distanceToTp));
+                }
+            }
+        } else {
+            if (unsafeTP == null) {
+                if (safePath < straightPath)
+                    text.append(addHubLocations(nearestTP, safeTP, shard, entry, false))
+                        .append(" (~" + (safePath + distanceToTp));
+                else text.append("walk (~" + straightPath);
+            } else {
+                if (safePath < unsafePath) {
+                    if (safePath < straightPath) 
+                        text.append(addHubLocations(nearestTP, safeTP, shard, entry, false))
+                            .append(" (~" + (safePath + distanceToTp));
+                    else text.append("walk (~" + straightPath);
+                } else {
+                    if (unsafePath > straightPath) text.append("walk (~" + straightPath);
+                    else {
+                        if (safePath < straightPath) {
+                            if (straightPath / unsafePath > 2) 
+                                text.append(addHubLocations(nearestTP, safeTP, shard, entry, false))
+                                    .append(" (~" + (safePath + distanceToTp) + " blocks) or ")
+                                    .append(addHubLocations(nearestTP, unsafeTP, shard, entry, true))
+                                    .append(" (~" + (unsafePath + distanceToTp));
+                            else text.append(addHubLocations(nearestTP, safeTP, shard, entry, false))
+                                    .append(" (~" + (safePath + distanceToTp));
+                        } else {
+                            if (safePath / unsafePath > 2)
+                                text.append("walk (~" + straightPath + " blocks) or ")
+                                        .append(addHubLocations(nearestTP, unsafeTP, shard, entry, true))
+                                        .append(" (~" + (unsafePath + distanceToTp));
+                            else text.append("walk (~" + straightPath);
+                        }
+                    }
+                }
+            }
+        }
+        text.append(" blocks).");
+        return text;
     }
 
     private static Teleport getNearestTeleport(String shard, int x, int y, int z, boolean safe) {
@@ -255,48 +280,76 @@ public class WaypointManager {
         return (int) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) * 10 + Math.pow(z1 - z2, 2));
     }
 
-    private static String addHubLocations(Teleport tp1, Teleport tp2, String shard, WaypointEntry entry) {
-        if (tp1 == tp2) return "walk";
+    private static Text addHubLocations(Teleport tp1, Teleport tp2, String shard, WaypointEntry entry, boolean alt) {
+        if (tp1 == tp2) return Text.of("walk");
+        MutableText text = Text.empty().append("through ");
 
         Teleport hub = getRegionHub(shard).get();
 
-        if (tp1.name().endsWith("Bell") || tp2.name().endsWith("Bell"))
+        if (tp1.name().endsWith("Bell") || tp2.name().endsWith("Bell")) {
             if (tp1.name().endsWith("Bell") && tp2.name().endsWith("Bell")) {
-                setWaypointsForPath(new Teleport[]{tp1, tp2}, entry);
-                return "through " + tp1.name() + " -> " + tp2.name();
-            } else if (tp1.name().endsWith("Bell"))
-                if (tp2.name().equals(hub.name())) {
-                    setWaypointsForPath(new Teleport[]{tp1, Chantry.get(), Galengarde.get()}, entry);
-                    return "through " + tp1.name() + " -> Chantry -> Galengarde";
-                } else {
-                    setWaypointsForPath(new Teleport[]{tp1, Chantry.get(), Galengarde.get(), tp2}, entry);
-                    return "through " + tp1.name() + " -> Chantry -> Galengarde -> " + tp2.name();
-                }
-            else if (tp1.name().startsWith("Chantry")) {
-                setWaypointsForPath(new Teleport[]{tp1, tp2}, entry);
-                return "through " + tp1.name() + " -> " + tp2.name();
-            } else if (tp1.name().equals(hub.name())) {
-                setWaypointsForPath(new Teleport[]{Galengarde.get(), Chantry.get(), tp2}, entry);
-                return "through Galengarde -> Chantry -> " + tp2.name();
+                writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry);
+                text.append(tp1.name() + " -> " + tp2.name());
             } else {
-                setWaypointsForPath(new Teleport[]{tp1, Galengarde.get(), Chantry.get(), tp2}, entry);
-                return "through " + tp1.name() + " -> Galengarde -> Chantry -> " + tp2.name();
+                if (tp1.name().endsWith("Bell")) {
+                    if (tp2.name().equals(hub.name())) {
+                        writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get(), Galengarde.get()}, entry);
+                        text.append(tp1.name() + " -> Chantry -> Galengarde");
+                    } else {
+                        if (tp2.name().equals("Chantry of Repentance")) {
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get()}, entry);
+                            text.append(tp1.name() + " -> " + tp2.name());
+                        }
+                        else {
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get(), Galengarde.get(), tp2}, entry);
+                            text.append(tp1.name() + " -> Chantry -> Galengarde -> " + tp2.name());
+                        }
+                    }
+                } else {
+                    if (tp1.name().startsWith("Chantry")) {
+                        writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry);
+                        text.append(tp1.name() + " -> " + tp2.name());
+                    } else {
+                        if (tp1.name().equals(hub.name())) {
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{Galengarde.get(), Chantry.get(), tp2}, entry);
+                            text.append("through Galengarde -> Chantry -> " + tp2.name());
+                        } else {
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Galengarde.get(), Chantry.get(), tp2}, entry);
+                            text.append(tp1.name() + " -> Galengarde -> Chantry -> " + tp2.name());
+                        }
+                    }
+                }
             }
-        else if (tp1.name().equals(hub.name()) || tp2.name().equals(hub.name())) {
-            setWaypointsForPath(new Teleport[]{tp1, tp2}, entry);
-            return "through " + tp1.name() + " -> " + tp2.name();
         } else {
-            setWaypointsForPath(new Teleport[]{tp1, hub, tp2}, entry);
-            return "through " + tp1.name() + " -> " + hub.name() + " -> " + tp2.name();
+            if (tp1.name().equals(hub.name()) || tp2.name().equals(hub.name())) {
+                writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry);
+                text.append(tp1.name() + " -> " + tp2.name());
+            } else {
+                writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, hub, tp2}, entry);
+                text.append(tp1.name() + " -> " + hub.name() + " -> " + tp2.name());
+            }
         }
+
+        if (alt) return text.setStyle(Style.EMPTY
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint alternate"))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to use this route instead")))
+                .withColor(Formatting.AQUA)
+                .withUnderline(true));
+        return text;
     }
 
-    private static void setWaypointsForPath(Teleport[] teleports, WaypointEntry entry) {
-        waypoints.clear();
+    private static void writeWaypoints(Collection<WaypointEntry> collection, Teleport[] teleports, WaypointEntry entry) {
+        collection.clear();
         for (Teleport tp : teleports) {
-            waypoints.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x(), tp.y(), tp.z())));
+            collection.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x(), tp.y(), tp.z())));
         }
-        waypoints.add(entry);
+        collection.add(entry);
+    }
+
+    public static void setAltPath() {
+        waypoints.clear();
+        waypoints.addAll(altPath);
+        client.inGameHud.getChatHud().addMessage(Text.of("Route changed."));
     }
 
     private static Teleports getRegionHub(String shard) {

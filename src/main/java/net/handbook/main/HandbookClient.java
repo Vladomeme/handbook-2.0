@@ -184,7 +184,11 @@ public class HandbookClient implements ClientModInitializer {
                                                             IntegerArgumentType.getInteger(context, "y"),
                                                             IntegerArgumentType.getInteger(context, "z"))));
                                                     return 1;
-                                                })))))
+                                                }))))
+                                .then(literal("alternate").executes(context -> {
+                                    WaypointManager.setAltPath();
+                                    return 1;
+                                })))
         ));
 
         LOGGER.info("Handbook 2.0 loaded!");

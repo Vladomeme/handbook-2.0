@@ -75,7 +75,7 @@ public class HandbookScreen extends Screen {
         this.addDrawableChild(clearWaypoint = new TexturedButtonWidget(
                 20, 2 , 76, 11,
                 0, 0, 11, new Identifier("handbook", "textures/clearwaypoint_button.png"),
-                76, 22, button -> WaypointManager.setVisibility(false)));
+                76, 22, button -> WaypointManager.setState(false)));
         clearWaypoint.active = WaypointManager.isActive();
         clearWaypoint.visible = WaypointManager.isActive();
 

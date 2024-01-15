@@ -16,6 +16,6 @@ public abstract class ClientConnectionMixin {
     public void handleDisconnection(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
         HandbookClient.dumpAll();
-        WaypointManager.setVisibility(false);
+        WaypointManager.setState(false);
     }
 }
