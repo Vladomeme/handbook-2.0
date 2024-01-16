@@ -8,8 +8,11 @@ import net.handbook.main.resources.waypoint.Teleports;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -17,6 +20,7 @@ import net.minecraft.text.*;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 
@@ -110,14 +114,14 @@ public class WaypointManager {
         if (waypoint == null) return;
 
         ClientWorld world = client.world;
-        ClientPlayerEntity player = client.player;
-        if (world == null || player == null) return;
+        Vec3d pos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+        if (world == null) return;
 
-        double beaconX = distance < 150 ? waypoint.x() - player.getX() : ((waypoint.x() - player.getX()) / distance) * 150;
-        double beaconZ = distance < 150 ? waypoint.z() - player.getZ() : ((waypoint.z() - player.getZ()) / distance) * 150;
+        double beaconX = distance < 150 ? (double) waypoint.x() - pos.getX() : ((waypoint.x() - pos.getX()) / distance) * 150;
+        double beaconZ = distance < 150 ? (double) waypoint.z() - pos.getZ() : ((waypoint.z() - pos.getZ()) / distance) * 150;
 
         context.matrixStack().push();
-        context.matrixStack().translate(beaconX, -(player.getY() + 64), beaconZ);
+        context.matrixStack().translate(beaconX, -(pos.getY() + 64), beaconZ);
         BeaconBlockEntityRenderer.renderBeam(context.matrixStack(), context.consumers(), BEAM_TEXTURE, 0, 1,
                 world.getTime(), 0, 1024, DyeColor.LIGHT_BLUE.getColorComponents(), 0.3f, 0.3f
         );
@@ -312,7 +316,7 @@ public class WaypointManager {
                     } else {
                         if (tp1.name().equals(hub.name())) {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{Galengarde.get(), Chantry.get(), tp2}, entry);
-                            text.append("through Galengarde -> Chantry -> " + tp2.name());
+                            text.append("Galengarde -> Chantry -> " + tp2.name());
                         } else {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Galengarde.get(), Chantry.get(), tp2}, entry);
                             text.append(tp1.name() + " -> Galengarde -> Chantry -> " + tp2.name());
