@@ -6,11 +6,11 @@
   "client": [
     "AdvancementsScreenMixin",
     "ChatHudMixin",
-    "ClientConnectionMixin",
     "ClientPlayerInteractionManagerMixin",
     "FileResourcePackProviderMixin",
-    "ResourceFinderMixin",
-    "MerchantScreenHandlerMixin"
+    "MerchantScreenHandlerMixin",
+    "MinecraftClientMixin",
+    "ResourceFinderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

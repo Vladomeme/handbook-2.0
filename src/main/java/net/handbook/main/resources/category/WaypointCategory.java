@@ -1,9 +1,7 @@
 package net.handbook.main.resources.category;
 
 import net.handbook.main.resources.entry.WaypointEntry;
-import net.handbook.main.resources.waypoint.Waypoint;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class WaypointCategory extends BaseCategory {
@@ -25,11 +23,5 @@ public class WaypointCategory extends BaseCategory {
     @Override
     public List<WaypointEntry> getEntries() {
         return entries;
-    }
-
-    public List<Waypoint> getWaypoints() {
-        List<Waypoint> waypoints = new ArrayList<>();
-        entries.forEach(entry -> waypoints.add(entry.getWaypoint()));
-        return waypoints;
     }
 }

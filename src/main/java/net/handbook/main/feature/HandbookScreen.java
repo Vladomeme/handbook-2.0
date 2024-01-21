@@ -66,7 +66,7 @@ public class HandbookScreen extends Screen {
     protected void init() {
         int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
 
-        if (categories.size() == 0) {
+        if (categories.isEmpty()) {
             close();
             MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
             return;
@@ -232,7 +232,7 @@ public class HandbookScreen extends Screen {
         context.getMatrices().pop();
         RenderSystem.disableBlend();
 
-        if (searchBox.getText().equals("") && !searchBox.isFocused()) {
+        if (searchBox.getText().isEmpty() && !searchBox.isFocused()) {
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 1000);
             context.drawText(tr, Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
@@ -368,7 +368,7 @@ public class HandbookScreen extends Screen {
 
     public static void filterEntries() {
         if (!searchBox.getText().equals(lastFilter)) {
-            if (searchBox.getText().equals("")) {
+            if (searchBox.getText().isEmpty()) {
                 optionsWidget.setEntries(activeCategory.getEntries(), "entry");
                 lastFilter = "";
                 return;

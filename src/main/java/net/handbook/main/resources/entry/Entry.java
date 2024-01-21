@@ -1,7 +1,6 @@
 package net.handbook.main.resources.entry;
 
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.village.TradeOfferList;
 
 import java.util.HashMap;
@@ -40,7 +39,7 @@ public class Entry {
     }
 
     public boolean hasImage() {
-        return image != null && !image.equals("");
+        return image != null && !image.isEmpty();
     }
 
     public HashMap<String, String> getTextFields() {
@@ -55,7 +54,7 @@ public class Entry {
         return null;
     }
 
-    public Waypoint getWaypoint() {
+    public WaypointEntry[] getWaypoints() {
         return null;
     }
 }

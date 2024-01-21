@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
@@ -21,6 +22,7 @@ import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
 import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.WaypointChain;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.handbook.main.scanner.AdvancementWriter;
@@ -82,6 +84,8 @@ public class HandbookClient implements ClientModInitializer {
                         Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
                     if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures")))
                         Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures"));
+                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints")))
+                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints"));
                 } catch (IOException e) {
                     LOGGER.error("Failed to create handbook directories.");
                     return;
@@ -102,6 +106,11 @@ public class HandbookClient implements ClientModInitializer {
                                 PositionedCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), PositionedCategory.class);
                                 LOGGER.info("Loading positioned category " + category.getTitle());
                                 HandbookScreen.categories.add(category);
+                            }
+                            case "waypoint" -> {
+                                WaypointCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointCategory.class);
+                                LOGGER.info("Loading waypoint category " + category.getTitle());
+                                HandbookScreen.categories.add(mergeWaypointEntries(category));
                             }
                             case "trader" -> {
                                 TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
@@ -136,10 +145,16 @@ public class HandbookClient implements ClientModInitializer {
             npcWriter.findEntities();
             WaypointManager.tick();
             if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
+            if (MinecraftClient.getInstance().world != null && WaypointManager.shouldRestore())
+                WaypointManager.sendRestoreMessage();
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register((ctx) -> {
             if (WaypointManager.isActive() && (WaypointManager.getDistance() > 30)) WaypointManager.renderBeacon(ctx);
+        });
+
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
         });
 
         openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
@@ -182,16 +197,48 @@ public class HandbookClient implements ClientModInitializer {
                                                             new Waypoint(
                                                             IntegerArgumentType.getInteger(context, "x"),
                                                             IntegerArgumentType.getInteger(context, "y"),
-                                                            IntegerArgumentType.getInteger(context, "z"))));
+                                                            IntegerArgumentType.getInteger(context, "z")), false, null));
                                                     return 1;
                                                 }))))
                                 .then(literal("alternate").executes(context -> {
-                                    WaypointManager.setAltPath();
+                                    WaypointManager.setAltPath(false);
+                                    return 1;
+                                }))
+                                .then(literal("continue").executes(context -> {
+                                    WaypointManager.continuePath();
+                                    return 1;
+                                }))
+                                .then(literal("skip").executes(context -> {
+                                    WaypointManager.skip();
+                                    return 1;
+                                }))
+                                .then(literal("path").executes(context -> {
+                                    WaypointManager.addPathToChain();
+                                    return 1;
+                                }))
+                                .then(literal("info").executes(context -> {
+                                    WaypointManager.printInfo();
                                     return 1;
                                 })))
         ));
 
         LOGGER.info("Handbook 2.0 loaded!");
+    }
+
+    private static WaypointCategory mergeWaypointEntries(WaypointCategory category) {
+        category.getEntries().forEach(entry -> {
+            Gson gson = new Gson();
+            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints/" + entry.getID() + ".json");
+            WaypointEntry[] waypoints = new WaypointEntry[0];
+            try {
+                waypoints = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointChain.class).getWaypoints();
+            } catch (IOException e) {
+                LOGGER.error("Failed to read waypoint entry file " + entry.getID() + ".json. Trying to open it in-game" +
+                        " will likely cause a crash.");
+            }
+            entry.setChain(new WaypointChain(waypoints));
+        });
+        return category;
     }
 
     public static void openScreen() {
@@ -201,6 +248,7 @@ public class HandbookClient implements ClientModInitializer {
     public static void dumpAll() {
         npcWriter.write();
         locationWriter.write();
+        LOGGER.info("Saved all new handbook entries.");
     }
 
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {

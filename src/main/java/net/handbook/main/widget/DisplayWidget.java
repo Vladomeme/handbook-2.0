@@ -19,6 +19,7 @@ import net.minecraft.util.Identifier;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.StringTokenizer;
 
@@ -69,15 +70,21 @@ public class DisplayWidget extends ClickableWidget {
             renderImage = false;
         }
 
-        boolean state = (entry.getTextFields() != null && entry.getTextFields().get("shard") != null);
-        HandbookScreen.setWaypoint.visible = state;
-        HandbookScreen.setWaypoint.active = state;
-        HandbookScreen.shareLocation.visible = state;
-        HandbookScreen.shareLocation.active = state;
-
-        state = entry.getOffers() != null;
-        HandbookScreen.openTrades.active = state;
-        HandbookScreen.openTrades.visible = state;
+        HandbookScreen.displayButtonsState(false);
+        if (entry.getTextFields() != null) {
+            HandbookScreen.setWaypoint.visible = true;
+            HandbookScreen.setWaypoint.active = true;
+            HandbookScreen.shareLocation.visible = true;
+            HandbookScreen.shareLocation.active = true;
+        }
+        if (entry.getOffers() != null) {
+            HandbookScreen.openTrades.active = true;
+            HandbookScreen.openTrades.visible = true;
+        }
+        if (entry.getWaypoints() != null) {
+            HandbookScreen.setWaypoint.visible = true;
+            HandbookScreen.setWaypoint.active = true;
+        }
     }
 
     @Override
@@ -168,17 +175,27 @@ public class DisplayWidget extends ClickableWidget {
         if (client.world == null) return;
 
         String world = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
-            client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
-            WaypointManager.setWaypoint(entry);
+
+        if (entry.getWaypoints() != null) {
+            setWaypointChain();
         }
         else {
-            client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")
-                    .getWithStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            Text.of("If you believe the shard is correct, enable `Spoof World Names` in /peb.")))).get(0));
+            if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
+                client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
+                WaypointManager.setWaypoint(entry);
+            } else {
+                client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")
+                        .getWithStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                Text.of("If you believe the shard is correct, enable `Spoof World Names` in /peb.")))).get(0));
+            }
         }
         if (client.currentScreen == null) return;
         client.currentScreen.close();
+    }
+
+    public void setWaypointChain() {
+        client.inGameHud.getChatHud().addMessage(Text.of("Path started: " + entry.getTitle()));
+        WaypointManager.setWaypointChain(List.of((entry.getWaypoints())));
     }
 
     public void shareLocation(String command) {
