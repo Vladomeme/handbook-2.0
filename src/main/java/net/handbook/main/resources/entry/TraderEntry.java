@@ -16,7 +16,7 @@ public class TraderEntry extends PositionedEntry {
 
     final String id;
 
-    public TraderEntry(String title, String text, String image, String shard, String position, String id) {
+    public TraderEntry(String title, String text, String image, String shard, int[] position, String id) {
         super(title, text, image, shard, position);
         this.id = id;
     }

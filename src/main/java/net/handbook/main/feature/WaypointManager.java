@@ -47,7 +47,7 @@ public class WaypointManager {
     }
 
     public static void setWaypoint(Entry entry) {
-        setWaypoint(getCoordinates(entry), entry.getTitle(), entry.getText());
+        setWaypoint(entry.getPosition(), entry.getTitle(), entry.getText());
     }
 
     public static void setWaypoint(int[] coords, String title, String text) {
@@ -235,11 +235,6 @@ public class WaypointManager {
             string.append(waypoint.getClearTitle()).append(" -> ");
         }
         HandbookClient.LOGGER.info(string.substring(0, string.length() - 3));
-    }
-
-    public static int[] getCoordinates(Entry entry) {
-        return Arrays.stream(entry.getTextFields().get("position").replace("Position:", "")
-                .replace(" ", "").split(",", 3)).mapToInt(Integer::parseInt).toArray();
     }
 
     public static double getDistance() {

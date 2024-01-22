@@ -64,6 +64,7 @@ public class TradesWidget extends ClickableWidget {
         command.append(world).append(" ");
         ItemStack item;
         Entry entry = HandbookScreen.displayWidget.getEntry();
+        String position = "Position: " + entry.getPosition()[0] + ", " + entry.getPosition()[1] + ", " + entry.getPosition()[2];
         switch (shareMode) {
             case COST -> {
                 item = selectedEntry.trade.getOriginalFirstBuyItem();
@@ -81,7 +82,7 @@ public class TradesWidget extends ClickableWidget {
                 if (item.getCount() != 1) command.append(" x").append(item.getCount());
 
                 command.append(" | ").append(entry.getClearTitle()).append(" (")
-                        .append(entry.getTextFields().get("shard").replace("Shard: ", "")).append(")");
+                        .append(entry.getShard()).append(")");
             }
             case TRADER -> {
                 item = selectedEntry.trade.getSellItem();
@@ -89,8 +90,8 @@ public class TradesWidget extends ClickableWidget {
                 if (item.getCount() != 1) command.append(" x").append(item.getCount());
 
                 command.append(" | ").append(entry.getClearTitle()).append(" (")
-                        .append(entry.getTextFields().get("shard").replace("Shard: ", "")).append(") ")
-                        .append(entry.getTextFields().get("position"));
+                        .append(entry.getShard()).append(") ")
+                        .append(position);
             }
             case FULL -> {
                 item = selectedEntry.trade.getOriginalFirstBuyItem();
@@ -108,8 +109,8 @@ public class TradesWidget extends ClickableWidget {
                 if (item.getCount() != 1) command.append(" x").append(item.getCount());
 
                 command.append(" | ").append(entry.getClearTitle()).append(" (")
-                        .append(entry.getTextFields().get("shard").replace("Shard: ", "")).append(") ")
-                        .append(entry.getTextFields().get("position"));
+                        .append(entry.getShard()).append(") ")
+                        .append(position);
             }
         }
         MinecraftClient.getInstance().player.networkHandler.sendCommand(command.toString());

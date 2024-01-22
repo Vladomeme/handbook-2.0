@@ -11,7 +11,7 @@ public class NPC {
     final String text;
     final String image;
     final String shard;
-    final String position;
+    final int[] position;
     transient String offers;
     final String id;
 
@@ -19,11 +19,8 @@ public class NPC {
         this.title = title;
         this.text = "";
         this.image = "";
-        this.shard = "Shard: " + world.replace("monumenta:", "").split("-")[0];
-        this.position = "Position: " +
-                String.valueOf(x).split("\\.")[0] + ", " +
-                String.valueOf(y).split("\\.")[0] + ", " +
-                String.valueOf(z).split("\\.")[0];
+        this.shard = world.replace("monumenta:", "").split("-")[0];
+        this.position = new int[]{(int) x, (int) y, (int) z};
         this.offers = "";
         this.id = getID(title, x, y, z);
     }

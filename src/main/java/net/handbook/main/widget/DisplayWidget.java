@@ -71,7 +71,7 @@ public class DisplayWidget extends ClickableWidget {
         }
 
         HandbookScreen.displayButtonsState(false);
-        if (entry.getTextFields() != null) {
+        if (entry.getShard() != null) {
             HandbookScreen.setWaypoint.visible = true;
             HandbookScreen.setWaypoint.active = true;
             HandbookScreen.shareLocation.visible = true;
@@ -99,16 +99,12 @@ public class DisplayWidget extends ClickableWidget {
         context.drawText(tr, entry.getTitle(), 5, 0, 16777215, true);
         context.getMatrices().pop();
 
-        int y = 20;
-        if (entry.getTextFields() != null) {
-            for (String text : entry.getTextFields().values()) {
-                for (String line : splitText(text)) {
-                    context.drawText(tr, line, 10, y, 16777215, false);
-                    y = y + 10;
-                }
-                y = y + 3;
-            }
-        }
+        if (entry.getShard() != null)
+            context.drawText(tr, "Shard: " + entry.getShard(), 10, 20, 16777215, false);
+        int[] coords = entry.getPosition();
+        if (coords != null)
+            context.drawText(tr, "Position: " + coords[0] + ", " + coords[1] + ", " + coords[2], 10, 30, 16777215, false);
+        int y = 43;
 
         for (int i = 0; i < description.length ; i++) {
             context.drawText(tr, description[i], 10, y + i * 10, 16777215, false);
@@ -174,13 +170,13 @@ public class DisplayWidget extends ClickableWidget {
     public void setWaypoint() {
         if (client.world == null) return;
 
-        String world = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
+        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
 
         if (entry.getWaypoints() != null) {
             setWaypointChain();
         }
         else {
-            if (entry.getTextFields().get("shard").replace("Shard: ", "").equals(world)) {
+            if (entry.getShard().equals(shard)) {
                 client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
                 WaypointManager.setWaypoint(entry);
             } else {
@@ -200,10 +196,10 @@ public class DisplayWidget extends ClickableWidget {
 
     public void shareLocation(String command) {
         if (client.player == null) return;
+        String position = "Position: " + entry.getPosition()[0] + ", " + entry.getPosition()[1] + ", " + entry.getPosition()[2];
         client.player.networkHandler.sendCommand(command + " "
                 + entry.getClearTitle().replaceAll(" \\((.*?)\\)", "")
-                + " (" + entry.getTextFields().get("shard").replace("Shard: ", "") + ") | "
-                + entry.getTextFields().get("position"));
+                + " (" + entry.getShard() + ") | " + position);
 
         if (client.currentScreen == null) return;
         client.currentScreen.close();

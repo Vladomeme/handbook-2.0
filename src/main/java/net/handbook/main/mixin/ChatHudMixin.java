@@ -2,7 +2,6 @@ package net.handbook.main.mixin;
 
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.category.PositionedCategory;
 import net.handbook.main.resources.entry.PositionedEntry;
@@ -84,7 +83,7 @@ public abstract class ChatHudMixin {
             for (PositionedEntry entry : ((PositionedCategory) category).getEntries()) {
                 if (!entry.getClearTitle().equals(POIName)) continue;
 
-                int[] coordinates = WaypointManager.getCoordinates(entry);
+                int[] coordinates = entry.getPosition();
                 int x = coordinates[0];
                 int y = coordinates[1];
                 int z = coordinates[2];

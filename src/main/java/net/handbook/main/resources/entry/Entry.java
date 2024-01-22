@@ -3,8 +3,6 @@ package net.handbook.main.resources.entry;
 import net.handbook.main.feature.HandbookScreen;
 import net.minecraft.village.TradeOfferList;
 
-import java.util.HashMap;
-
 public class Entry {
 
     final String title;
@@ -42,7 +40,11 @@ public class Entry {
         return image != null && !image.isEmpty();
     }
 
-    public HashMap<String, String> getTextFields() {
+    public String getShard() {
+        return null;
+    }
+
+    public int[] getPosition() {
         return null;
     }
 
