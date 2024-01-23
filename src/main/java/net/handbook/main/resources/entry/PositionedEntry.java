@@ -20,16 +20,4 @@ public class PositionedEntry extends Entry {
     public int[] getPosition() {
         return position;
     }
-
-    public int getX() {
-        return position[0];
-    }
-
-    public int getY() {
-        return position[1];
-    }
-
-    public int getZ() {
-        return position[2];
-    }
 }

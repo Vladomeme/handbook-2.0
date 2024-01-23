@@ -5,6 +5,7 @@ import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.feature.WaypointManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.world.ClientWorld;
@@ -45,13 +46,14 @@ public class NPCWriter {
         });
     }
 
-    public void addNPC(Entity entity, boolean manual) {
+    //returns int because it's used in command
+    public int addNPC(Entity entity, boolean manual) {
         ClientWorld world = MinecraftClient.getInstance().world;
-        if (world == null) return;
+        if (world == null) return 1;
         if (!entity.hasCustomName() || entity.getScoreboardTeam() == null || !entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) {
             if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
                     Text.of("§cERROR: This entity can not be added."));
-            return;
+            return 1;
         }
 
         for (NPC npc : entries) {
@@ -59,7 +61,7 @@ public class NPCWriter {
                     && npc.id.equals(npc.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
                 if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
                         Text.of("§cERROR: NPC is already added."));
-                return;
+                return 1;
             }
         }
         if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
@@ -67,8 +69,9 @@ public class NPCWriter {
         HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
 
         newCount++;
-        entries.add(new NPC(entity.getCustomName().getString(), world.getRegistryKey().getValue().toString(),
+        entries.add(new NPC(entity.getCustomName().getString(), WaypointManager.getShard(),
                 entity.getX(), entity.getY(), entity.getZ()));
+        return 1;
     }
 
     public void addOffers(TradeOfferList offers) {
@@ -92,7 +95,8 @@ public class NPCWriter {
         NPCWriter.z = (int) z;
     }
 
-    public void write() {
+    //returns int because it's used in command
+    public int write() {
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"npcs.json\" with " + entries.size() +
                 " NPCs total, " + newCount + " new NPCs."));
         Gson gson = new Gson();
@@ -103,7 +107,7 @@ public class NPCWriter {
             writer = gson.newJsonWriter(new FileWriter(file));
             writer.setIndent("    ");
             gson.toJson(this, NPCWriter.class, writer);
-            this.newCount = 0;
+            newCount = 0;
         } catch (Exception e) {
             HandbookClient.LOGGER.error("Couldn't save npcs.json.");
             e.printStackTrace();
@@ -113,7 +117,7 @@ public class NPCWriter {
         }
         (new File(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")).getParentFile().mkdirs();
         for (NPC npc : entries) {
-            if (npc.offers == null || npc.offers.equals("")) continue;
+            if (npc.offers == null || npc.offers.isEmpty()) continue;
             try {
                 if (Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + npc.id + ".txt"))) continue;
 
@@ -123,9 +127,10 @@ public class NPCWriter {
                 throw new RuntimeException(e);
             }
         }
+        return 1;
     }
 
-    public static byte[] compressTrades(String text) {
+    private static byte[] compressTrades(String text) {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (DeflaterOutputStream outputStream = new DeflaterOutputStream(byteStream)) {
             outputStream.write(text.getBytes());

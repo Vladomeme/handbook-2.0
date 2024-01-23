@@ -2,7 +2,7 @@ package net.handbook.main.resources.entry;
 
 public class WaypointChain extends Entry {
 
-    WaypointEntry[] waypoints;
+    final WaypointEntry[] waypoints;
 
     public WaypointChain(WaypointEntry[] waypoints) {
         super(null, null, null);

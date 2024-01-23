@@ -13,8 +13,9 @@ import java.util.Set;
 
 public class AdvancementWriter {
 
-    public static void dumpAdvancements(String root) {
-        if (MinecraftClient.getInstance().getNetworkHandler() == null) return;
+    //returns int because it's used in command
+    public static int dumpAdvancements(String root) {
+        if (MinecraftClient.getInstance().getNetworkHandler() == null) return 1;
 
         AdvancementManager manager = MinecraftClient.getInstance().getNetworkHandler().getAdvancementHandler().getManager();
         for (Advancement advancement : manager.getRoots()) {
@@ -36,14 +37,15 @@ public class AdvancementWriter {
                 throw new RuntimeException(e);
             }
             MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Dump successful."));
-            return;
+            return 1;
         }
 
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("§cERROR: No advancement tree with this root."));
+        return 1;
     }
 
     private static StringBuilder childrenLoop(StringBuilder output, Advancement advancement, boolean loopFurther) {
-        if (((Set<Advancement>) advancement.getChildren()).size() > 0) {
+        if (!((Set<Advancement>) advancement.getChildren()).isEmpty()) {
             output.append("{\"title\":\"").append(advancement.getDisplay().getTitle().getString())
                     .append("\",\"text\":\"").append(advancement.getDisplay().getDescription().getString());
             output.append("\",\"children\":[");
@@ -66,7 +68,7 @@ public class AdvancementWriter {
     private static StringBuilder sameLevelLoop(StringBuilder output, Advancement advancement) {
         if (advancement.getDisplay() == null) return output;
 
-        if (((Set<Advancement>) advancement.getChildren()).size() > 0) {
+        if (!((Set<Advancement>) advancement.getChildren()).isEmpty()) {
             output.append("{\"title\":\"").append(advancement.getDisplay().getTitle().getString())
                     .append("\",\"text\":\"").append(advancement.getDisplay().getDescription().getString());
             output.append("\"},");

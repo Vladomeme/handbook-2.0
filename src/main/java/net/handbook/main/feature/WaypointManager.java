@@ -8,6 +8,7 @@ import net.handbook.main.resources.waypoint.Teleport;
 import net.handbook.main.resources.waypoint.Teleports;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -24,18 +25,21 @@ import java.util.*;
 
 import static net.handbook.main.resources.waypoint.Teleports.*;
 
+@SuppressWarnings("SameReturnValue")
 public class WaypointManager {
 
     private static final MinecraftClient client = MinecraftClient.getInstance();
+    private static final ChatHud chat = client.inGameHud.getChatHud();
 
     private static final Queue<WaypointEntry> waypoints = new LinkedList<>();
     private static final List<WaypointEntry> altPath = new ArrayList<>();
-    static int tick;
-    static double distance;
+    private static int tick;
+    private static double distance;
     private static boolean paused = false;
+    private static String prevShard;
     private static boolean sendRestoreMessage = false;
 
-    public static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
+    private static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
 
     public static void tick() {
         if (waypoints.isEmpty()) return;
@@ -54,16 +58,17 @@ public class WaypointManager {
         setWaypoint(new WaypointEntry(title, text, new Waypoint(coords[0], coords[1], coords[2]), false, null));
     }
 
-    public static void setWaypoint(WaypointEntry entry) {
+    //returns int because it's used in command
+    public static int setWaypoint(WaypointEntry entry) {
         WaypointManager.waypoints.clear();
         WaypointManager.waypoints.add(entry);
 
         setState(true);
         tick = 0;
 
-        if (client.world == null) return;
-        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        client.inGameHud.getChatHud().addMessage(getFastestPath(shard, entry, false));
+        if (client.world == null) return 1;
+        chat.addMessage(getFastestPath(getShard(), entry, false));
+        return 1;
     }
 
     public static void setWaypointChain(List<WaypointEntry> waypoints) {
@@ -74,24 +79,16 @@ public class WaypointManager {
         tick = 0;
 
         if (client.world == null) return;
-        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        client.inGameHud.getChatHud().addMessage(getFastestPath(shard, waypoints.get(0), true));
+        chat.addMessage(getFastestPath(getShard(), waypoints.get(0), true));
     }
 
     public static void setState(boolean state) {
         if (HandbookScreen.clearWaypoint == null) return;
         if (!state) waypoints.clear();
         paused = false;
+        prevShard = getShard();
         HandbookScreen.clearWaypoint.visible = state;
         HandbookScreen.clearWaypoint.active = state;
-    }
-
-    public static void clear() {
-        waypoints.clear();
-    }
-
-    public static void skip() {
-        onWaypointReached(MinecraftClient.getInstance().player, MinecraftClient.getInstance().world);
     }
 
     public static void emitParticles() {
@@ -104,6 +101,10 @@ public class WaypointManager {
         ClientWorld world = client.world;
         ClientPlayerEntity player = client.player;
         if (world == null || player == null) return;
+        if (!prevShard.equals(getShard())) {
+            waypoints.clear();
+            return;
+        }
         distance = Math.sqrt(Math.pow(player.getX() - waypoint.x(), 2) + Math.pow(player.getY() - waypoint.y(), 2)
                 + Math.pow(player.getZ() - waypoint.z(), 2));
         if (distance < 5 || (waypoints.size() > 1 && distance < 10)) onWaypointReached(player, world);
@@ -150,100 +151,94 @@ public class WaypointManager {
 
             if (waypointEntry.equals(waypoints.peek())) return;
 
-            while (!waypointEntry.equals(waypoints.peek())) waypoints.poll().getTitle();
+            while (!waypointEntry.equals(waypoints.peek())) waypoints.poll();
             return;
         }
     }
 
-    private static void onWaypointReached(ClientPlayerEntity player, ClientWorld world) {
-        if (paused) return;
-        if (waypoints.size() == 1) {
-            client.inGameHud.getChatHud().addMessage(Text.of(
-                    (waypoints.peek().getText().isEmpty() ? "" : (waypoints.poll().getText() + " ")) + "§aWaypoint removed."));
-            setState(false);
-        } else {
-            if (waypoints.size() > 1) {
-                if (waypoints.peek().shouldPause()) {
-                    client.inGameHud.getChatHud().addMessage(Text.of(waypoints.poll().getText()));
-                    client.inGameHud.getChatHud().addMessage(Text.literal("[Continue]")
-                            .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint continue"))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to set the next waypoint")))));
-                    paused = true;
-                } else {
-                    WaypointEntry waypoint = waypoints.poll();
-                    client.inGameHud.getChatHud().addMessage(Text.of(
-                            waypoint.getText() + " Head to " + waypoints.peek().getClearTitle()));
-                    MutableText text = Text.literal("[Skip]")
-                            .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint skip"))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to skip this waypoint"))));
-                    if (waypoints.peek().inChain() && shouldSuggestPath(waypoint)) {
-                        text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
-                                .append(Text.literal("[Add fastest path]")
-                                .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint path"))
-                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to find fastest path")))));
-                    }
-                    client.inGameHud.getChatHud().addMessage(text);
-                }
-            }
-        }
+    //returns int because it's used in command
+    public static int onWaypointReached(ClientPlayerEntity player, ClientWorld world) {
+        if (paused || waypoints.isEmpty()) return 1;
+
         world.playSound(player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
+
+        if (waypoints.size() == 1) {
+            chat.addMessage(Text.of(
+                    ((waypoints.peek().getText() == null || waypoints.peek().getText().isEmpty())
+                            ? "" : (waypoints.poll().getText() + " ")) + "§aWaypoint removed."));
+            setState(false);
+            return 1;
+        }
+        if (waypoints.peek().shouldPause()) {
+            chat.addMessage(Text.of(waypoints.poll().getText()));
+            chat.addMessage(buildClickableMessage("[Continue]",
+                    "/handbook waypoint continue", "Click to set the next waypoint"));
+            paused = true;
+            return 1;
+        }
+        WaypointEntry waypoint = waypoints.poll();
+        chat.addMessage(Text.of(waypoint.getText() + " Head to " + waypoints.peek().getClearTitle()));
+        MutableText text = buildClickableMessage("[Skip]",
+                "/handbook waypoint skip", "Click to skip this waypoint");
+
+        if (waypoints.peek().inChain() && shouldSuggestPath(waypoint))
+            text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
+                    .append(buildClickableMessage("[Add fastest path]",
+                            "/handbook waypoint path", "Click to find fastest path"));
+        chat.addMessage(text);
+        return 1;
     }
 
-    public static void continuePath() {
+    //returns int because it's used in command
+    public static int continuePath() {
         ClientWorld world = client.world;
         ClientPlayerEntity player = client.player;
-        if (player == null || world == null) return;
+        if (player == null || world == null) return 1;
 
-        paused = false;
-        client.inGameHud.getChatHud().addMessage(Text.of("Head to " + waypoints.peek().getClearTitle()));
-        MutableText text = Text.literal("[Skip]")
-                .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint skip"))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to skip this waypoint"))));
-        if (waypoints.peek().inChain() && shouldSuggestPath(waypoints.peek())) {
-            text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
-                    .append(Text.literal("[Add fastest path]")
-                    .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint path"))
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to find fastest path")))));
-        }
-        client.inGameHud.getChatHud().addMessage(text);
         world.playSound(player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
+
+        paused = false;
+        chat.addMessage(Text.of("Head to " + waypoints.peek().getClearTitle()));
+        MutableText text = buildClickableMessage("[Skip]",
+                "/handbook waypoint skip", "Click to skip this waypoint");
+        if (waypoints.peek().inChain() && shouldSuggestPath(waypoints.peek()))
+            text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
+                    .append(buildClickableMessage("[Add fastest path]",
+                            "/handbook waypoint path","Click to find fastest path"));
+        chat.addMessage(text);
+        return 1;
     }
 
-    public static void addPathToChain() {
+    //returns int because it's used in command
+    public static int addPathToChain() {
         WaypointEntry target = waypoints.poll();
         List<WaypointEntry> remainingPath = waypoints.stream().toList();
         waypoints.clear();
-        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        client.inGameHud.getChatHud().addMessage(getFastestPath(shard, target, false));
+        chat.addMessage(getFastestPath(getShard(), target, false));
         waypoints.addAll(remainingPath);
+        return 1;
     }
 
-    public static boolean isActive() {
-        return !waypoints.isEmpty();
-    }
+    //returns int because it's used in command
+    public static int printInfo() {
+        if (waypoints.isEmpty()) {
+            HandbookClient.LOGGER.info("No waypoints active");
+            return 1;
+        }
 
-    public static void printInfo() {
         StringBuilder string = new StringBuilder();
         for (WaypointEntry waypoint : waypoints) {
             string.append(waypoint.getClearTitle()).append(" -> ");
         }
         HandbookClient.LOGGER.info(string.substring(0, string.length() - 3));
-    }
-
-    public static double getDistance() {
-        return distance;
+        return 1;
     }
 
     public static Text getFastestPath(String shard, WaypointEntry entry, boolean append) {
         ClientPlayerEntity player = client.player;
-        if (player == null) return null;
+        if (player == null) return Text.of("");
 
         Waypoint waypoint = entry.getWaypoint();
         int x = waypoint.x();
@@ -357,40 +352,40 @@ public class WaypointManager {
 
     private static Text addHubLocations(Teleport tp1, Teleport tp2, String shard, WaypointEntry entry, boolean alt, boolean append) {
         if (tp1 == tp2) return Text.of("walk");
-        MutableText text = Text.empty().append("through ");
+        StringBuilder text = (new StringBuilder()).append("through ");
 
         Teleport hub = getRegionHub(shard).get();
 
         if (tp1.name().endsWith("Bell") || tp2.name().endsWith("Bell")) {
             if (tp1.name().endsWith("Bell") && tp2.name().endsWith("Bell")) {
                 writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry, append);
-                text.append(tp1.name() + " -> " + tp2.name());
+                text.append(tp1.name()).append(" -> ").append(tp2.name());
             } else {
                 if (tp1.name().endsWith("Bell")) {
                     if (tp2.name().equals(hub.name())) {
                         writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get(), Galengarde.get()}, entry, append);
-                        text.append(tp1.name() + " -> Chantry -> Galengarde");
+                        text.append(tp1.name()).append(" -> Chantry -> Galengarde");
                     } else {
                         if (tp2.name().equals("Chantry of Repentance")) {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get()}, entry, append);
-                            text.append(tp1.name() + " -> " + tp2.name());
+                            text.append(tp1.name()).append(" -> ").append(tp2.name());
                         }
                         else {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get(), Galengarde.get(), tp2}, entry, append);
-                            text.append(tp1.name() + " -> Chantry -> Galengarde -> " + tp2.name());
+                            text.append(tp1.name()).append(" -> Chantry -> Galengarde -> ").append(tp2.name());
                         }
                     }
                 } else {
                     if (tp1.name().startsWith("Chantry")) {
                         writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry, append);
-                        text.append(tp1.name() + " -> " + tp2.name());
+                        text.append(tp1.name()).append(" -> ").append(tp2.name());
                     } else {
                         if (tp1.name().equals(hub.name())) {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{Galengarde.get(), Chantry.get(), tp2}, entry, append);
-                            text.append("Galengarde -> Chantry -> " + tp2.name());
+                            text.append("Galengarde -> Chantry -> ").append(tp2.name());
                         } else {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Galengarde.get(), Chantry.get(), tp2}, entry, append);
-                            text.append(tp1.name() + " -> Galengarde -> Chantry -> " + tp2.name());
+                            text.append(tp1.name()).append(" -> Galengarde -> Chantry -> ").append(tp2.name());
                         }
                     }
                 }
@@ -398,17 +393,16 @@ public class WaypointManager {
         } else {
             if (tp1.name().equals(hub.name()) || tp2.name().equals(hub.name())) {
                 writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry, append);
-                text.append(tp1.name() + " -> " + tp2.name());
+                text.append(tp1.name()).append(" -> ").append(tp2.name());
             } else {
                 writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, hub, tp2}, entry, append);
-                text.append(tp1.name() + " -> " + hub.name() + " -> " + tp2.name());
+                text.append(tp1.name()).append(" -> ").append(hub.name()).append(" -> ").append(tp2.name());
             }
         }
 
-        if (alt) return text.setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint alternate"))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to use this route instead"))));
-        return text;
+        if (alt) return buildClickableMessage(text.toString(),
+                "/handbook waypoint alternate", "Click to use this route instead");
+        return Text.of(text.toString());
     }
 
     private static void writeWaypoints(Collection<WaypointEntry> collection, Teleport[] teleports, WaypointEntry entry, boolean append) {
@@ -420,17 +414,12 @@ public class WaypointManager {
         collection.add(entry);
     }
 
-    private static boolean shouldSuggestPath(WaypointEntry entry) {
-        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-        String message = getFastestPath(shard, entry, true).getString();
-        return !message.contains("walk") || message.contains(" or ");
-    }
-
-    public static void setAltPath(boolean append) {
-        if (append) {
+    //returns int because it's used in command
+    public static int setAltPath() {
+        if (waypoints.peek().inChain()) {
             if (altPath.isEmpty()) {
-                client.inGameHud.getChatHud().addMessage(Text.of("Something's broken. Don't click that."));
-                return;
+                chat.addMessage(Text.of("Something's broken. Don't click that."));
+                return 1;
             }
             WaypointEntry target = altPath.stream().toList().get(altPath.size() - 1);
             while (!waypoints.peek().getTitle().equals(target.getTitle())) waypoints.poll();
@@ -438,26 +427,26 @@ public class WaypointManager {
             waypoints.clear();
             waypoints.addAll(altPath);
             waypoints.addAll(remainingPath);
-            client.inGameHud.getChatHud().addMessage(Text.of("Waypoints restored."));
-        }
-        else {
+        } else {
             waypoints.clear();
             waypoints.addAll(altPath);
-            client.inGameHud.getChatHud().addMessage(Text.of("Route changed."));
         }
+        chat.addMessage(Text.of("Route changed."));
+        return 1;
+    }
+
+    //returns int because it's used in command
+    public static int restoreWaypoints() {
+        waypoints.clear();
+        waypoints.addAll(altPath);
+        chat.addMessage(Text.of("Waypoints restored."));
+        return 1;
     }
 
     public static void saveWaypoints() {
         altPath.clear();
         altPath.addAll(waypoints);
-    }
-
-    public static boolean waypointsSaved() {
-        return !altPath.isEmpty();
-    }
-
-    public static boolean shouldRestore() {
-        return sendRestoreMessage;
+        waypoints.clear();
     }
 
     public static void prepareRestoreMessage() {
@@ -466,10 +455,25 @@ public class WaypointManager {
 
     public static void sendRestoreMessage() {
         sendRestoreMessage = false;
-        client.inGameHud.getChatHud().addMessage(Text.literal("Restore waypoints")
+        if (prevShard.equals(getShard())) {
+            chat.addMessage(buildClickableMessage("Restore waypoints",
+                    "/handbook waypoint restore", "Click to restore handbook waypoints"));
+        }
+    }
+
+    public static MutableText buildClickableMessage(String text, String command, String hoverText) {
+        return Text.literal(text)
                 .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint alternate"))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to restore handbook waypoints")))));
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(hoverText))));
+    }
+
+    public static void clear() {
+        waypoints.clear();
+    }
+
+    public static String getShard() {
+        return client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
     }
 
     private static Teleports getRegionHub(String shard) {
@@ -487,6 +491,14 @@ public class WaypointManager {
         return Empty;
     }
 
+    public static double getDistance() {
+        return distance;
+    }
+
+    public static boolean isActive() {
+        return !waypoints.isEmpty();
+    }
+
     private static boolean isInPlayableArea(String shard, ClientPlayerEntity player) {
         int x = (int) player.getX();
         int z = (int) player.getZ();
@@ -502,5 +514,18 @@ public class WaypointManager {
             }
         }
         return true;
+    }
+
+    private static boolean shouldSuggestPath(WaypointEntry entry) {
+        String message = getFastestPath(getShard(), entry, true).getString();
+        return !message.contains("walk") || message.contains(" or ");
+    }
+
+    public static boolean waypointsSaved() {
+        return !altPath.isEmpty();
+    }
+
+    public static boolean shouldRestore() {
+        return sendRestoreMessage;
     }
 }

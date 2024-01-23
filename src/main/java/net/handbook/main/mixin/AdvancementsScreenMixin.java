@@ -24,7 +24,7 @@ public abstract class AdvancementsScreenMixin extends Screen {
     @Inject(method = "init", at = @At("TAIL"))
     public void init(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
-        addDrawableChild(button = new TexturedButtonWidget(this.width - 51, 1, 50, 11, 0, 0, 11,
+        addDrawableChild(button = new TexturedButtonWidget(width - 51, 1, 50, 11, 0, 0, 11,
                 new Identifier("handbook", "textures/button.png"), 50, 22, button -> HandbookClient.openScreen()));
     }
 

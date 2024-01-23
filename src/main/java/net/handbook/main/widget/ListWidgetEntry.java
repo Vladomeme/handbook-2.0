@@ -34,17 +34,17 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
         this.entry = entry;
         this.type = type;
 
-        this.button = new TexturedButtonWidget(0, 0, width, 12, 0, 0, 0,
+        button = new TexturedButtonWidget(0, 0, width, 12, 0, 0, 0,
                 new Identifier("handbook", "empty"), button -> {
             updateHighlight(true);
             entry.mouseClicked();
         });
-        this.list = ImmutableList.of(this.button);
+        list = ImmutableList.of(button);
     }
 
     @Override
     public void render(DrawContext context, int index, int top, int left, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-        this.button.setPosition(left, top);
+        button.setPosition(left, top);
 
         if (highlighted) {
             RenderSystem.enableBlend();
@@ -52,9 +52,8 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
             RenderSystem.disableBlend();
         }
 
-        if (tr.getWidth(entry.getTitle()) > 150) {
+        if (tr.getWidth(entry.getTitle()) > 150)
             context.drawText(tr, tr.trimToWidth(entry.getTitle(), 147) + "...", left + 10, top, 16777215, false);
-        }
         else context.drawText(tr, entry.getTitle(), left + 10, top, 16777215, false);
     }
 
@@ -66,12 +65,12 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
     @Override
     public List<? extends Element> children() {
-        return this.list;
+        return list;
     }
 
     @Override
     public List<? extends Selectable> selectableChildren() {
-        return this.list;
+        return list;
     }
 
     public void updateHighlight(boolean state) {
@@ -92,6 +91,6 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     }
 
     public void setHighlighted(boolean state) {
-        this.highlighted = state;
+        highlighted = state;
     }
 }

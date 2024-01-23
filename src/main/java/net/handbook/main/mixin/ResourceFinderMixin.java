@@ -12,8 +12,6 @@ public abstract class ResourceFinderMixin {
 
     @Inject(method = "toResourceId", at = @At(value = "HEAD"), cancellable = true)
     public void toResourceId(Identifier path, CallbackInfoReturnable<Identifier> cir) {
-        if (path.getNamespace().equals("handbook")) {
-            cir.setReturnValue(path);
-        }
+        if (path.getNamespace().equals("handbook")) cir.setReturnValue(path);
     }
 }

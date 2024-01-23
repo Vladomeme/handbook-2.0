@@ -162,64 +162,34 @@ public class HandbookClient implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 literal("handbook")
                         .then(literal("dump")
-                                .then(literal("NPC").executes(context -> {
-                                    npcWriter.write();
-                                    return 1;
-                                }))
-                                .then(literal("locations").executes(context -> {
-                                    locationWriter.write();
-                                    return 1;
-                                }))
+                                .then(literal("NPC").executes(ctx -> npcWriter.write()))
+                                .then(literal("locations").executes(ctx -> locationWriter.write()))
                                 .then(literal("advancements")
-                                        .then(argument("Root", StringArgumentType.string()).executes(context -> {
-                                            AdvancementWriter.dumpAdvancements(StringArgumentType.getString(context, "Root"));
-                                            return 1;
-                                        })))
-                                .then(literal("all").executes(context -> {
-                                    dumpAll();
-                                    return 1;
-                                })))
+                                        .then(argument("Root", StringArgumentType.string()).executes(ctx ->
+                                                AdvancementWriter.dumpAdvancements(StringArgumentType.getString(ctx, "Root")))))
+                                .then(literal("all").executes(ctx -> dumpAll())))
                         .then(literal("add")
                                 .then(literal("location").then(argument("Name", StringArgumentType.string())
-                                        .suggests(this::getSuggestions).executes(context -> {
-                                    locationWriter.addLocation(StringArgumentType.getString(context, "Name"));
-                                    return 1;
-                                })))
-                                .then(literal("NPC").then(argument("Target", CEntityArgumentType.entity()).executes(context -> {
-                                    npcWriter.addNPC(CEntityArgumentType.getCEntity(context, "Target"), true);
-                                    return 1;
-                                }))))
+                                        .suggests(this::getSuggestions).executes(ctx ->
+                                                locationWriter.addLocation(StringArgumentType.getString(ctx, "Name")))))
+                                .then(literal("NPC").then(argument("Target", CEntityArgumentType.entity()).executes(ctx ->
+                                        npcWriter.addNPC(CEntityArgumentType.getCEntity(ctx, "Target"), true)))))
                         .then(literal("waypoint")
                                 .then(argument("x", IntegerArgumentType.integer())
                                         .then(argument("y", IntegerArgumentType.integer())
-                                                .then(argument("z", IntegerArgumentType.integer()).executes(context -> {
-                                                    WaypointManager.setWaypoint(new WaypointEntry("Waypoint", null,
-                                                            new Waypoint(
-                                                            IntegerArgumentType.getInteger(context, "x"),
-                                                            IntegerArgumentType.getInteger(context, "y"),
-                                                            IntegerArgumentType.getInteger(context, "z")), false, null));
-                                                    return 1;
-                                                }))))
-                                .then(literal("alternate").executes(context -> {
-                                    WaypointManager.setAltPath(false);
-                                    return 1;
-                                }))
-                                .then(literal("continue").executes(context -> {
-                                    WaypointManager.continuePath();
-                                    return 1;
-                                }))
-                                .then(literal("skip").executes(context -> {
-                                    WaypointManager.skip();
-                                    return 1;
-                                }))
-                                .then(literal("path").executes(context -> {
-                                    WaypointManager.addPathToChain();
-                                    return 1;
-                                }))
-                                .then(literal("info").executes(context -> {
-                                    WaypointManager.printInfo();
-                                    return 1;
-                                })))
+                                                .then(argument("z", IntegerArgumentType.integer()).executes(ctx ->
+                                                        WaypointManager.setWaypoint(new WaypointEntry("Waypoint", null,
+                                                        new Waypoint(
+                                                        IntegerArgumentType.getInteger(ctx, "x"),
+                                                        IntegerArgumentType.getInteger(ctx, "y"),
+                                                        IntegerArgumentType.getInteger(ctx, "z")), false, null))))))
+                                .then(literal("alternate").executes(ctx -> WaypointManager.setAltPath()))
+                                .then(literal("restore").executes(ctx -> WaypointManager.restoreWaypoints()))
+                                .then(literal("continue").executes(ctx -> WaypointManager.continuePath()))
+                                .then(literal("skip").executes(ctx ->
+                                        WaypointManager.onWaypointReached(MinecraftClient.getInstance().player, MinecraftClient.getInstance().world)))
+                                .then(literal("path").executes(ctx -> WaypointManager.addPathToChain()))
+                                .then(literal("info").executes(ctx -> WaypointManager.printInfo())))
         ));
 
         LOGGER.info("Handbook 2.0 loaded!");
@@ -245,13 +215,15 @@ public class HandbookClient implements ClientModInitializer {
         MinecraftClient.getInstance().setScreen(new HandbookScreen(Text.of("")));
     }
 
-    public static void dumpAll() {
+    //returns int because it's used in command
+    public static int dumpAll() {
         npcWriter.write();
         locationWriter.write();
         LOGGER.info("Saved all new handbook entries.");
+        return 1;
     }
 
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
+    private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
         for (BaseCategory category : HandbookScreen.categories) {
             if (!category.getTitle().equals("Locations")) continue;
 

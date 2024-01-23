@@ -48,11 +48,8 @@ public class HandbookResourcePack extends DirectoryResourcePack {
             stream2.forEach(foundPath -> {
                 String file = path.relativize(foundPath).toString();
                 Identifier identifier = Identifier.of(namespace, file);
-                if (identifier == null) {
-                    HandbookClient.LOGGER.error("fucked up file: " + file);
-                } else {
-                    consumer.accept(identifier, InputSupplier.create(foundPath));
-                }
+                if (identifier == null) HandbookClient.LOGGER.error("fucked up file: " + file);
+                else consumer.accept(identifier, InputSupplier.create(foundPath));
             });
         } catch (IOException iOException) {
             HandbookClient.LOGGER.error("Failed to load handbook images");

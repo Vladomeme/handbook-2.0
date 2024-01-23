@@ -5,8 +5,8 @@ import net.handbook.main.resources.waypoint.Waypoint;
 public class WaypointEntry extends Entry {
 
     WaypointChain waypoints;
-    Waypoint waypoint;
-    boolean pause;
+    final Waypoint waypoint;
+    final boolean pause;
     boolean chain = false;
     final String id;
 

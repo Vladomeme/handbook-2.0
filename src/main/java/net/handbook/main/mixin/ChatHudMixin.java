@@ -2,6 +2,7 @@ package net.handbook.main.mixin;
 
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.category.PositionedCategory;
 import net.handbook.main.resources.entry.PositionedEntry;
@@ -10,7 +11,6 @@ import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,7 +35,7 @@ public abstract class ChatHudMixin {
         if (HandbookConfig.INSTANCE.enabled && message.getString().contains("Position:"))
             message = injectWaypointClickEvent(message);
 
-        addMessage(message, signature, this.client.inGameHud.getTicks(), indicator, false);
+        addMessage(message, signature, client.inGameHud.getTicks(), indicator, false);
 
         if (HandbookConfig.INSTANCE.enabled) {
             if (message.getString().startsWith("Your bounty for"))
@@ -45,7 +45,7 @@ public abstract class ChatHudMixin {
 
     @Unique
     public Text injectWaypointClickEvent(Text message) {
-        Text text = message.getSiblings().size() > 0 ? message.getSiblings().get(message.getSiblings().size() - 1) : message;
+        Text text = !message.getSiblings().isEmpty() ? message.getSiblings().get(message.getSiblings().size() - 1) : message;
 
         int index = text.getString().indexOf("Position:");
         String prePosition = text.getString().substring(0, index);
@@ -58,18 +58,15 @@ public abstract class ChatHudMixin {
 
         MutableText modifiedText = Text.empty();
 
-        if (message.getSiblings().size() > 0) {
+        if (!message.getSiblings().isEmpty()) {
             modifiedText = Text.literal(message.asTruncatedString(getTrunkLength(message.copy()))).setStyle(message.getStyle());
             for (int i = 0; i < message.getSiblings().size() - 1; i++) {
                 modifiedText.append(message.getSiblings().get(i));
             }
         }
         modifiedText.append(Text.literal(prePosition).setStyle(text.getStyle()));
-        modifiedText.append(Text.literal(position).setStyle(Style.EMPTY
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint " + x + " " + y + " " + z))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to set a waypoint")))
-                .withColor(Formatting.AQUA)
-                .withUnderline(true)));
+        modifiedText.append(WaypointManager.buildClickableMessage(position,
+                "/handbook waypoint " + x + " " + y + " " + z, "Click to set a waypoint"));
 
         return modifiedText;
     }
@@ -83,18 +80,10 @@ public abstract class ChatHudMixin {
             for (PositionedEntry entry : ((PositionedCategory) category).getEntries()) {
                 if (!entry.getClearTitle().equals(POIName)) continue;
 
-                int[] coordinates = entry.getPosition();
-                int x = coordinates[0];
-                int y = coordinates[1];
-                int z = coordinates[2];
+                int[] coords = entry.getPosition();
 
-                MutableText waypointText = Text.literal("[Set waypoint]").setStyle(Style.EMPTY
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/handbook waypoint " + x + " " + y + " " + z))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to set a waypoint")))
-                        .withColor(Formatting.AQUA)
-                        .withUnderline(true));
-
-                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(waypointText);
+                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(WaypointManager.buildClickableMessage("[Set waypoint]",
+                        "/handbook waypoint " + coords[0] + " " + coords[1] + " " + coords[2], "Click to set a waypoint"));
                 return;
             }
         }

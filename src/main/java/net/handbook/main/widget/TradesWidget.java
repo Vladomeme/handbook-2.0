@@ -40,22 +40,22 @@ public class TradesWidget extends ClickableWidget {
 
     public void startSharing(TradeListWidgetEntry entry) {
         cancelSharing();
-        this.selectedEntry = entry;
+        selectedEntry = entry;
         entry.setHighlighted(true);
 
         HandbookScreen.tradeButtonsState(true);
         buttonsY = (int) client.mouse.getY() / client.options.getGuiScale().getValue() + 24;
-        HandbookScreen.moveTradeButtons(this.getX() + 140, buttonsY - 18);
+        HandbookScreen.moveTradeButtons(getX() + 140, buttonsY - 18);
         HandbookScreen.shareCancel.active = true;
         HandbookScreen.shareCancel.visible = true;
-        HandbookScreen.shareCancel.setPosition(this.getX() + 141, buttonsY + 12);
+        HandbookScreen.shareCancel.setPosition(getX() + 141, buttonsY + 12);
     }
 
     public void selectMode(Mode mode) {
-        this.shareMode = mode;
+        shareMode = mode;
         HandbookScreen.worldButtonsState(true);
-        HandbookScreen.moveWorldButtons(this.getX() + 182, buttonsY + 6);
-        HandbookScreen.shareCancel.setPosition(this.getX() + 141, buttonsY + 12);
+        HandbookScreen.moveWorldButtons(getX() + 182, buttonsY + 6);
+        HandbookScreen.shareCancel.setPosition(getX() + 141, buttonsY + 12);
     }
 
     public void share(String world) {

@@ -34,14 +34,14 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
     public TradeListWidgetEntry(TradeOffer trade, int width) {
         this.trade = trade;
 
-        this.button = new TexturedButtonWidget(0, 0, width, 20, 0, 0, 0,
+        button = new TexturedButtonWidget(0, 0, width, 20, 0, 0, 0,
                 new Identifier("handbook", "empty"), button -> HandbookScreen.tradesWidget.startSharing(this));
-        this.list = ImmutableList.of(this.button);
+        list = ImmutableList.of(button);
     }
 
     @Override
     public void render(DrawContext context, int index, int top, int left, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-        this.button.setPosition(left, top);
+        button.setPosition(left, top);
 
         if (highlighted) {
             RenderSystem.enableBlend();
@@ -65,10 +65,10 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
         context.drawItemInSlot(tr, itemStack3, left + 91, top + 2);
 
         RenderSystem.disableScissor();
-        if (this.isMouseOver(mouseX, mouseY)) renderTooltip(context, mouseX, mouseY, left);
+        if (isMouseOver(mouseX, mouseY)) renderTooltip(context, mouseX, mouseY, left);
     }
 
-    public void renderTooltip(DrawContext context, int x, int y, int left) {
+    private void renderTooltip(DrawContext context, int x, int y, int left) {
         if (y > HandbookScreen.tradeList.getBottom()) return;
         ItemStack itemStack = null;
 
@@ -88,15 +88,15 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
 
     @Override
     public List<? extends Element> children() {
-        return this.list;
+        return list;
     }
 
     @Override
     public List<? extends Selectable> selectableChildren() {
-        return this.list;
+        return list;
     }
 
     public void setHighlighted(boolean state) {
-        this.highlighted = state;
+        highlighted = state;
     }
 }

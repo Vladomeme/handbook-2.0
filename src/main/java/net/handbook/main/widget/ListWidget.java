@@ -15,16 +15,16 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 	public ListWidget(int width, int height, int top, int bottom) {
 		super(MinecraftClient.getInstance(), width, height, top, bottom, 12);
 
-		this.listWidth = width;
+		listWidth = width;
 
-		this.setRenderBackground(false);
-		this.setRenderHorizontalShadows(false);
-		this.setRenderHeader(false, 0);
+		setRenderBackground(false);
+		setRenderHorizontalShadows(false);
+		setRenderHeader(false, 0);
 	}
 
 	public void setEntries(List<? extends net.handbook.main.resources.entry.Entry> entries, String type) {
-		this.clearEntries();
-		this.setScrollAmount(0);
+		clearEntries();
+		setScrollAmount(0);
 
 		int maxWidth = 0;
 
@@ -35,17 +35,17 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		}
 		maxWidth = Math.min(maxWidth, 150);
 
-		this.width = maxWidth;
+		width = maxWidth;
 	}
 
 	@Override
 	protected int getScrollbarPositionX() {
-		return this.right - 11;
+		return right - 11;
 	}
 
 	@Override
 	public int getRowWidth() {
-		return this.listWidth;
+		return listWidth;
 	}
 
 	public void clear() {

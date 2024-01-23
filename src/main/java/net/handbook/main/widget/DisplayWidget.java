@@ -112,21 +112,21 @@ public class DisplayWidget extends ClickableWidget {
 
         if (renderImage) {
             if (invalidImage) {
-                context.drawText(tr, "Invalid image", (int) (this.width * 0.5), 10, 16777215, false);
+                context.drawText(tr, "Invalid image", (int) (width * 0.5), 10, 16777215, false);
                 super.render(context, mouseX, mouseY, delta);
                 return;
             }
             float scale = 1;
-            if (imageWidth > this.width * 0.5 - 10) {
-                if (imageHeight > this.height * 0.8) {
-                    scale = (float) Math.min((this.width * 0.5 - 10) / imageWidth, (this.imageHeight * 0.8) / imageHeight);
+            if (imageWidth > width * 0.5 - 10) {
+                if (imageHeight > height * 0.8) {
+                    scale = (float) Math.min((width * 0.5 - 10) / imageWidth, (imageHeight * 0.8) / imageHeight);
                 }
-                else scale = (float) (this.width * 0.5 / imageWidth);
+                else scale = (float) (width * 0.5 / imageWidth);
             }
             context.getMatrices().push();
             context.getMatrices().scale(scale, scale, 2);
             RenderSystem.enableBlend();
-            context.drawTexture(id, (int) ((this.width * 0.5) / scale), (int) (10 / scale), 0, 0,
+            context.drawTexture(id, (int) ((width * 0.5) / scale), (int) (10 / scale), 0, 0,
                     imageWidth, imageHeight, imageWidth, imageHeight);
             RenderSystem.disableBlend();
             context.getMatrices().pop();
@@ -134,11 +134,11 @@ public class DisplayWidget extends ClickableWidget {
         context.getMatrices().pop();
     }
 
-    public String[] splitText(String text) {
+    private String[] splitText(String text) {
         StringTokenizer tokens = new StringTokenizer(text, " ");
         StringBuilder output = new StringBuilder();
         int lineLength = 0;
-        int maxLength = (this.width / 10);
+        int maxLength = (width / 10);
         if (maxLength <= 0) maxLength = 100;
         while (tokens.hasMoreTokens()) {
             String word = tokens.nextToken();
@@ -170,13 +170,10 @@ public class DisplayWidget extends ClickableWidget {
     public void setWaypoint() {
         if (client.world == null) return;
 
-        String shard = client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
-
         if (entry.getWaypoints() != null) {
             setWaypointChain();
-        }
-        else {
-            if (entry.getShard().equals(shard)) {
+        } else {
+            if (entry.getShard().equals(WaypointManager.getShard())) {
                 client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.getTitle()));
                 WaypointManager.setWaypoint(entry);
             } else {
@@ -189,7 +186,7 @@ public class DisplayWidget extends ClickableWidget {
         client.currentScreen.close();
     }
 
-    public void setWaypointChain() {
+    private void setWaypointChain() {
         client.inGameHud.getChatHud().addMessage(Text.of("Path started: " + entry.getTitle()));
         WaypointManager.setWaypointChain(List.of((entry.getWaypoints())));
     }

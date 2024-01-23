@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.feature.WaypointManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -25,11 +26,12 @@ public class LocationWriter {
     final List<Location> entries = new ArrayList<>();
     private transient int newCount = 0;
 
-    public void addLocation(String name) {
+    //returns int because it's used in command
+    public int addLocation(String name) {
         ClientWorld world = MinecraftClient.getInstance().world;
-        if (world == null) return;
+        if (world == null) return 1;
         ClientPlayerEntity entity = MinecraftClient.getInstance().player;
-        if (entity == null) return;
+        if (entity == null) return 1;
 
         if (name.startsWith("\"")) name = name.replace("\"", "");
 
@@ -38,11 +40,13 @@ public class LocationWriter {
                 ". Don't forget to save it!"));
 
         newCount++;
-        entries.add(new Location(name, world.getRegistryKey().getValue().toString(), entity.getX(), entity.getY(), entity.getZ()));
+        entries.add(new Location(name, WaypointManager.getShard(), entity.getX(), entity.getY(), entity.getZ()));
+        return 1;
     }
 
+    //returns int because it's used in command
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void write() {
+    public int write() {
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"locations.json\" with " + entries.size() +
                 " locations total, " + newCount + " new locations."));
         Gson gson = new Gson();
@@ -53,7 +57,7 @@ public class LocationWriter {
             writer = gson.newJsonWriter(new FileWriter(file));
             writer.setIndent("    ");
             gson.toJson(this, LocationWriter.class, writer);
-            this.newCount = 0;
+            newCount = 0;
         } catch (Exception e) {
             HandbookClient.LOGGER.error("Couldn't save locations.json.");
             e.printStackTrace();
@@ -61,6 +65,7 @@ public class LocationWriter {
         } finally {
             IOUtils.closeQuietly(writer);
         }
+        return 1;
     }
 
     public static LocationWriter read() {

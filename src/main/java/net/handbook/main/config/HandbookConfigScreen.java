@@ -25,9 +25,10 @@ public class HandbookConfigScreen {
                         .build());
 
                 category.addEntry(entryBuilder.startBooleanToggle(Text.of("Enable scanner"), currentConfig.enableScanner)
-                        .setTooltip(Text.of("If enabled, will scan all nearby NPCs and add them to the" +
-                                "\nhandbook. Also scans villager trades whenever you open them." +
-                                "\nMay kill your performance so don't play with this enabled."))
+                        .setTooltip(Text.of("""
+                                If enabled, will scan all nearby NPCs and add them to the
+                                handbook. Also scans villager trades whenever you open them.
+                                May kill your performance so don't play with this enabled."""))
                         .setSaveConsumer(newConfig -> currentConfig.enableScanner = newConfig)
                         .setDefaultValue(defaultConfig.enableScanner)
                         .build());

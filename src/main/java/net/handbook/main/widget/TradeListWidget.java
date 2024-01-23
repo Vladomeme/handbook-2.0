@@ -15,28 +15,28 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 	public TradeListWidget(int width, int height, int top, int bottom) {
 		super(MinecraftClient.getInstance(), width, height, top, bottom, 24);
 
-		this.listWidth = width;
+		listWidth = width;
 
-		this.setRenderBackground(false);
-		this.setRenderHorizontalShadows(false);
-		this.setRenderHeader(false, 0);
+		setRenderBackground(false);
+		setRenderHorizontalShadows(false);
+		setRenderHeader(false, 0);
 	}
 
 	public void setEntries(TradeOfferList trades) {
-		this.clearEntries();
+		clearEntries();
 
 		for (TradeOffer trade : trades) {
-			this.addEntry(new TradeListWidgetEntry(trade, listWidth));
+			addEntry(new TradeListWidgetEntry(trade, listWidth));
 		}
 	}
 
 	@Override
 	protected int getScrollbarPositionX() {
-		return this.right - 11;
+		return right - 11;
 	}
 	@Override
 	public int getRowWidth() {
-		return this.listWidth;
+		return listWidth;
 	}
 
 	public int getBottom() {

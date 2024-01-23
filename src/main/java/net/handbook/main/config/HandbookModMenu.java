@@ -10,9 +10,9 @@ import net.minecraft.text.Text;
 public class HandbookModMenu implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        if (FabricLoader.getInstance().isModLoaded("cloth-config2")) {
+        if (FabricLoader.getInstance().isModLoaded("cloth-config2"))
             return HandbookConfigScreen::create;
-        }
+
         return parent -> new NoticeScreen(() -> MinecraftClient.getInstance().setScreen(parent),
                 Text.of("Handbook 2.0"), Text.of("Mod requires Cloth Config to be able to show the config."));
     }
