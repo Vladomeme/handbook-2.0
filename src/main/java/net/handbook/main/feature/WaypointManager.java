@@ -2,6 +2,7 @@ package net.handbook.main.feature;
 
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Teleport;
@@ -89,6 +90,13 @@ public class WaypointManager {
         prevShard = getShard();
         HandbookScreen.clearWaypoint.visible = state;
         HandbookScreen.clearWaypoint.active = state;
+        HandbookScreen.continueWaypoint.visible = state;
+        HandbookScreen.continueWaypoint.active = state;
+    }
+
+    public static void continueOrSkip() {
+        if (paused) continuePath();
+        else onWaypointReached(client.player, client.world);
     }
 
     public static void emitParticles() {
@@ -101,7 +109,7 @@ public class WaypointManager {
         ClientWorld world = client.world;
         ClientPlayerEntity player = client.player;
         if (world == null || player == null) return;
-        if (!prevShard.equals(getShard())) {
+        if (prevShard != null && !prevShard.equals(getShard())) {
             waypoints.clear();
             return;
         }
@@ -113,13 +121,14 @@ public class WaypointManager {
         double particleY = player.getY() + ((waypoint.y() - player.getY()) / distance) * ((float) tick / 3);
         double particleZ = player.getZ() + ((waypoint.z() - player.getZ()) / distance) * ((float) tick / 3);
 
-        world.addParticle(ParticleTypes.END_ROD, particleX + (Math.random() - Math.random()) * 0.5,
+        world.addParticle(HandbookConfig.INSTANCE.monuParticles ? ParticleTypes.COMPOSTER : ParticleTypes.END_ROD,
+                particleX + (Math.random() - Math.random()) * 0.5,
                 particleY + 0.5 + (Math.random() - Math.random()) * 0.5,
                 particleZ + (Math.random() - Math.random()) * 0.5, 0, 0, 0);
     }
 
     public static void renderBeacon(WorldRenderContext context) {
-        if (waypoints.peek() == null || paused) return;
+        if (waypoints.peek() == null || paused || !HandbookConfig.INSTANCE.renderBeacon) return;
         Waypoint waypoint = waypoints.peek().getWaypoint();
         if (waypoint == null) return;
 
@@ -170,7 +179,7 @@ public class WaypointManager {
             setState(false);
             return 1;
         }
-        if (waypoints.peek().shouldPause()) {
+        if (waypoints.peek().shouldPause() && !HandbookConfig.INSTANCE.alwaysContinue) {
             chat.addMessage(Text.of(waypoints.poll().getText()));
             chat.addMessage(buildClickableMessage("[Continue]",
                     "/handbook waypoint continue", "Click to set the next waypoint"));

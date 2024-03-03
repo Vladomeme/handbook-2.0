@@ -2,6 +2,7 @@ package net.handbook.main.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.entry.Entry;
@@ -84,6 +85,11 @@ public class DisplayWidget extends ClickableWidget {
         if (entry.getWaypoints() != null) {
             HandbookScreen.setWaypoint.visible = true;
             HandbookScreen.setWaypoint.active = true;
+        }
+        if ((HandbookConfig.INSTANCE.editorMode)
+                && (HandbookScreen.activeCategory.getTitle().equals("Locations") || HandbookScreen.activeCategory.getTitle().equals("NPC"))) {
+            HandbookScreen.delete.visible = true;
+            HandbookScreen.delete.active = true;
         }
     }
 
@@ -200,6 +206,23 @@ public class DisplayWidget extends ClickableWidget {
 
         if (client.currentScreen == null) return;
         client.currentScreen.close();
+    }
+
+    public void deleteEntry() {
+        switch (HandbookScreen.activeCategory.getTitle()) {
+            case "Location" -> HandbookClient.locationWriter.deleteEntry(entry.getTitle());
+            case "NPC" -> HandbookClient.npcWriter.deleteEntry(entry.getID());
+            default -> {
+                client.inGameHud.getChatHud().addMessage(Text.of("Unable to delete an entry from this category."));
+                return;
+            }
+        }
+        HandbookScreen.activeCategory.getEntries().remove(entry);
+        double scroll = HandbookScreen.optionsWidget.getScrollAmount();
+        HandbookScreen.optionsWidget.setEntries(HandbookScreen.activeCategory.getEntries(), "entry");
+        HandbookScreen.optionsWidget.setScrollAmount(scroll);
+        setEntry(null);
+        HandbookScreen.displayButtonsState(false);
     }
 
     public Entry getEntry() {

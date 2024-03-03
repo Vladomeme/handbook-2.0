@@ -10,12 +10,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class HandbookConfig {
 
     public boolean enabled = true;
     public boolean enableScanner = false;
+    public boolean editorMode = true;
+    public boolean alwaysContinue = false;
+    public boolean monuParticles = false;
+    public boolean renderBeacon = true;
+    public boolean editMessages = true;
 
     private static final File FILE = new File(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook").toFile(), "config.json");
 
@@ -40,6 +46,7 @@ public class HandbookConfig {
         Gson gson = new Gson();
         JsonWriter writer = null;
         try {
+            if (!Files.exists(FILE.toPath())) Files.createDirectories(FILE.toPath());
             writer = gson.newJsonWriter(new FileWriter(FILE));
             writer.setIndent("    ");
             gson.toJson(gson.toJsonTree(this, HandbookConfig.class), writer);

@@ -29,6 +29,8 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		int maxWidth = 0;
 
 		for (net.handbook.main.resources.entry.Entry entry : entries) {
+			if (entry.getTitle().equals("EXCLUDE")) continue;
+
 			addEntry(new ListWidgetEntry(entry, listWidth, type));
 			int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
 			if (width > maxWidth) maxWidth = width;

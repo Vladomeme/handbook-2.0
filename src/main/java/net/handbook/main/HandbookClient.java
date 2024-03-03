@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.editor.LocationScreen;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
@@ -25,9 +26,9 @@ import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.WaypointChain;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Waypoint;
-import net.handbook.main.scanner.AdvancementWriter;
-import net.handbook.main.scanner.LocationWriter;
-import net.handbook.main.scanner.NPCWriter;
+import net.handbook.main.editor.AdvancementWriter;
+import net.handbook.main.editor.LocationWriter;
+import net.handbook.main.editor.NPCWriter;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -55,6 +56,7 @@ public class HandbookClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("handbook");
 
     public static KeyBinding openScreen;
+    public static KeyBinding addLocation;
 
     public static final LocationWriter locationWriter = LocationWriter.read();
     public static final NPCWriter npcWriter = NPCWriter.read();
@@ -115,7 +117,8 @@ public class HandbookClient implements ClientModInitializer {
                             case "trader" -> {
                                 TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
                                 LOGGER.info("Loading trader category " + category.getTitle());
-                                HandbookScreen.categories.add(category);
+                                if (category.getTitle().equals("EXCLUDE")) npcWriter.setBlacklist(category);
+                                else HandbookScreen.categories.add(category);
                             }
                             default -> {
                                 Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
@@ -142,6 +145,12 @@ public class HandbookClient implements ClientModInitializer {
                     //don't care
                 }
             }
+            if (addLocation.wasPressed()) {
+                if (!(MinecraftClient.getInstance().currentScreen instanceof LocationScreen)) addLocation();
+                while (addLocation.wasPressed()) {
+                    //don't care
+                }
+            }
             npcWriter.findEntities();
             WaypointManager.tick();
             if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
@@ -158,6 +167,7 @@ public class HandbookClient implements ClientModInitializer {
         });
 
         openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
+        addLocation = KeyBindingHelper.registerKeyBinding(new KeyBinding("Add location", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "Handbook 2.0"));
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 literal("handbook")
@@ -215,7 +225,12 @@ public class HandbookClient implements ClientModInitializer {
         MinecraftClient.getInstance().setScreen(new HandbookScreen(Text.of("")));
     }
 
+    public static void addLocation() {
+        MinecraftClient.getInstance().setScreen(new LocationScreen(Text.of("")));
+    }
+
     //returns int because it's used in command
+    @SuppressWarnings("SameReturnValue")
     public static int dumpAll() {
         npcWriter.write();
         locationWriter.write();

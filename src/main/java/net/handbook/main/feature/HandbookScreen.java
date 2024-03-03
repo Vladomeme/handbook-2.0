@@ -32,6 +32,7 @@ public class HandbookScreen extends Screen {
     public static TexturedButtonWidget setWaypoint;
     public static TexturedButtonWidget openTrades;
     public static TexturedButtonWidget shareLocation;
+    public static TexturedButtonWidget delete;
     //Trade widget
     public static TradesWidget tradesWidget;
     public static TradeListWidget tradeList;
@@ -48,6 +49,7 @@ public class HandbookScreen extends Screen {
     public static TexturedButtonWidget shareCancel;
     //Other
     public static TexturedButtonWidget clearWaypoint;
+    public static TexturedButtonWidget continueWaypoint;
 
     public static final List<BaseCategory> categories = new ArrayList<>();
     public static BaseCategory activeCategory;
@@ -78,6 +80,13 @@ public class HandbookScreen extends Screen {
                 76, 22, button -> WaypointManager.setState(false)));
         clearWaypoint.active = WaypointManager.isActive();
         clearWaypoint.visible = WaypointManager.isActive();
+
+        addDrawableChild(continueWaypoint = new TexturedButtonWidget(
+                99, 2 , 45, 11,
+                0, 0, 11, new Identifier("handbook", "textures/continue.png"),
+                45, 22, button -> WaypointManager.continueOrSkip()));
+        continueWaypoint.active = WaypointManager.isActive();
+        continueWaypoint.visible = WaypointManager.isActive();
 
         int maxWidth = 0;
 
@@ -125,6 +134,11 @@ public class HandbookScreen extends Screen {
                 40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 76, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_button.png"),
                 76, 22, button -> worldButtonsState(true)));
+
+        addDrawableChild(delete = new TexturedButtonWidget(
+                MinecraftClient.getInstance().getWindow().getScaledWidth() - 40, screenHeight - 32, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/delete.png"),
+                36, 22, button -> displayWidget.deleteEntry()));
 
         addDrawableChild(shareGlobal = new TexturedButtonWidget(
                 120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 80, 36, 11,
@@ -300,6 +314,8 @@ public class HandbookScreen extends Screen {
         shareLocation.visible = state;
         openTrades.active = state;
         openTrades.visible = state;
+        delete.active = state;
+        delete.visible = state;
     }
 
     public static void tradeButtonsState(boolean state) {

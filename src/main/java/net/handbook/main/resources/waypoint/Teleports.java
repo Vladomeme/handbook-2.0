@@ -8,7 +8,7 @@ public enum Teleports {
     Farr      (new Teleport("Farr",      "valley", 570,   100, 190,  true)),
     Highwatch (new Teleport("Highwatch", "valley", 1170,  130, -110, true)),
     Lowtide   (new Teleport("Lowtide",   "valley", 710,   73,  480,  true)),
-    Oceangate (new Teleport("Oceangate", "valley", -1630, 130, 70,   true)),
+    Oceangate (new Teleport("Oceangate", "valley", -1634, 122, 98,   true)),
     TaEldim   (new Teleport("Ta'Eldim",  "valley", 470,   190, -380, true)),
     //Valley unsafe
     White     (new Teleport("White Dungeon Lobby",       "valley", 215,  121, -155, false)),

@@ -3,7 +3,7 @@ package net.handbook.main.resources.entry;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
-import net.handbook.main.scanner.NPCWriter;
+import net.handbook.main.editor.NPCWriter;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;

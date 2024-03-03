@@ -1,4 +1,4 @@
-package net.handbook.main.scanner;
+package net.handbook.main.editor;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
@@ -27,6 +27,7 @@ public class LocationWriter {
     private transient int newCount = 0;
 
     //returns int because it's used in command
+    @SuppressWarnings("SameReturnValue")
     public int addLocation(String name) {
         ClientWorld world = MinecraftClient.getInstance().world;
         if (world == null) return 1;
@@ -37,15 +38,26 @@ public class LocationWriter {
 
         HandbookClient.LOGGER.info("ADDING NEW LOCATION: " + name);
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("New location added: " + name +
-                ". Don't forget to save it!"));
+                ". Reload resources to see it in the handbook."));
 
         newCount++;
         entries.add(new Location(name, WaypointManager.getShard(), entity.getX(), entity.getY(), entity.getZ()));
         return 1;
     }
 
+    public void deleteEntry(String title) {
+        for (Location entry : entries) {
+            if (entry.title.equals(title)) {
+                entries.remove(entry);
+                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Entry removed: " + title));
+                return;
+            }
+        }
+        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Unable to delete this entry"));
+    }
+
     //returns int because it's used in command
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "SameReturnValue"})
     public int write() {
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"locations.json\" with " + entries.size() +
                 " locations total, " + newCount + " new locations."));

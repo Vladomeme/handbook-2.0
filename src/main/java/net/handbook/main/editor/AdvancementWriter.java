@@ -1,4 +1,4 @@
-package net.handbook.main.scanner;
+package net.handbook.main.editor;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.advancement.Advancement;
@@ -14,6 +14,7 @@ import java.util.Set;
 public class AdvancementWriter {
 
     //returns int because it's used in command
+    @SuppressWarnings("SameReturnValue")
     public static int dumpAdvancements(String root) {
         if (MinecraftClient.getInstance().getNetworkHandler() == null) return 1;
 

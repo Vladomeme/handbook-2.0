@@ -1,4 +1,4 @@
-package net.handbook.main.scanner;
+package net.handbook.main.editor;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
@@ -6,6 +6,9 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.category.TraderCategory;
+import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.TraderEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.world.ClientWorld;
@@ -31,6 +34,7 @@ public class NPCWriter {
     String type = "trader";
     String title = "NPC";
     final List<NPC> entries = new ArrayList<>();
+    transient TraderCategory blacklist;
     private transient int newCount = 0;
     static int x;
     static int y;
@@ -47,6 +51,7 @@ public class NPCWriter {
     }
 
     //returns int because it's used in command
+    @SuppressWarnings("SameReturnValue")
     public int addNPC(Entity entity, boolean manual) {
         ClientWorld world = MinecraftClient.getInstance().world;
         if (world == null) return 1;
@@ -58,12 +63,20 @@ public class NPCWriter {
 
         for (NPC npc : entries) {
             if (npc.title.equals(entity.getCustomName().getString())
-                    && npc.id.equals(npc.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
+                    && npc.id.equals(NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
                 if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
                         Text.of("§cERROR: NPC is already added."));
                 return 1;
             }
         }
+        for (Entry entry : blacklist.getEntries()) {
+            if (entry.getID().equals(NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
+                if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+                        Text.of("§cERROR: NPC is already added."));
+                return 1;
+            }
+        }
+
         if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
                 Text.of("Added new NPC: " + entity.getCustomName().getString()));
         HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
@@ -74,6 +87,23 @@ public class NPCWriter {
         return 1;
     }
 
+    public void deleteEntry(String id) {
+        for (NPC entry : entries) {
+            if (entry.id.equals(id)) {
+                entries.remove(entry);
+                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Entry removed: " + id));
+                blacklist.getEntries().add(new TraderEntry(null, null, null, null, null, id));
+                try {
+                    Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + id + ".txt"));
+                } catch (IOException e) {
+                    //don't care
+                }
+                return;
+            }
+        }
+        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Unable to delete this entry"));
+    }
+
     public void addOffers(TradeOfferList offers) {
         String name;
         if (MinecraftClient.getInstance().currentScreen instanceof MerchantScreen) {
@@ -82,7 +112,7 @@ public class NPCWriter {
         else return;
 
         for (NPC npc : entries) {
-            if (npc.id.equals(npc.getID(name, x, y, z))) {
+            if (npc.id.equals(NPC.getID(name, x, y, z))) {
                 npc.setOffers(offers);
                 return;
             }
@@ -96,11 +126,13 @@ public class NPCWriter {
     }
 
     //returns int because it's used in command
+    @SuppressWarnings("SameReturnValue")
     public int write() {
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"npcs.json\" with " + entries.size() +
                 " NPCs total, " + newCount + " new NPCs."));
         Gson gson = new Gson();
         JsonWriter writer = null;
+        //ENTRIES
         try {
             File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "npcs.json");
             file.getParentFile().mkdirs();
@@ -115,6 +147,7 @@ public class NPCWriter {
         } finally {
             IOUtils.closeQuietly(writer);
         }
+        //TRADES
         (new File(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")).getParentFile().mkdirs();
         for (NPC npc : entries) {
             if (npc.offers == null || npc.offers.isEmpty()) continue;
@@ -126,6 +159,21 @@ public class NPCWriter {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+        //BLACKLIST
+        try {
+            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "npc_blacklist.json");
+            file.getParentFile().mkdirs();
+            writer = gson.newJsonWriter(new FileWriter(file));
+            writer.setIndent("    ");
+            gson.toJson(blacklist, TraderCategory.class, writer);
+            newCount = 0;
+        } catch (Exception e) {
+            HandbookClient.LOGGER.error("Couldn't save npc_blacklist.json.");
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } finally {
+            IOUtils.closeQuietly(writer);
         }
         return 1;
     }
@@ -161,5 +209,9 @@ public class NPCWriter {
             HandbookClient.LOGGER.error("Could not find npcs.json in config/handbook/. A new file will be created when dumping,");
         }
         return new NPCWriter();
+    }
+
+    public void setBlacklist(TraderCategory blacklist) {
+        this.blacklist = blacklist;
     }
 }

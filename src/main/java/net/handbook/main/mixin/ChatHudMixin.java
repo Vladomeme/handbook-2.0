@@ -25,6 +25,7 @@ public abstract class ChatHudMixin {
     @Final @Shadow
     private MinecraftClient client;
 
+    @SuppressWarnings("SameParameterValue")
     @Shadow
     protected abstract void addMessage(Text message, @Nullable MessageSignatureData signature, int ticks, @Nullable MessageIndicator indicator, boolean refresh);
 
@@ -32,7 +33,7 @@ public abstract class ChatHudMixin {
             at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V"))
     public void addMessage(ChatHud instance, Text message, MessageSignatureData signature, int ticks, MessageIndicator indicator, boolean refresh) {
-        if (HandbookConfig.INSTANCE.enabled && message.getString().contains("Position:"))
+        if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.editMessages && message.getString().contains("Position:"))
             message = injectWaypointClickEvent(message);
 
         addMessage(message, signature, client.inGameHud.getTicks(), indicator, false);

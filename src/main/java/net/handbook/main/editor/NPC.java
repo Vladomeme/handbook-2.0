@@ -1,4 +1,4 @@
-package net.handbook.main.scanner;
+package net.handbook.main.editor;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -49,7 +49,7 @@ public class NPC {
         return item;
     }
 
-    public String getID(String title, double x, double y, double z) {
+    public static String getID(String title, double x, double y, double z) {
         return title.toLowerCase().replaceAll("§.", "").replaceAll("[^A-Za-z0-9]", "")
                 + ((int) x + (int) y + (int) z);
     }

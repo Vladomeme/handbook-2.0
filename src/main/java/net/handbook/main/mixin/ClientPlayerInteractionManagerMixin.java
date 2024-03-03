@@ -1,7 +1,7 @@
 package net.handbook.main.mixin;
 
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.scanner.NPCWriter;
+import net.handbook.main.editor.NPCWriter;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;

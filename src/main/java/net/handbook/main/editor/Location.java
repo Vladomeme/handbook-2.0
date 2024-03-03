@@ -1,4 +1,4 @@
-package net.handbook.main.scanner;
+package net.handbook.main.editor;
 
 public class Location {
 
