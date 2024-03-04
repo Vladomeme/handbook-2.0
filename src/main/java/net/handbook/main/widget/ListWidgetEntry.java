@@ -46,20 +46,43 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     public void render(DrawContext context, int index, int top, int left, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
         button.setPosition(left, top);
 
+        String category;
+        if (type.equals("entry")) category = HandbookScreen.activeCategory.getTitle();
+        else category = "Categories";
+        RenderSystem.enableBlend();
         if (highlighted) {
-            RenderSystem.enableBlend();
-            context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 866822826);
-            RenderSystem.disableBlend();
+            if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+                context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 1358935040);
+            else context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 866822826);
         }
+        else {
+            if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+                context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 2030023680);
+        }
+        RenderSystem.disableBlend();
 
         if (tr.getWidth(entry.getTitle()) > 150)
             context.drawText(tr, tr.trimToWidth(entry.getTitle(), 147) + "...", left + 10, top, 16777215, false);
         else context.drawText(tr, entry.getTitle(), left + 10, top, 16777215, false);
     }
 
+    public void markEntry() {
+        String category;
+        if (type.equals("entry")) category = HandbookScreen.activeCategory.getTitle();
+        else category = "Categories";
+        if (HandbookScreen.markedEntries.getMarkedEntries(category) == null)
+            HandbookScreen.markedEntries.addCategory(category);
+        else {
+            if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+                HandbookScreen.markedEntries.getMarkedEntries(category).remove(entry.getTitle());
+            else HandbookScreen.markedEntries.getMarkedEntries(category).add(entry.getTitle());
+        }
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        this.button.mouseClicked(mouseX, mouseY, button);
+        if (button == 1) markEntry();
+        else this.button.mouseClicked(mouseX, mouseY, button);
         return super.mouseClicked(mouseX, mouseY, button);
     }
 

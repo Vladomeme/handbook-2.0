@@ -120,6 +120,7 @@ public class HandbookClient implements ClientModInitializer {
                                 if (category.getTitle().equals("EXCLUDE")) npcWriter.setBlacklist(category);
                                 else HandbookScreen.categories.add(category);
                             }
+                            case "mark" -> LOGGER.info("Loading marked entries data.");
                             default -> {
                                 Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
                                 LOGGER.info("Loading normal category " + category.getTitle());
@@ -234,7 +235,8 @@ public class HandbookClient implements ClientModInitializer {
     public static int dumpAll() {
         npcWriter.write();
         locationWriter.write();
-        LOGGER.info("Saved all new handbook entries.");
+        HandbookScreen.markedEntries.write();
+        LOGGER.info("Saved all handbook entries.");
         return 1;
     }
 

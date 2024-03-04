@@ -2,6 +2,7 @@ package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.resources.category.BaseCategory;
+import net.handbook.main.resources.category.MarkCategory;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.widget.*;
 import net.minecraft.client.MinecraftClient;
@@ -52,6 +53,7 @@ public class HandbookScreen extends Screen {
     public static TexturedButtonWidget continueWaypoint;
 
     public static final List<BaseCategory> categories = new ArrayList<>();
+    public static MarkCategory markedEntries = MarkCategory.read();
     public static BaseCategory activeCategory;
     public static ListWidgetEntry selectedEntry;
 
@@ -73,6 +75,7 @@ public class HandbookScreen extends Screen {
             MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
             return;
         }
+        activeCategory = categories.get(0);
 
         addDrawableChild(clearWaypoint = new TexturedButtonWidget(
                 20, 2 , 76, 11,
@@ -103,10 +106,11 @@ public class HandbookScreen extends Screen {
         categoriesWidget.setLeftPos(20);
         categoriesWidget.setEntries(categories, "category");
         categoriesWidget.children().get(0).updateHighlight(true);
+        activeCategory = (BaseCategory) categoriesWidget.children().get(0).entry;
 
         maxWidth = 0;
 
-        for (Entry entry : categories.get(0).getEntries()) {
+        for (Entry entry : ((BaseCategory) categoriesWidget.children().get(0).entry).getEntries()) {
             int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -119,8 +123,7 @@ public class HandbookScreen extends Screen {
         addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 6, screenHeight - 70, 31, screenHeight - 10));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(categories.get(0).getEntries(), "entry");
-        activeCategory = categories.get(0);
+        optionsWidget.setEntries(((BaseCategory) categoriesWidget.children().get(0).entry).getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
