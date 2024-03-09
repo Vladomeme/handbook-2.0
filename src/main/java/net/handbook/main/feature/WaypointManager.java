@@ -471,6 +471,10 @@ public class WaypointManager {
     }
 
     public static MutableText buildClickableMessage(String text, String command, String hoverText) {
+        if (hoverText.isEmpty())
+            return Text.literal(text)
+                .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
         return Text.literal(text)
                 .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))

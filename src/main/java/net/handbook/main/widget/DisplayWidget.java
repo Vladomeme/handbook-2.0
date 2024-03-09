@@ -105,12 +105,17 @@ public class DisplayWidget extends ClickableWidget {
         context.drawText(tr, entry.getTitle(), 5, 0, 16777215, true);
         context.getMatrices().pop();
 
-        if (entry.getShard() != null)
-            context.drawText(tr, "Shard: " + entry.getShard(), 10, 20, 16777215, false);
+        int y = 20;
+        if (entry.getShard() != null) {
+            context.drawText(tr, "Shard: " + entry.getShard(), 10, y, 16777215, false);
+            y += 10;
+        }
         int[] coords = entry.getPosition();
-        if (coords != null)
-            context.drawText(tr, "Position: " + coords[0] + ", " + coords[1] + ", " + coords[2], 10, 30, 16777215, false);
-        int y = 43;
+        if (coords != null) {
+            context.drawText(tr, "Position: " + coords[0] + ", " + coords[1] + ", " + coords[2], 10, y, 16777215, false);
+            y += 10;
+        }
+        y += 3;
 
         for (int i = 0; i < description.length ; i++) {
             context.drawText(tr, description[i], 10, y + i * 10, 16777215, false);

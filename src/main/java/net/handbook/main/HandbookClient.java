@@ -18,7 +18,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
-import net.handbook.main.editor.LocationScreen;
+import net.handbook.main.editor.*;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
@@ -26,9 +26,6 @@ import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.WaypointChain;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Waypoint;
-import net.handbook.main.editor.AdvancementWriter;
-import net.handbook.main.editor.LocationWriter;
-import net.handbook.main.editor.NPCWriter;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -109,6 +106,11 @@ public class HandbookClient implements ClientModInitializer {
                                 LOGGER.info("Loading positioned category " + category.getTitle());
                                 HandbookScreen.categories.add(category);
                             }
+                            case "area" -> {
+                                AreaCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), AreaCategory.class);
+                                LOGGER.info("Loading area category " + category.getTitle());
+                                HandbookScreen.categories.add(category);
+                            }
                             case "waypoint" -> {
                                 WaypointCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointCategory.class);
                                 LOGGER.info("Loading waypoint category " + category.getTitle());
@@ -154,6 +156,7 @@ public class HandbookClient implements ClientModInitializer {
             }
             npcWriter.findEntities();
             WaypointManager.tick();
+            if (AreaSelector.isActive()) AreaSelector.emitParticles();
             if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
             if (MinecraftClient.getInstance().world != null && WaypointManager.shouldRestore())
                 WaypointManager.sendRestoreMessage();
@@ -201,6 +204,18 @@ public class HandbookClient implements ClientModInitializer {
                                         WaypointManager.onWaypointReached(MinecraftClient.getInstance().player, MinecraftClient.getInstance().world)))
                                 .then(literal("path").executes(ctx -> WaypointManager.addPathToChain()))
                                 .then(literal("info").executes(ctx -> WaypointManager.printInfo())))
+                        .then(literal("area")
+                                .then(literal("select").executes(ctx -> AreaSelector.init()))
+                                .then(literal("finish").executes(ctx -> AreaSelector.finish()))
+                                .then(literal("move")
+                                        .then(argument("Point", IntegerArgumentType.integer())
+                                                .executes(ctx -> AreaSelector.movePointToPlayer(IntegerArgumentType.getInteger(ctx, "Point")))
+                                                .then(argument("Dimension", IntegerArgumentType.integer())
+                                                        .then(argument("Distance", IntegerArgumentType.integer()).executes(ctx ->
+                                                                AreaSelector.movePoint(
+                                                                        IntegerArgumentType.getInteger(ctx, "Point"),
+                                                                        IntegerArgumentType.getInteger(ctx, "Dimension"),
+                                                                        IntegerArgumentType.getInteger(ctx, "Distance"))))))))
         ));
 
         LOGGER.info("Handbook 2.0 loaded!");

@@ -1,6 +1,8 @@
 package net.handbook.main.mixin;
 
+import net.handbook.main.MixinMethods;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.editor.AreaSelector;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.BaseCategory;
@@ -8,6 +10,7 @@ import net.handbook.main.resources.category.PositionedCategory;
 import net.handbook.main.resources.entry.PositionedEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.text.*;
@@ -19,20 +22,37 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(ChatHud.class)
-public abstract class ChatHudMixin {
+import java.util.ArrayList;
+import java.util.List;
 
-    @Final @Shadow
+@Mixin(ChatHud.class)
+public abstract class ChatHudMixin implements MixinMethods {
+
+    @Shadow @Final
     private MinecraftClient client;
+    @Shadow @Final
+    private List<ChatHudLine> messages;
+    @Shadow @Final
+    private List<ChatHudLine.Visible> visibleMessages;
+
+    @Unique
+    private static final List<Text> blockedMessages = new ArrayList<>();
 
     @SuppressWarnings("SameParameterValue")
     @Shadow
     protected abstract void addMessage(Text message, @Nullable MessageSignatureData signature, int ticks, @Nullable MessageIndicator indicator, boolean refresh);
 
+    @Shadow
+    public abstract void addMessage(Text message);
+
     @Redirect(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
             at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V"))
     public void addMessage(ChatHud instance, Text message, MessageSignatureData signature, int ticks, MessageIndicator indicator, boolean refresh) {
+        if (AreaSelector.isActive()) {
+            blockedMessages.add(message);
+            return;
+        }
         if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.editMessages && message.getString().contains("Position:"))
             message = injectWaypointClickEvent(message);
 
@@ -61,9 +81,8 @@ public abstract class ChatHudMixin {
 
         if (!message.getSiblings().isEmpty()) {
             modifiedText = Text.literal(message.asTruncatedString(getTrunkLength(message.copy()))).setStyle(message.getStyle());
-            for (int i = 0; i < message.getSiblings().size() - 1; i++) {
+            for (int i = 0; i < message.getSiblings().size() - 1; i++)
                 modifiedText.append(message.getSiblings().get(i));
-            }
         }
         modifiedText.append(Text.literal(prePosition).setStyle(text.getStyle()));
         modifiedText.append(WaypointManager.buildClickableMessage(position,
@@ -91,11 +110,26 @@ public abstract class ChatHudMixin {
     }
 
     @Unique
+    public void handbook$unblockChat() {
+        handbook$removeLastMessages(11);
+        for (Text message : blockedMessages)
+            addMessage(message);
+        blockedMessages.clear();
+    }
+
+    @Unique
+    public void handbook$removeLastMessages(int amount) {
+        for (int i = 0; i < amount; i++) {
+            this.messages.remove(0);
+            this.visibleMessages.remove(0);
+        }
+    }
+
+    @Unique
     public int getTrunkLength(MutableText text) {
         int length = 0;
-        for (Text section : text.getSiblings()) {
+        for (Text section : text.getSiblings())
             length += section.getString().length();
-        }
         return text.getString().length() - length;
     }
 }

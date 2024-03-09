@@ -48,6 +48,10 @@ public class Entry {
         return null;
     }
 
+    public int[] getArea() {
+        return null;
+    }
+
     public TradeOfferList getOffers() {
         return null;
     }
