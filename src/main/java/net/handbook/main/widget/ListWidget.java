@@ -2,6 +2,7 @@ package net.handbook.main.widget;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ElementListWidget;
@@ -11,6 +12,8 @@ import java.util.List;
 
 @Environment(EnvType.CLIENT)
 public class ListWidget extends ElementListWidget<ListWidgetEntry> {
+
+	private final HandbookScreen screen = HandbookClient.handbookScreen;
 
 	public int listWidth;
 
@@ -34,18 +37,18 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		List<ListWidgetEntry> normal = new ArrayList<>();
 
 		String category;
-		if (type.equals("entry")) category = HandbookScreen.activeCategory.getTitle();
+		if (type.equals("entry")) category = screen.activeCategory.getTitle();
 		else category = "Categories";
 
 		for (net.handbook.main.resources.entry.Entry entry : entries) {
 			if (entry.getTitle().equals("EXCLUDE")) continue;
 
-			if (HandbookScreen.markedEntries.getMarkedEntries(category) == null) {
-				HandbookScreen.markedEntries.addCategory(category);
+			if (screen.markedEntries.getMarkedEntries(category) == null) {
+				screen.markedEntries.addCategory(category);
 				normal.add(new ListWidgetEntry(entry, listWidth, type));
 			}
 			else {
-				if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+				if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
 					favourite.add(new ListWidgetEntry(entry, listWidth, type));
 				else normal.add(new ListWidgetEntry(entry, listWidth, type));
 			}

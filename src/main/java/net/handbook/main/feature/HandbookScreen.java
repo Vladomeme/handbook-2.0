@@ -1,6 +1,7 @@
 package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.handbook.main.HandbookClient;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.category.MarkCategory;
 import net.handbook.main.resources.entry.Entry;
@@ -11,6 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -21,61 +23,76 @@ import java.util.List;
 
 public class HandbookScreen extends Screen {
 
-    public static final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+    public static final HandbookScreen INSTANCE = new HandbookScreen(Text.of(""));
+
+    public MinecraftClient client;
+    public TextRenderer tr;
 
     //First column
-    public static ListWidget categoriesWidget;
+    public ListWidget categoriesWidget;
+    public TexturedButtonWidget openTradesScreen;
     //Second column
-    public static ListWidget optionsWidget;
-    public static TextFieldWidget searchBox;
+    public ListWidget optionsWidget;
+    public TextFieldWidget searchBox;
     //Display widget
-    public static DisplayWidget displayWidget;
-    public static TexturedButtonWidget setWaypoint;
-    public static TexturedButtonWidget openTrades;
-    public static TexturedButtonWidget shareLocation;
-    public static TexturedButtonWidget delete;
+    public DisplayWidget displayWidget;
+    public TexturedButtonWidget setWaypoint;
+    public TexturedButtonWidget openTrades;
+    public TexturedButtonWidget shareLocation;
+    public TexturedButtonWidget delete;
+    public TexturedButtonWidget resetTrades;
     //Trade widget
-    public static TradesWidget tradesWidget;
-    public static TradeListWidget tradeList;
-    public static TexturedButtonWidget back;
-    public static TexturedButtonWidget shareCost;
-    public static TexturedButtonWidget shareTrader;
-    public static TexturedButtonWidget shareFull;
+    public TradesWidget tradesWidget;
+    public TradeListWidget tradeList;
+    public TexturedButtonWidget back;
+    public TexturedButtonWidget shareCost;
+    public TexturedButtonWidget shareTrader;
+    public TexturedButtonWidget shareFull;
     //Chat selection
-    public static TexturedButtonWidget shareGlobal;
-    public static TexturedButtonWidget shareLocal;
-    public static TexturedButtonWidget shareWorld;
-    public static TexturedButtonWidget shareLFG;
-    public static TexturedButtonWidget shareReply;
-    public static TexturedButtonWidget shareCancel;
+    public TexturedButtonWidget shareGlobal;
+    public TexturedButtonWidget shareLocal;
+    public TexturedButtonWidget shareWorld;
+    public TexturedButtonWidget shareLFG;
+    public TexturedButtonWidget shareReply;
+    public TexturedButtonWidget shareCancel;
     //Other
-    public static TexturedButtonWidget clearWaypoint;
-    public static TexturedButtonWidget continueWaypoint;
+    public TexturedButtonWidget clearWaypoint;
+    public TexturedButtonWidget continueWaypoint;
 
-    public static final List<BaseCategory> categories = new ArrayList<>();
-    public static MarkCategory markedEntries = MarkCategory.read();
-    public static BaseCategory activeCategory;
-    public static ListWidgetEntry selectedEntry;
+    public final List<BaseCategory> categories = new ArrayList<>();
+    public final MarkCategory markedEntries = MarkCategory.read();
+    public BaseCategory activeCategory;
+    public ListWidgetEntry selectedEntry;
 
-    static int line1x;
-    static int line2x;
-    private static int lastKey;
-    private static String lastFilter = "";
+    int line1x;
+    int line2x;
+    private int lastKey;
+    private String lastFilter = "";
 
-    public HandbookScreen(Text title) {
+    private HandbookScreen(Text title) {
         super(title);
     }
 
     @Override
     protected void init() {
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        client = MinecraftClient.getInstance();
+        tr = client.textRenderer;
 
         if (categories.isEmpty()) {
             close();
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
+            client.inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
             return;
         }
         activeCategory = categories.get(0);
+
+        addElements();
+
+        super.init();
+    }
+
+    private void addElements() {
+        int screenHeight = client.getWindow().getScaledHeight();
+        int screenWidth = client.getWindow().getScaledWidth();
 
         addDrawableChild(clearWaypoint = new TexturedButtonWidget(
                 20, 2 , 76, 11,
@@ -94,7 +111,7 @@ public class HandbookScreen extends Screen {
         int maxWidth = 0;
 
         for (BaseCategory category : categories) {
-            int width = MinecraftClient.getInstance().textRenderer.getWidth(category.getTitle());
+            int width = tr.getWidth(category.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
 
@@ -102,7 +119,7 @@ public class HandbookScreen extends Screen {
         line1x = maxWidth + 11;
 
         addDrawableChild(categoriesWidget = new ListWidget(
-                maxWidth, screenHeight - 40, 31, screenHeight - 10));
+                maxWidth, screenHeight - 70, 30, screenHeight - 40));
         categoriesWidget.setLeftPos(20);
         categoriesWidget.setEntries(categories, "category");
         categoriesWidget.children().get(0).updateHighlight(true);
@@ -110,111 +127,128 @@ public class HandbookScreen extends Screen {
 
         maxWidth = 0;
 
+        addDrawableChild(openTradesScreen = new TexturedButtonWidget(
+                line1x / 2 - 37, screenHeight - 30, 75, 11,
+                0, 0, 11, new Identifier("handbook", "textures/trade_search.png"),
+                75, 22, button -> client.setScreen(HandbookClient.tradeScreen)));
+
         for (Entry entry : ((BaseCategory) categoriesWidget.children().get(0).entry).getEntries()) {
-            int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
+            int width = tr.getWidth(entry.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
         maxWidth = Math.min(maxWidth, 150);
         maxWidth = maxWidth + 10;
 
-        addDrawableChild(searchBox = new TextFieldWidget(
-                tr, 25 + categoriesWidget.listWidth, 16, maxWidth, 12, Text.of("")));
-
         addDrawableChild(optionsWidget = new ListWidget(
-                maxWidth + 6, screenHeight - 70, 31, screenHeight - 10));
+                maxWidth + 6, screenHeight - 60, 30, screenHeight - 30));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
         optionsWidget.setEntries(((BaseCategory) categoriesWidget.children().get(0).entry).getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
 
+        addDrawableChild(searchBox = new TextFieldWidget(
+                tr, line1x + 1, 16, line2x - line1x - 1, 12, Text.of("")));
+        searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
+
         addDrawableChild(setWaypoint = new TexturedButtonWidget(
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 44, 65, 11,
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 65, 11,
                 0, 0, 11, new Identifier("handbook", "textures/waypoint_button.png"),
                 65, 22, button -> displayWidget.setWaypoint()));
 
         addDrawableChild(shareLocation = new TexturedButtonWidget(
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 76, 11,
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 76, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_button.png"),
                 76, 22, button -> worldButtonsState(true)));
 
         addDrawableChild(delete = new TexturedButtonWidget(
-                MinecraftClient.getInstance().getWindow().getScaledWidth() - 40, screenHeight - 32, 36, 11,
+                screenWidth - 40, screenHeight - 30, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/delete.png"),
                 36, 22, button -> displayWidget.deleteEntry()));
 
+        addDrawableChild(resetTrades = new TexturedButtonWidget(
+                screenWidth - 73, screenHeight - 42, 69, 11,
+                0, 0, 11, new Identifier("handbook", "textures/reset_trades.png"),
+                69, 22, button -> {
+            resetTrades.active = false;
+            resetTrades.visible = false;
+            openTrades.active = false;
+            openTrades.visible = false;
+            displayWidget.deleteTrade();
+        }));
+
         addDrawableChild(shareGlobal = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 80, 36, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 90, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_global.png"),
                 36, 22, button -> {
-                    if (displayWidget.visible) displayWidget.shareLocation("g");
-                    else tradesWidget.share("g");
-                }));
+            if (displayWidget.visible) displayWidget.shareLocation("g");
+            else tradesWidget.share("g");
+        }));
 
         addDrawableChild(shareLocal = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 68, 36, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 78, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_local.png"),
                 36, 22, button -> {
-                    if (displayWidget.visible) displayWidget.shareLocation("l");
-                    else tradesWidget.share("l");
-                }));
+            if (displayWidget.visible) displayWidget.shareLocation("l");
+            else tradesWidget.share("l");
+        }));
 
         addDrawableChild(shareWorld = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 56, 36, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 66, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_world.png"),
                 36, 22, button -> {
-                    if (displayWidget.visible) displayWidget.shareLocation("wc");
-                    else tradesWidget.share("wc");
-                }));
+            if (displayWidget.visible) displayWidget.shareLocation("wc");
+            else tradesWidget.share("wc");
+        }));
 
         addDrawableChild(shareLFG = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 44, 36, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_lfg.png"),
                 36, 22, button -> {
-                    if (displayWidget.visible) displayWidget.shareLocation("lfg");
-                    else tradesWidget.share("lfg");
-                }));
+            if (displayWidget.visible) displayWidget.shareLocation("lfg");
+            else tradesWidget.share("lfg");
+        }));
 
         addDrawableChild(shareReply = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 36, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_reply.png"),
                 36, 22, button -> {
-                    if (displayWidget.visible) displayWidget.shareLocation("r");
-                    else tradesWidget.share("r");
-                }));
+            if (displayWidget.visible) displayWidget.shareLocation("r");
+            else tradesWidget.share("r");
+        }));
 
         addDrawableChild(shareCancel = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 36, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 36, 11,
                 0, 0, 11, new Identifier("handbook", "textures/location_cancel.png"),
                 36, 22, button -> {
-                    if (displayWidget.visible) worldButtonsState(false);
-                    else tradesWidget.cancelSharing();
-                }));
+            if (displayWidget.visible) worldButtonsState(false);
+            else tradesWidget.cancelSharing();
+        }));
 
         addDrawableChild(openTrades = new TexturedButtonWidget(
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 65, 11,
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 65, 11,
                 0, 0, 11, new Identifier("handbook", "textures/trades_button.png"),
                 65, 22, button -> openTrades(displayWidget.getEntry().getOffers(), displayWidget.getEntry().getTitle())));
 
         addDrawableChild(back = new TexturedButtonWidget(
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 26, 11,
+                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 26, 11,
                 0, 0, 11, new Identifier("handbook", "textures/back.png"),
                 26, 22, button -> openDisplay()));
         back.active = false;
         back.visible = false;
 
         addDrawableChild(shareCost = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 44, 39, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 39, 11,
                 0, 0, 11, new Identifier("handbook", "textures/trade_cost.png"),
                 39, 22, button -> tradesWidget.selectMode(TradesWidget.Mode.COST)));
 
         addDrawableChild(shareTrader = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 32, 39, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 39, 11,
                 0, 0, 11, new Identifier("handbook", "textures/trade_trader.png"),
                 39, 22, button -> tradesWidget.selectMode(TradesWidget.Mode.TRADER)));
 
         addDrawableChild(shareFull = new TexturedButtonWidget(
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20, 39, 11,
+                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 39, 11,
                 0, 0, 11, new Identifier("handbook", "textures/trade_full.png"),
                 39, 22, button -> tradesWidget.selectMode(TradesWidget.Mode.FULL)));
 
@@ -230,10 +264,7 @@ public class HandbookScreen extends Screen {
         tradesWidget.visible = false;
         tradesWidget.active = false;
 
-        addDrawableChild(tradeList = new TradeListWidget(130, screenHeight - 100, 50, screenHeight - 50));
-        tradeList.setLeftPos(10000);
-
-        super.init();
+        addDrawableChild(tradeList = new TradeListWidget(10000, 130, screenHeight - 100, 50, screenHeight - 50));
     }
 
     @Override
@@ -242,34 +273,29 @@ public class HandbookScreen extends Screen {
 
         RenderSystem.enableBlend();
         context.fill(0, 0, width, 15, 0, 548055807);
-        context.getMatrices().push();
-        context.getMatrices().scale(1.5f, 1.5f, 1);
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.scale(1.5f, 1.5f, 1);
         context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1, -1, false);
-        context.getMatrices().pop();
-        RenderSystem.disableBlend();
+        matrices.pop();
 
-        if (searchBox.getText().isEmpty() && !searchBox.isFocused()) {
-            context.getMatrices().push();
-            context.getMatrices().translate(0, 0, 1000);
-            context.drawText(tr, Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
-                    searchBox.getX() + 3, searchBox.getY() + 3, -10197916, false);
-            context.getMatrices().pop();
-        }
+        if (optionsWidget.children().isEmpty())
+            context.drawText(tr, Text.of("Nothing found :("),
+                    line1x + (line2x - line1x) / 2 - tr.getWidth("Nothing found :(") / 2, 35, -1, false);
 
         context.fill(line1x, 15, line1x + 1, height - 10, 100, -1);
         context.fill(line2x, 15, line2x + 1, height - 10, 100, -1);
 
-        RenderSystem.enableBlend();
         super.render(context, mouseX, mouseY, delta);
         RenderSystem.disableBlend();
     }
 
-    public static void openTrades(TradeOfferList trades, String name) {
+    public void openTrades(TradeOfferList trades, String name) {
         tradesWidget.visible = true;
         tradesWidget.setName(name);
-        tradeList.setEntries(trades);
         tradeList.setLeftPos(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        tradeList.setEntries(trades, displayWidget.getEntry().getID());
 
         displayWidget.visible = false;
         back.active = true;
@@ -279,7 +305,7 @@ public class HandbookScreen extends Screen {
         worldButtonsState(false);
     }
 
-    public static void openDisplay() {
+    public void openDisplay() {
         tradesWidget.visible = false;
         tradeList.setLeftPos(10000);
 
@@ -291,11 +317,11 @@ public class HandbookScreen extends Screen {
         worldButtonsState(false);
         tradeButtonsState(false);
         moveWorldButtons(120 + categoriesWidget.listWidth + optionsWidget.listWidth,
-                MinecraftClient.getInstance().getWindow().getScaledHeight() - 20);
+                client.getWindow().getScaledHeight() - 30);
         displayWidget.setEntry(displayWidget.getEntry());
     }
 
-    public static void worldButtonsState(boolean state) {
+    public void worldButtonsState(boolean state) {
         shareGlobal.active = state;
         shareGlobal.visible = state;
         shareLocal.active = state;
@@ -310,7 +336,7 @@ public class HandbookScreen extends Screen {
         shareCancel.visible = state;
     }
 
-    public static void displayButtonsState(boolean state) {
+    public void displayButtonsState(boolean state) {
         setWaypoint.active = state;
         setWaypoint.visible = state;
         shareLocation.active = state;
@@ -319,9 +345,11 @@ public class HandbookScreen extends Screen {
         openTrades.visible = state;
         delete.active = state;
         delete.visible = state;
+        resetTrades.active = state;
+        resetTrades.visible = state;
     }
 
-    public static void tradeButtonsState(boolean state) {
+    public void tradeButtonsState(boolean state) {
         shareCost.active = state;
         shareCost.visible = state;
         shareTrader.active = state;
@@ -330,7 +358,7 @@ public class HandbookScreen extends Screen {
         shareFull.visible = state;
     }
 
-    public static void moveWorldButtons(int x, int y) {
+    public void moveWorldButtons(int x, int y) {
         shareGlobal.setPosition(x, y - 60);
         shareLocal.setPosition(x, y - 48);
         shareWorld.setPosition(x, y - 36);
@@ -339,30 +367,30 @@ public class HandbookScreen extends Screen {
         shareCancel.setPosition(x, y);
     }
 
-    public static void moveTradeButtons(int x, int y) {
+    public void moveTradeButtons(int x, int y) {
         shareCost.setPosition(x, y - 24);
         shareTrader.setPosition(x, y - 12);
         shareFull.setPosition(x, y);
     }
 
-    public static void setEntries(BaseCategory category) {
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
-        int screenWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
+    public void setEntries(BaseCategory category) {
+        int screenHeight = client.getWindow().getScaledHeight();
+        int screenWidth = client.getWindow().getScaledWidth();
         int maxWidth = 0;
 
         for (Entry entry : category.getEntries()) {
-            int width = MinecraftClient.getInstance().textRenderer.getWidth(entry.getTitle());
+            int width = tr.getWidth(entry.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
         maxWidth = Math.min(maxWidth, 150);
         maxWidth = maxWidth + 10;
 
-        searchBox.setWidth(maxWidth);
-        optionsWidget.updateSize(maxWidth + 6, screenHeight - 70, 31, screenHeight - 10);
+        optionsWidget.updateSize(maxWidth + 6, screenHeight - 60, 30, screenHeight - 30);
         optionsWidget.listWidth = maxWidth + 6;
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
         optionsWidget.setEntries(category.getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
+        searchBox.setWidth(line2x - line1x - 1);
 
         maxWidth = screenWidth - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
 
@@ -378,14 +406,14 @@ public class HandbookScreen extends Screen {
         openTrades.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         back.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
 
-        moveWorldButtons(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 20);
+        moveWorldButtons(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30);
         worldButtonsState(false);
 
         activeCategory = category;
         searchBox.setText("");
     }
 
-    public static void filterEntries() {
+    public void filterEntries() {
         if (!searchBox.getText().equals(lastFilter)) {
             if (searchBox.getText().isEmpty()) {
                 optionsWidget.setEntries(activeCategory.getEntries(), "entry");
@@ -402,7 +430,6 @@ public class HandbookScreen extends Screen {
         lastFilter = searchBox.getText();
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         lastKey = keyCode;
@@ -416,11 +443,6 @@ public class HandbookScreen extends Screen {
         return true;
     }
 
-    @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        return super.keyReleased(keyCode, scanCode, modifiers);
-    }
-
     @SuppressWarnings("ConstantConditions")
     @Override
     public void close() {
@@ -429,20 +451,5 @@ public class HandbookScreen extends Screen {
             client.player.closeScreen();
             super.close();
         }
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        return super.mouseScrolled(mouseX, mouseY, amount);
-    }
-
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 }

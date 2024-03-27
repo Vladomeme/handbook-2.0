@@ -1,6 +1,6 @@
 package net.handbook.main.resources.category;
 
-import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.HandbookClient;
 import net.handbook.main.resources.entry.Entry;
 
 import java.util.List;
@@ -18,8 +18,8 @@ public class BaseCategory extends Entry {
 
     @Override
     public void mouseClicked() {
-        HandbookScreen.setEntries(this);
-        HandbookScreen.activeCategory = this;
+        HandbookClient.handbookScreen.setEntries(this);
+        HandbookClient.handbookScreen.activeCategory = this;
     }
 
     public String getType() {

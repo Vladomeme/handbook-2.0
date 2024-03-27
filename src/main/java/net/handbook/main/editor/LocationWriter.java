@@ -21,6 +21,8 @@ import java.util.List;
 
 public class LocationWriter {
 
+    public static final LocationWriter INSTANCE = read();
+
     String type = "positioned";
     String title = "Locations";
     final List<Location> entries = new ArrayList<>();

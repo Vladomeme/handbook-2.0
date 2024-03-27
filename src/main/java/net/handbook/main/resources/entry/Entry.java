@@ -1,6 +1,6 @@
 package net.handbook.main.resources.entry;
 
-import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.HandbookClient;
 import net.minecraft.village.TradeOfferList;
 
 public class Entry {
@@ -16,8 +16,8 @@ public class Entry {
     }
 
     public void mouseClicked() {
-        HandbookScreen.displayWidget.setEntry(this);
-        HandbookScreen.openDisplay();
+        HandbookClient.handbookScreen.displayWidget.setEntry(this);
+        HandbookClient.handbookScreen.openDisplay();
     }
 
     public String getTitle() {

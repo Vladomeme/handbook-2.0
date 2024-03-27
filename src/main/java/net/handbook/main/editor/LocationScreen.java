@@ -2,7 +2,6 @@ package net.handbook.main.editor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
-import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
@@ -11,6 +10,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -36,14 +36,9 @@ public class LocationScreen extends Screen {
 
     @Override
     protected void init() {
-        for (BaseCategory category : HandbookScreen.categories) {
+        for (BaseCategory category : HandbookClient.handbookScreen.categories) {
             if (category.getTitle().equals("Locations")) {
-                addDrawableChild(textField = new TextFieldWidget(tr, centerX - 65, centerY - 15, 130, 12, Text.of("")));
-                textField.setPlaceholder(Text.of("Name").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
-
-                addDrawableChild(submitButton = new TexturedButtonWidget(centerX + 30, centerY + 6, 36, 11,
-                    0, 0, 11, new Identifier("handbook", "textures/save.png"),
-                    36, 22, button -> save()));
+                addElements();
 
                 super.init();
                 return;
@@ -53,18 +48,28 @@ public class LocationScreen extends Screen {
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("\"Locations\" category not found!"));
     }
 
+    private void addElements() {
+        addDrawableChild(textField = new TextFieldWidget(tr, centerX - 65, centerY - 15, 130, 12, Text.of("")));
+        textField.setPlaceholder(Text.of("Name").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
+
+        addDrawableChild(submitButton = new TexturedButtonWidget(centerX + 30, centerY + 6, 36, 11,
+                0, 0, 11, new Identifier("handbook", "textures/save.png"),
+                36, 22, button -> save()));
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (client.player == null) return;
         renderBackground(context);
 
+        MatrixStack matrices = context.getMatrices();
         RenderSystem.enableBlend();
         context.fill(0, 0, width, 15, 0, 548055807);
-        context.getMatrices().push();
-        context.getMatrices().scale(1.5f, 1.5f, 1);
+        matrices.push();
+        matrices.scale(1.5f, 1.5f, 1);
         context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1, -1, false);
-        context.getMatrices().pop();
+        matrices.pop();
 
         context.fill(centerX - 75, centerY - 50, centerX + 75, centerY + 25, 1087624147);
         context.drawBorder(centerX - 76, centerY - 51, 152, 77, -2894893);
@@ -83,7 +88,7 @@ public class LocationScreen extends Screen {
             close();
             return;
         }
-        for (BaseCategory category : HandbookScreen.categories) {
+        for (BaseCategory category : HandbookClient.handbookScreen.categories) {
             if (!category.getTitle().equals("Locations")) continue;
             for (Entry entry : category.getEntries()) {
                 if (entry.getTitle().equals(textField.getText())) {

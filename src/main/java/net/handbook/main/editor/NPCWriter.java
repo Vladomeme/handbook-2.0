@@ -31,6 +31,8 @@ import java.util.zip.InflaterOutputStream;
 @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
 public class NPCWriter {
 
+    public static final NPCWriter INSTANCE = read();
+
     String type = "trader";
     String title = "NPC";
     final List<NPC> entries = new ArrayList<>();
@@ -161,6 +163,7 @@ public class NPCWriter {
             }
         }
         //BLACKLIST
+        if (blacklist == null) return 1;
         try {
             File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "npc_blacklist.json");
             file.getParentFile().mkdirs();

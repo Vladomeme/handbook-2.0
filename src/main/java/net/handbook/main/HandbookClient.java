@@ -20,9 +20,11 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.editor.*;
 import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.feature.TradeScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
 import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.TraderEntry;
 import net.handbook.main.resources.entry.WaypointChain;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Waypoint;
@@ -33,6 +35,7 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.village.TradeOfferList;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,16 +54,18 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 public class HandbookClient implements ClientModInitializer {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("handbook");
+    private static final MinecraftClient client = MinecraftClient.getInstance();
 
     public static KeyBinding openScreen;
     public static KeyBinding addLocation;
 
-    public static final LocationWriter locationWriter = LocationWriter.read();
-    public static final NPCWriter npcWriter = NPCWriter.read();
+    public static final HandbookScreen handbookScreen = HandbookScreen.INSTANCE;
+    public static final TradeScreen tradeScreen = TradeScreen.INSTANCE;
+    public static final LocationWriter locationWriter = LocationWriter.INSTANCE;
+    public static final NPCWriter npcWriter = NPCWriter.INSTANCE;
 
     static boolean firstLoad = false;
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public void onInitializeClient() {
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
@@ -72,93 +77,115 @@ public class HandbookClient implements ClientModInitializer {
 
             @Override
             public void reload(ResourceManager manager) {
-                Gson gson = new Gson();
-
-                HandbookScreen.categories.clear();
-                if (firstLoad) dumpAll();
-                firstLoad = true;
-
-                try {
-                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")))
-                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
-                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures")))
-                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures"));
-                    if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints")))
-                        Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints"));
-                } catch (IOException e) {
-                    LOGGER.error("Failed to create handbook directories.");
-                    return;
-                }
-
-                File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
-                if (files == null) {
-                    LOGGER.error("No handbook categories found!");
-                    return;
-                }
-
-                for (File file : files) {
-                    if (!file.getName().endsWith("json") || file.getName().equals("config.json")) continue;
-                    try {
-                        String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
-                        switch (type) {
-                            case "positioned" -> {
-                                PositionedCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), PositionedCategory.class);
-                                LOGGER.info("Loading positioned category " + category.getTitle());
-                                HandbookScreen.categories.add(category);
-                            }
-                            case "area" -> {
-                                AreaCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), AreaCategory.class);
-                                LOGGER.info("Loading area category " + category.getTitle());
-                                HandbookScreen.categories.add(category);
-                            }
-                            case "waypoint" -> {
-                                WaypointCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointCategory.class);
-                                LOGGER.info("Loading waypoint category " + category.getTitle());
-                                HandbookScreen.categories.add(mergeWaypointEntries(category));
-                            }
-                            case "trader" -> {
-                                TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
-                                LOGGER.info("Loading trader category " + category.getTitle());
-                                if (category.getTitle().equals("EXCLUDE")) npcWriter.setBlacklist(category);
-                                else HandbookScreen.categories.add(category);
-                            }
-                            case "mark" -> LOGGER.info("Loading marked entries data.");
-                            default -> {
-                                Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
-                                LOGGER.info("Loading normal category " + category.getTitle());
-                                HandbookScreen.categories.add(category);
-                            }
-                        }
-                    } catch (IOException | JsonSyntaxException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                HandbookScreen.categories.sort(Comparator.comparing(BaseCategory::getTitle));
-                for (BaseCategory category : HandbookScreen.categories) {
-                    category.getEntries().sort(Comparator.comparing(Entry::getClearTitle));
-                }
-                LOGGER.info("Loaded " + HandbookScreen.categories.size() + " categories");
+                onReload();
             }
         });
 
+        registerEvents();
+        registerKeyBinds();
+        registerCommands();
+
+        LOGGER.info("Handbook 2.0 loaded!");
+    }
+
+    private void onReload() {
+        Gson gson = new Gson();
+
+        handbookScreen.categories.clear();
+        if (firstLoad) dumpAll();
+        firstLoad = true;
+
+        try {
+            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")))
+                Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
+            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures")))
+                Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures"));
+            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints")))
+                Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints"));
+        } catch (IOException e) {
+            LOGGER.error("Failed to create handbook directories.");
+            return;
+        }
+
+        File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
+        if (files == null) {
+            LOGGER.error("No handbook categories found!");
+            return;
+        }
+
+        for (File file : files) {
+            if (!file.getName().endsWith("json") || file.getName().equals("config.json")) continue;
+            try {
+                String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
+                switch (type) {
+                    case "positioned" -> {
+                        PositionedCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), PositionedCategory.class);
+                        LOGGER.info("Loading positioned category " + category.getTitle());
+                        handbookScreen.categories.add(category);
+                    }
+                    case "area" -> {
+                        AreaCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), AreaCategory.class);
+                        LOGGER.info("Loading area category " + category.getTitle());
+                        handbookScreen.categories.add(category);
+                    }
+                    case "waypoint" -> {
+                        WaypointCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointCategory.class);
+                        LOGGER.info("Loading waypoint category " + category.getTitle());
+                        handbookScreen.categories.add(mergeWaypointEntries(category));
+                    }
+                    case "trader" -> {
+                        TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
+                        LOGGER.info("Loading trader category " + category.getTitle());
+                        if (category.getTitle().equals("EXCLUDE")) {
+                            npcWriter.setBlacklist(category);
+                            continue;
+                        }
+                        else handbookScreen.categories.add(category);
+
+                        tradeScreen.clear();
+                        for (TraderEntry entry : category.getEntries()) {
+                            TradeOfferList offers = entry.getOffers();
+                            if (offers != null) tradeScreen.addEntries(offers, entry.getID());
+                        }
+                    }
+                    case "mark" -> LOGGER.info("Loading marked entries data.");
+                    default -> {
+                        Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
+                        LOGGER.info("Loading normal category " + category.getTitle());
+                        handbookScreen.categories.add(category);
+                    }
+                }
+            } catch (IOException | JsonSyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        handbookScreen.categories.sort(Comparator.comparing(BaseCategory::getTitle));
+        for (BaseCategory category : handbookScreen.categories) {
+            category.getEntries().sort(Comparator.comparing(Entry::getClearTitle));
+        }
+        LOGGER.info("Loaded " + handbookScreen.categories.size() + " categories");
+    }
+
+    private void registerEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (openScreen.wasPressed()) {
-                if (!(MinecraftClient.getInstance().currentScreen instanceof HandbookScreen)) openScreen();
+                if (!(client.currentScreen instanceof HandbookScreen)) openHandbookScreen();
                 while (openScreen.wasPressed()) {
-                    //don't care
+                    //drain all presses
                 }
             }
             if (addLocation.wasPressed()) {
-                if (!(MinecraftClient.getInstance().currentScreen instanceof LocationScreen)) addLocation();
+                if (!(client.currentScreen instanceof LocationScreen)) openLocationScreen();
                 while (addLocation.wasPressed()) {
-                    //don't care
+                    //drain all presses
                 }
             }
             npcWriter.findEntities();
             WaypointManager.tick();
             if (AreaSelector.isActive()) AreaSelector.emitParticles();
-            if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen) HandbookScreen.filterEntries();
-            if (MinecraftClient.getInstance().world != null && WaypointManager.shouldRestore())
+            if (client.currentScreen instanceof HandbookScreen) handbookScreen.filterEntries();
+            if (client.currentScreen instanceof TradeScreen) tradeScreen.filterEntries();
+            if (client.world != null && WaypointManager.shouldRestore())
                 WaypointManager.sendRestoreMessage();
         });
 
@@ -169,10 +196,14 @@ public class HandbookClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
         });
+    }
 
+    private void registerKeyBinds() {
         openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
         addLocation = KeyBindingHelper.registerKeyBinding(new KeyBinding("Add location", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "Handbook 2.0"));
+    }
 
+    private void registerCommands() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 literal("handbook")
                         .then(literal("dump")
@@ -193,15 +224,15 @@ public class HandbookClient implements ClientModInitializer {
                                         .then(argument("y", IntegerArgumentType.integer())
                                                 .then(argument("z", IntegerArgumentType.integer()).executes(ctx ->
                                                         WaypointManager.setWaypoint(new WaypointEntry("Waypoint", null,
-                                                        new Waypoint(
-                                                        IntegerArgumentType.getInteger(ctx, "x"),
-                                                        IntegerArgumentType.getInteger(ctx, "y"),
-                                                        IntegerArgumentType.getInteger(ctx, "z")), false, null))))))
+                                                                new Waypoint(
+                                                                        IntegerArgumentType.getInteger(ctx, "x"),
+                                                                        IntegerArgumentType.getInteger(ctx, "y"),
+                                                                        IntegerArgumentType.getInteger(ctx, "z")), false, null))))))
                                 .then(literal("alternate").executes(ctx -> WaypointManager.setAltPath()))
                                 .then(literal("restore").executes(ctx -> WaypointManager.restoreWaypoints()))
                                 .then(literal("continue").executes(ctx -> WaypointManager.continuePath()))
                                 .then(literal("skip").executes(ctx ->
-                                        WaypointManager.onWaypointReached(MinecraftClient.getInstance().player, MinecraftClient.getInstance().world)))
+                                        WaypointManager.onWaypointReached(client.player, client.world)))
                                 .then(literal("path").executes(ctx -> WaypointManager.addPathToChain()))
                                 .then(literal("info").executes(ctx -> WaypointManager.printInfo())))
                         .then(literal("area")
@@ -217,11 +248,9 @@ public class HandbookClient implements ClientModInitializer {
                                                                         IntegerArgumentType.getInteger(ctx, "Dimension"),
                                                                         IntegerArgumentType.getInteger(ctx, "Distance"))))))))
         ));
-
-        LOGGER.info("Handbook 2.0 loaded!");
     }
 
-    private static WaypointCategory mergeWaypointEntries(WaypointCategory category) {
+    private WaypointCategory mergeWaypointEntries(WaypointCategory category) {
         category.getEntries().forEach(entry -> {
             Gson gson = new Gson();
             File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints/" + entry.getID() + ".json");
@@ -237,12 +266,16 @@ public class HandbookClient implements ClientModInitializer {
         return category;
     }
 
-    public static void openScreen() {
-        MinecraftClient.getInstance().setScreen(new HandbookScreen(Text.of("")));
+    public static void openHandbookScreen() {
+        client.setScreen(handbookScreen);
     }
 
-    public static void addLocation() {
-        MinecraftClient.getInstance().setScreen(new LocationScreen(Text.of("")));
+    public static void openTradeScreen() {
+        client.setScreen(tradeScreen);
+    }
+
+    public static void openLocationScreen() {
+        client.setScreen(new LocationScreen(Text.of("")));
     }
 
     //returns int because it's used in command
@@ -250,13 +283,13 @@ public class HandbookClient implements ClientModInitializer {
     public static int dumpAll() {
         npcWriter.write();
         locationWriter.write();
-        HandbookScreen.markedEntries.write();
+        handbookScreen.markedEntries.write();
         LOGGER.info("Saved all handbook entries.");
         return 1;
     }
 
     private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
-        for (BaseCategory category : HandbookScreen.categories) {
+        for (BaseCategory category : handbookScreen.categories) {
             if (!category.getTitle().equals("Locations")) continue;
 
             for (Entry entry : category.getEntries()) {

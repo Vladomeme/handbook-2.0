@@ -1,6 +1,6 @@
 package net.handbook.main;
 
-public interface MixinMethods {
+public interface HBMixinMethods {
 
     void handbook$unblockChat();
 

@@ -1,5 +1,6 @@
 package net.handbook.main.widget;
 
+import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
@@ -7,6 +8,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 
@@ -14,6 +16,7 @@ public class TradesWidget extends ClickableWidget {
 
     private final MinecraftClient client = MinecraftClient.getInstance();
     private final TextRenderer tr = client.textRenderer;
+    private final HandbookScreen screen = HandbookClient.handbookScreen;
 
     private String name;
     private TradeListWidgetEntry selectedEntry;
@@ -28,14 +31,15 @@ public class TradesWidget extends ClickableWidget {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (!visible) return;
 
-        context.getMatrices().push();
-        context.getMatrices().translate(getX(), getY(), 100);
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(getX(), getY(), 100);
 
-        context.getMatrices().push();
-        context.getMatrices().scale(1.75f, 1.75f, 1);
+        matrices.push();
+        matrices.scale(1.75f, 1.75f, 1);
         context.drawText(tr, name, 5, 0, 16777215, true);
-        context.getMatrices().pop();
-        context.getMatrices().pop();
+        matrices.pop();
+        matrices.pop();
     }
 
     public void startSharing(TradeListWidgetEntry entry) {
@@ -43,19 +47,19 @@ public class TradesWidget extends ClickableWidget {
         selectedEntry = entry;
         entry.setHighlighted(true);
 
-        HandbookScreen.tradeButtonsState(true);
+        screen.tradeButtonsState(true);
         buttonsY = (int) client.mouse.getY() / client.options.getGuiScale().getValue() + 24;
-        HandbookScreen.moveTradeButtons(getX() + 140, buttonsY - 18);
-        HandbookScreen.shareCancel.active = true;
-        HandbookScreen.shareCancel.visible = true;
-        HandbookScreen.shareCancel.setPosition(getX() + 141, buttonsY + 12);
+        screen.moveTradeButtons(getX() + 140, buttonsY - 18);
+        screen.shareCancel.active = true;
+        screen.shareCancel.visible = true;
+        screen.shareCancel.setPosition(getX() + 141, buttonsY + 12);
     }
 
     public void selectMode(Mode mode) {
         shareMode = mode;
-        HandbookScreen.worldButtonsState(true);
-        HandbookScreen.moveWorldButtons(getX() + 182, buttonsY + 6);
-        HandbookScreen.shareCancel.setPosition(getX() + 141, buttonsY + 12);
+        screen.worldButtonsState(true);
+        screen.moveWorldButtons(getX() + 182, buttonsY + 6);
+        screen.shareCancel.setPosition(getX() + 141, buttonsY + 12);
     }
 
     public void share(String world) {
@@ -63,7 +67,7 @@ public class TradesWidget extends ClickableWidget {
         StringBuilder command = new StringBuilder();
         command.append(world).append(" ");
         ItemStack item;
-        Entry entry = HandbookScreen.displayWidget.getEntry();
+        Entry entry = screen.displayWidget.getEntry();
         String position = "Position: " + entry.getPosition()[0] + ", " + entry.getPosition()[1] + ", " + entry.getPosition()[2];
         switch (shareMode) {
             case COST -> {
@@ -120,12 +124,11 @@ public class TradesWidget extends ClickableWidget {
     }
 
     public void cancelSharing() {
-        if (selectedEntry != null)
-            selectedEntry.setHighlighted(false);
+        if (selectedEntry != null) selectedEntry.setHighlighted(false);
         selectedEntry = null;
 
-        HandbookScreen.worldButtonsState(false);
-        HandbookScreen.tradeButtonsState(false);
+        screen.worldButtonsState(false);
+        screen.tradeButtonsState(false);
     }
 
     public void setName(String name) {

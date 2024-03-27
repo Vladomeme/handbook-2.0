@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
@@ -22,6 +23,7 @@ import java.util.List;
 public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
     private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+    private final HandbookScreen screen = HandbookClient.handbookScreen;
 
     private final String type;
     public final Entry entry;
@@ -47,16 +49,16 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
         button.setPosition(left, top);
 
         String category;
-        if (type.equals("entry")) category = HandbookScreen.activeCategory.getTitle();
+        if (type.equals("entry")) category = screen.activeCategory.getTitle();
         else category = "Categories";
         RenderSystem.enableBlend();
         if (highlighted) {
-            if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+            if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
                 context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 1358935040);
             else context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 866822826);
         }
         else {
-            if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+            if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
                 context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 2030023680);
         }
         RenderSystem.disableBlend();
@@ -68,14 +70,14 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
     public void markEntry() {
         String category;
-        if (type.equals("entry")) category = HandbookScreen.activeCategory.getTitle();
+        if (type.equals("entry")) category = screen.activeCategory.getTitle();
         else category = "Categories";
-        if (HandbookScreen.markedEntries.getMarkedEntries(category) == null)
-            HandbookScreen.markedEntries.addCategory(category);
+        if (screen.markedEntries.getMarkedEntries(category) == null)
+            screen.markedEntries.addCategory(category);
         else {
-            if (HandbookScreen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
-                HandbookScreen.markedEntries.getMarkedEntries(category).remove(entry.getTitle());
-            else HandbookScreen.markedEntries.getMarkedEntries(category).add(entry.getTitle());
+            if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+                screen.markedEntries.getMarkedEntries(category).remove(entry.getTitle());
+            else screen.markedEntries.getMarkedEntries(category).add(entry.getTitle());
         }
     }
 
@@ -99,15 +101,15 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     public void updateHighlight(boolean state) {
         switch (type) {
             case "category" -> {
-                if (HandbookScreen.selectedEntry != null)
-                    HandbookScreen.selectedEntry.setHighlighted(false);
-                HandbookScreen.selectedEntry = this;
+                if (screen.selectedEntry != null)
+                    screen.selectedEntry.setHighlighted(false);
+                screen.selectedEntry = this;
 
             }
             case "entry" -> {
-                if (HandbookScreen.displayWidget.selectedEntry != null)
-                    HandbookScreen.displayWidget.selectedEntry.setHighlighted(false);
-                HandbookScreen.displayWidget.selectedEntry = this;
+                if (screen.displayWidget.selectedEntry != null)
+                    screen.displayWidget.selectedEntry.setHighlighted(false);
+                screen.displayWidget.selectedEntry = this;
             }
         }
         setHighlighted(state);

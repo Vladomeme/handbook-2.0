@@ -1,6 +1,6 @@
 package net.handbook.main.editor;
 
-import net.handbook.main.MixinMethods;
+import net.handbook.main.HBMixinMethods;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -17,12 +17,13 @@ import static net.handbook.main.feature.WaypointManager.buildClickableMessage;
 public class AreaSelector {
 
     static ChatHud chat;
-    static int[] coords = new int[6];
+    static final int[] coords = new int[6];
 
     static boolean active = false;
     static int tick;
 
     //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
     public static int init() {
         chat = MinecraftClient.getInstance().inGameHud.getChatHud();
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
@@ -109,7 +110,7 @@ public class AreaSelector {
     }
 
     public static void updateMessage() {
-        ((MixinMethods) chat).handbook$removeLastMessages(2);
+        ((HBMixinMethods) chat).handbook$removeLastMessages(2);
 
         active = false;
         chat.addMessage(Text.literal("     " + coords[0] + ", " + coords[1] + ", " + coords[2]
@@ -123,6 +124,7 @@ public class AreaSelector {
     }
 
     //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
     public static int movePoint(int point, int dim, int distance) {
         coords[point * 3 + dim] += distance;
         updateMessage();
@@ -131,6 +133,7 @@ public class AreaSelector {
     }
 
     //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
     public static int movePointToPlayer(int point) {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player != null) {
@@ -144,9 +147,10 @@ public class AreaSelector {
     }
 
     //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
     public static int finish() {
         active = false;
-        ((MixinMethods) chat).handbook$unblockChat();
+        ((HBMixinMethods) chat).handbook$unblockChat();
 
         return 1;
     }

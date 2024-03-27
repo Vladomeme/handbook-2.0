@@ -1,6 +1,7 @@
 package net.handbook.main.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
@@ -11,6 +12,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.resource.Resource;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
@@ -20,6 +22,8 @@ import net.minecraft.util.Identifier;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringTokenizer;
@@ -31,6 +35,7 @@ public class DisplayWidget extends ClickableWidget {
     private String[] description = new String[]{};
     private final MinecraftClient client = MinecraftClient.getInstance();
     private final TextRenderer tr = client.textRenderer;
+    private final HandbookScreen screen = HandbookClient.handbookScreen;
 
     private Identifier id;
     private int imageWidth;
@@ -59,37 +64,37 @@ public class DisplayWidget extends ClickableWidget {
                     renderImage = true;
                     invalidImage = false;
                 }
-                else {
-                    invalidImage = true;
-                }
+                else invalidImage = true;
             } catch (IOException e) {
                 HandbookClient.LOGGER.error("Invalid image name in entry " + entry.getTitle());
                 throw new RuntimeException(e);
             }
         }
-        else {
-            renderImage = false;
-        }
+        else renderImage = false;
 
-        HandbookScreen.displayButtonsState(false);
+        screen.displayButtonsState(false);
         if (entry.getShard() != null) {
-            HandbookScreen.setWaypoint.visible = true;
-            HandbookScreen.setWaypoint.active = true;
-            HandbookScreen.shareLocation.visible = true;
-            HandbookScreen.shareLocation.active = true;
+            screen.setWaypoint.visible = true;
+            screen.setWaypoint.active = true;
+            screen.shareLocation.visible = true;
+            screen.shareLocation.active = true;
         }
         if (entry.getOffers() != null) {
-            HandbookScreen.openTrades.active = true;
-            HandbookScreen.openTrades.visible = true;
+            screen.openTrades.visible = true;
+            screen.openTrades.active = true;
+            if (HandbookConfig.INSTANCE.editorMode) {
+                screen.resetTrades.visible = true;
+                screen.resetTrades.active = true;
+            }
         }
         if (entry.getWaypoints() != null) {
-            HandbookScreen.setWaypoint.visible = true;
-            HandbookScreen.setWaypoint.active = true;
+            screen.setWaypoint.visible = true;
+            screen.setWaypoint.active = true;
         }
         if ((HandbookConfig.INSTANCE.editorMode)
-                && (HandbookScreen.activeCategory.getTitle().equals("Locations") || HandbookScreen.activeCategory.getTitle().equals("NPC"))) {
-            HandbookScreen.delete.visible = true;
-            HandbookScreen.delete.active = true;
+                && (screen.activeCategory.getTitle().equals("Locations") || screen.activeCategory.getTitle().equals("NPC"))) {
+            screen.delete.visible = true;
+            screen.delete.active = true;
         }
     }
 
@@ -97,13 +102,14 @@ public class DisplayWidget extends ClickableWidget {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (entry == null || !visible) return;
 
-        context.getMatrices().push();
-        context.getMatrices().translate(getX(), getY(), 1);
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(getX(), getY(), 1);
 
-        context.getMatrices().push();
-        context.getMatrices().scale(1.75f, 1.75f, 1);
+        matrices.push();
+        matrices.scale(1.75f, 1.75f, 1);
         context.drawText(tr, entry.getTitle(), 5, 0, 16777215, true);
-        context.getMatrices().pop();
+        matrices.pop();
 
         int y = 20;
         if (entry.getShard() != null) {
@@ -134,15 +140,15 @@ public class DisplayWidget extends ClickableWidget {
                 }
                 else scale = (float) (width * 0.5 / imageWidth);
             }
-            context.getMatrices().push();
-            context.getMatrices().scale(scale, scale, 2);
+            matrices.push();
+            matrices.scale(scale, scale, 2);
             RenderSystem.enableBlend();
             context.drawTexture(id, (int) ((width * 0.5) / scale), (int) (10 / scale), 0, 0,
                     imageWidth, imageHeight, imageWidth, imageHeight);
             RenderSystem.disableBlend();
-            context.getMatrices().pop();
+            matrices.pop();
         }
-        context.getMatrices().pop();
+        matrices.pop();
     }
 
     private String[] splitText(String text) {
@@ -214,7 +220,7 @@ public class DisplayWidget extends ClickableWidget {
     }
 
     public void deleteEntry() {
-        switch (HandbookScreen.activeCategory.getTitle()) {
+        switch (screen.activeCategory.getTitle()) {
             case "Location" -> HandbookClient.locationWriter.deleteEntry(entry.getTitle());
             case "NPC" -> HandbookClient.npcWriter.deleteEntry(entry.getID());
             default -> {
@@ -222,12 +228,21 @@ public class DisplayWidget extends ClickableWidget {
                 return;
             }
         }
-        HandbookScreen.activeCategory.getEntries().remove(entry);
-        double scroll = HandbookScreen.optionsWidget.getScrollAmount();
-        HandbookScreen.optionsWidget.setEntries(HandbookScreen.activeCategory.getEntries(), "entry");
-        HandbookScreen.optionsWidget.setScrollAmount(scroll);
+        screen.activeCategory.getEntries().remove(entry);
+        double scroll = screen.optionsWidget.getScrollAmount();
+        screen.optionsWidget.setEntries(screen.activeCategory.getEntries(), "entry");
+        screen.optionsWidget.setScrollAmount(scroll);
         setEntry(null);
-        HandbookScreen.displayButtonsState(false);
+        screen.displayButtonsState(false);
+    }
+
+    public void deleteTrade() {
+        try {
+            Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + entry.getID() + ".txt"));
+        } catch (IOException e) {
+            //don't care
+        }
+        client.inGameHud.getChatHud().addMessage(Text.of("Removed trades. Interact with the villager again to update them."));
     }
 
     public Entry getEntry() {

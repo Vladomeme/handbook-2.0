@@ -1,9 +1,9 @@
 package net.handbook.main.mixin;
 
-import net.handbook.main.MixinMethods;
+import net.handbook.main.HandbookClient;
+import net.handbook.main.HBMixinMethods;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.AreaSelector;
-import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.category.PositionedCategory;
@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Mixin(ChatHud.class)
-public abstract class ChatHudMixin implements MixinMethods {
+public abstract class ChatHudMixin implements HBMixinMethods {
 
     @Shadow @Final
     private MinecraftClient client;
@@ -94,7 +94,7 @@ public abstract class ChatHudMixin implements MixinMethods {
     @Unique
     private void suggestBountyWaypoint(String message) {
         String POIName = message.replace("Your bounty for today is ", "").replace("!", "");
-        for (BaseCategory category : HandbookScreen.categories) {
+        for (BaseCategory category : HandbookClient.handbookScreen.categories) {
             if (!category.getClearTitle().startsWith("POI")) continue;
 
             for (PositionedEntry entry : ((PositionedCategory) category).getEntries()) {

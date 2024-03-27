@@ -6,12 +6,12 @@ import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Teleport;
-import net.handbook.main.resources.waypoint.Teleports;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
@@ -24,13 +24,14 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 
-import static net.handbook.main.resources.waypoint.Teleports.*;
+import static net.handbook.main.resources.waypoint.Teleport.*;
 
 @SuppressWarnings("SameReturnValue")
 public class WaypointManager {
 
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final ChatHud chat = client.inGameHud.getChatHud();
+    private static final HandbookScreen screen = HandbookClient.handbookScreen;
 
     private static final Queue<WaypointEntry> waypoints = new LinkedList<>();
     private static final List<WaypointEntry> altPath = new ArrayList<>();
@@ -61,8 +62,8 @@ public class WaypointManager {
 
     //returns int because it's used in command
     public static int setWaypoint(WaypointEntry entry) {
-        WaypointManager.waypoints.clear();
-        WaypointManager.waypoints.add(entry);
+        waypoints.clear();
+        waypoints.add(entry);
 
         setState(true);
         tick = 0;
@@ -72,26 +73,26 @@ public class WaypointManager {
         return 1;
     }
 
-    public static void setWaypointChain(List<WaypointEntry> waypoints) {
-        WaypointManager.waypoints.clear();
-        for (WaypointEntry entry : waypoints) WaypointManager.waypoints.add(entry.markAsChain());
+    public static void setWaypointChain(List<WaypointEntry> entries) {
+        waypoints.clear();
+        for (WaypointEntry entry : entries) waypoints.add(entry.markAsChain());
 
         setState(true);
         tick = 0;
 
         if (client.world == null) return;
-        chat.addMessage(getFastestPath(getShard(), waypoints.get(0), true));
+        chat.addMessage(getFastestPath(getShard(), entries.get(0), true));
     }
 
     public static void setState(boolean state) {
-        if (HandbookScreen.clearWaypoint == null) return;
+        if (screen.clearWaypoint == null) return;
         if (!state) waypoints.clear();
         paused = false;
         prevShard = getShard();
-        HandbookScreen.clearWaypoint.visible = state;
-        HandbookScreen.clearWaypoint.active = state;
-        HandbookScreen.continueWaypoint.visible = state;
-        HandbookScreen.continueWaypoint.active = state;
+        screen.clearWaypoint.visible = state;
+        screen.clearWaypoint.active = state;
+        screen.continueWaypoint.visible = state;
+        screen.continueWaypoint.active = state;
     }
 
     public static void continueOrSkip() {
@@ -139,12 +140,13 @@ public class WaypointManager {
         double beaconX = distance < 150 ? (double) waypoint.x() - pos.getX() : ((waypoint.x() - pos.getX()) / distance) * 150;
         double beaconZ = distance < 150 ? (double) waypoint.z() - pos.getZ() : ((waypoint.z() - pos.getZ()) / distance) * 150;
 
-        context.matrixStack().push();
-        context.matrixStack().translate(beaconX, -(pos.getY() + 64), beaconZ);
+        MatrixStack matrices = context.matrixStack();
+        matrices.push();
+        matrices.translate(beaconX, -(pos.getY() + 64), beaconZ);
         BeaconBlockEntityRenderer.renderBeam(context.matrixStack(), context.consumers(), BEAM_TEXTURE, 0, 1,
                 world.getTime(), 0, 1024, DyeColor.LIGHT_BLUE.getColorComponents(), 0.3f, 0.3f
         );
-        context.matrixStack().pop();
+        matrices.pop();
     }
 
     private static void checkChain() {
@@ -269,9 +271,9 @@ public class WaypointManager {
             distanceToTp = getDistanceToTP(nearestTP, (int) player.getX(), (int) player.getY(), (int) player.getZ(), false);
             straightPath = getDistance((int) player.getX(), (int) player.getY(), (int) player.getZ(), x, y, z);
         } else {
-            nearestTP = getRegionHub(shard).get();
+            nearestTP = getRegionHub(shard);
             distanceToTp = 0;
-            straightPath = getDistance(nearestTP.x(), nearestTP.y(), nearestTP.z(), x, y, z);
+            straightPath = getDistance(nearestTP.x, nearestTP.y, nearestTP.z, x, y, z);
         }
 
         MutableText text = Text.empty().append("Fastest way: ");
@@ -330,9 +332,8 @@ public class WaypointManager {
         Teleport nearestTeleport = null;
         int shortestDistance = 999999;
 
-        for (Teleports teleport : Teleports.values()) {
-            Teleport tp = teleport.get();
-            if (!tp.shard().equals(shard) || tp.isSafe() != safe) continue;
+        for (Teleport tp : Teleport.values()) {
+            if (!tp.shard.equals(shard) || tp.isSafe != safe) continue;
 
             int distance = getDistanceToTP(tp, x, y, z, true);
             if (distance < shortestDistance) {
@@ -347,8 +348,8 @@ public class WaypointManager {
         if (tp == null)
             return 999999;
         if (correctY)
-            return getCorrectedDistance(tp.x(), tp.y(), tp.z(), x, y, z);
-        return getDistance(tp.x(), tp.y(), tp.z(), x, y, z);
+            return getCorrectedDistance(tp.x, tp.y, tp.z, x, y, z);
+        return getDistance(tp.x, tp.y, tp.z, x, y, z);
     }
 
     private static int getDistance(int x1, int y1, int z1, int x2, int y2, int z2) {
@@ -363,7 +364,7 @@ public class WaypointManager {
         if (tp1 == tp2) return Text.of("walk");
         StringBuilder text = (new StringBuilder()).append("through ");
 
-        Teleport hub = getRegionHub(shard).get();
+        Teleport hub = getRegionHub(shard);
 
         if (tp1.name().endsWith("Bell") || tp2.name().endsWith("Bell")) {
             if (tp1.name().endsWith("Bell") && tp2.name().endsWith("Bell")) {
@@ -372,15 +373,15 @@ public class WaypointManager {
             } else {
                 if (tp1.name().endsWith("Bell")) {
                     if (tp2.name().equals(hub.name())) {
-                        writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get(), Galengarde.get()}, entry, append);
+                        writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry, Galengarde}, entry, append);
                         text.append(tp1.name()).append(" -> Chantry -> Galengarde");
                     } else {
                         if (tp2.name().equals("Chantry of Repentance")) {
-                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get()}, entry, append);
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry}, entry, append);
                             text.append(tp1.name()).append(" -> ").append(tp2.name());
                         }
                         else {
-                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry.get(), Galengarde.get(), tp2}, entry, append);
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry, Galengarde, tp2}, entry, append);
                             text.append(tp1.name()).append(" -> Chantry -> Galengarde -> ").append(tp2.name());
                         }
                     }
@@ -390,10 +391,10 @@ public class WaypointManager {
                         text.append(tp1.name()).append(" -> ").append(tp2.name());
                     } else {
                         if (tp1.name().equals(hub.name())) {
-                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{Galengarde.get(), Chantry.get(), tp2}, entry, append);
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{Galengarde, Chantry, tp2}, entry, append);
                             text.append("Galengarde -> Chantry -> ").append(tp2.name());
                         } else {
-                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Galengarde.get(), Chantry.get(), tp2}, entry, append);
+                            writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Galengarde, Chantry, tp2}, entry, append);
                             text.append(tp1.name()).append(" -> Galengarde -> Chantry -> ").append(tp2.name());
                         }
                     }
@@ -418,7 +419,7 @@ public class WaypointManager {
         if (append) return;
         collection.clear();
         for (Teleport tp : teleports) {
-            collection.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x(), tp.y(), tp.z()), false, null));
+            collection.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x, tp.y, tp.z), false, null));
         }
         collection.add(entry);
     }
@@ -489,7 +490,7 @@ public class WaypointManager {
         return client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
     }
 
-    private static Teleports getRegionHub(String shard) {
+    private static Teleport getRegionHub(String shard) {
         switch (shard) {
             case "valley" -> {
                 return Sierhaven;
