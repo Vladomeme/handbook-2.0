@@ -94,7 +94,7 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
     }
 
     private void renderTooltip(DrawContext context, int x, int y, int left) {
-        if (y > screen.tradeList.getBottom()) return;
+        if (y > MinecraftClient.getInstance().getWindow().getScaledHeight() - 40) return;
         ItemStack itemStack = null;
 
              if (x > left 	   && x < left + 20)  itemStack = trade.getOriginalFirstBuyItem();

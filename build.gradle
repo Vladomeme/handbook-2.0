@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.3-SNAPSHOT'
+	id 'fabric-loom' version '1.5-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -32,6 +32,7 @@ dependencies {
 	}
 	modImplementation "dev.xpple:clientarguments:1.5"
 	include "dev.xpple:clientarguments:1.5"
+	modImplementation files(".gradle/monumenta-item-dictionary-1.5.1-1.20.1.jar")
 }
 
 processResources {
