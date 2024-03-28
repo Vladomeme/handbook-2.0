@@ -227,7 +227,7 @@ public class HandbookClient implements ClientModInitializer {
                                                                 new Waypoint(
                                                                         IntegerArgumentType.getInteger(ctx, "x"),
                                                                         IntegerArgumentType.getInteger(ctx, "y"),
-                                                                        IntegerArgumentType.getInteger(ctx, "z")), false, null))))))
+                                                                        IntegerArgumentType.getInteger(ctx, "z"), null), false, null))))))
                                 .then(literal("alternate").executes(ctx -> WaypointManager.setAltPath()))
                                 .then(literal("restore").executes(ctx -> WaypointManager.restoreWaypoints()))
                                 .then(literal("continue").executes(ctx -> WaypointManager.continuePath()))

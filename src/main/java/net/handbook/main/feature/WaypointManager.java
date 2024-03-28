@@ -53,11 +53,17 @@ public class WaypointManager {
     }
 
     public static void setWaypoint(Entry entry) {
-        setWaypoint(entry.getPosition(), entry.getTitle(), entry.getText());
+        if (entry.getArea() == null) setWaypoint(entry.getPosition(), entry.getTitle(), entry.getText());
+        else setAreaWaypoint(entry.getPosition(), entry.getArea(), entry.getTitle(), entry.getText());
     }
 
     public static void setWaypoint(int[] coords, String title, String text) {
-        setWaypoint(new WaypointEntry(title, text, new Waypoint(coords[0], coords[1], coords[2]), false, null));
+        setWaypoint(new WaypointEntry(title, text, new Waypoint(coords[0], coords[1], coords[2], null), false, null));
+    }
+
+    public static void setAreaWaypoint(int[] coords, int[] area, String title, String text) {
+        setWaypoint(new WaypointEntry(title, text, new Waypoint(coords[0], coords[1], coords[2], area), false, null));
+        HandbookClient.LOGGER.info("area waypoint: " + Arrays.toString(area));
     }
 
     //returns int because it's used in command
@@ -70,6 +76,9 @@ public class WaypointManager {
 
         if (client.world == null) return 1;
         chat.addMessage(getFastestPath(getShard(), entry, false));
+        if (!isInPlayableArea(getShard(), entry.getWaypoint().x(), entry.getWaypoint().z()))
+            chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
+                    .setStyle(Style.EMPTY.withColor(Formatting.RED)));
         return 1;
     }
 
@@ -82,6 +91,9 @@ public class WaypointManager {
 
         if (client.world == null) return;
         chat.addMessage(getFastestPath(getShard(), entries.get(0), true));
+        if (!isInPlayableArea(getShard(), entries.get(0).getWaypoint().x(), entries.get(0).getWaypoint().z()))
+            chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
+                    .setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 
     public static void setState(boolean state) {
@@ -116,6 +128,15 @@ public class WaypointManager {
         }
         distance = Math.sqrt(Math.pow(player.getX() - waypoint.x(), 2) + Math.pow(player.getY() - waypoint.y(), 2)
                 + Math.pow(player.getZ() - waypoint.z(), 2));
+        if (waypoint.area() != null) {
+            int[] area = waypoint.area();
+            if (player.getX() < Math.max(area[0], area[3]) && player.getX() > Math.min(area[0], area[3])
+                    && player.getY() < Math.max(area[1], area[4]) && player.getY() > Math.min(area[1], area[4])
+                    && player.getZ() < Math.max(area[2], area[5]) && player.getZ() > Math.min(area[2], area[5])) {
+                onWaypointReached(player, world);
+                return;
+            }
+        }
         if (distance < 5 || (waypoints.size() > 1 && distance < 10)) onWaypointReached(player, world);
 
         double particleX = player.getX() + ((waypoint.x() - player.getX()) / distance) * ((float) tick / 3);
@@ -156,12 +177,21 @@ public class WaypointManager {
 
         for (WaypointEntry waypointEntry : waypoints) {
             Waypoint waypoint = waypointEntry.getWaypoint();
+            if (waypoint.area() != null) {
+                int[] area = waypoint.area();
+                if (player.getX() < Math.max(area[0], area[3]) && player.getX() > Math.min(area[0], area[3])
+                        && player.getY() < Math.max(area[1], area[4]) && player.getY() > Math.min(area[1], area[4])
+                        && player.getZ() < Math.max(area[2], area[5]) && player.getZ() > Math.min(area[2], area[5])) {
+                    if (waypointEntry.equals(waypoints.peek())) return;
+
+                    while (!waypointEntry.equals(waypoints.peek())) waypoints.poll();
+                    return;
+                }
+            }
             int distance = (int) Math.sqrt(Math.pow(player.getX() - waypoint.x(), 2) + Math.pow(player.getY() - waypoint.y(), 2)
                     + Math.pow(player.getZ() - waypoint.z(), 2));
             if (!(distance < 5 || (waypoints.size() > 1 && distance < 10))) continue;
-
             if (waypointEntry.equals(waypoints.peek())) return;
-
             while (!waypointEntry.equals(waypoints.peek())) waypoints.poll();
             return;
         }
@@ -175,9 +205,11 @@ public class WaypointManager {
                 SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
 
         if (waypoints.size() == 1) {
-            chat.addMessage(Text.of(
-                    ((waypoints.peek().getText() == null || waypoints.peek().getText().isEmpty())
-                            ? "" : (waypoints.poll().getText() + " ")) + "§aWaypoint removed."));
+            if (waypoints.peek().inChain()) {
+                chat.addMessage(Text.of(((waypoints.peek().getText() == null ||
+                        waypoints.peek().getText().isEmpty()) ? "" : (waypoints.poll().getText() + " ")) + "§aWaypoint removed."));
+            }
+            else chat.addMessage(Text.of("§aWaypoint removed."));
             setState(false);
             return 1;
         }
@@ -198,6 +230,9 @@ public class WaypointManager {
                     .append(buildClickableMessage("[Add fastest path]",
                             "/handbook waypoint path", "Click to find fastest path"));
         chat.addMessage(text);
+        if (!isInPlayableArea(getShard(), waypoints.peek().getWaypoint().x(), waypoints.peek().getWaypoint().z()))
+            chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)));
         return 1;
     }
 
@@ -266,7 +301,7 @@ public class WaypointManager {
         Teleport nearestTP;
         int distanceToTp;
 
-        if (isInPlayableArea(shard, player)) {
+        if (isInPlayableArea(shard, (int) player.getX(), (int) player.getZ())) {
             nearestTP = getNearestTeleport(shard, (int) player.getX(), (int) player.getY(), (int) player.getZ(), true);
             distanceToTp = getDistanceToTP(nearestTP, (int) player.getX(), (int) player.getY(), (int) player.getZ(), false);
             straightPath = getDistance((int) player.getX(), (int) player.getY(), (int) player.getZ(), x, y, z);
@@ -419,7 +454,7 @@ public class WaypointManager {
         if (append) return;
         collection.clear();
         for (Teleport tp : teleports) {
-            collection.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x, tp.y, tp.z), false, null));
+            collection.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x, tp.y, tp.z, null), false, null));
         }
         collection.add(entry);
     }
@@ -513,9 +548,7 @@ public class WaypointManager {
         return !waypoints.isEmpty();
     }
 
-    private static boolean isInPlayableArea(String shard, ClientPlayerEntity player) {
-        int x = (int) player.getX();
-        int z = (int) player.getZ();
+    private static boolean isInPlayableArea(String shard, int x, int z) {
         switch (shard) {
             case "valley" -> {
                 return x > -1800 && x < 1720 && z > -690 && z < 800;

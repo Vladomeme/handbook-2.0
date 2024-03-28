@@ -1,5 +1,5 @@
 package net.handbook.main.resources.waypoint;
 
-public record Waypoint(int x, int y, int z) {
+public record Waypoint(Integer x, Integer y, Integer z, int[] area) {
 
 }
