@@ -56,6 +56,10 @@ public class Entry {
         return null;
     }
 
+    public boolean hasOffers() {
+        return false;
+    }
+
     public String getID() {
         return null;
     }

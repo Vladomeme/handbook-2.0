@@ -17,7 +17,6 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.*;
-import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -40,6 +39,7 @@ public class WaypointManager {
     private static boolean paused = false;
     private static String prevShard;
     private static boolean sendRestoreMessage = false;
+    private static final float[] beaconColor = new float[3];
 
     private static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
 
@@ -63,7 +63,7 @@ public class WaypointManager {
 
     public static void setAreaWaypoint(int[] coords, int[] area, String title, String text) {
         setWaypoint(new WaypointEntry(title, text, new Waypoint(coords[0], coords[1], coords[2], area), false, null));
-        HandbookClient.LOGGER.info("area waypoint: " + Arrays.toString(area));
+        HandbookClient.LOGGER.info("area waypoint: {}", Arrays.toString(area));
     }
 
     //returns int because it's used in command
@@ -165,7 +165,7 @@ public class WaypointManager {
         matrices.push();
         matrices.translate(beaconX, -(pos.getY() + 64), beaconZ);
         BeaconBlockEntityRenderer.renderBeam(context.matrixStack(), context.consumers(), BEAM_TEXTURE, 0, 1,
-                world.getTime(), 0, 1024, DyeColor.LIGHT_BLUE.getColorComponents(), 0.3f, 0.3f
+                world.getTime(), 0, 1024, beaconColor, 0.3f, 0.3f
         );
         matrices.pop();
     }
@@ -401,47 +401,47 @@ public class WaypointManager {
 
         Teleport hub = getRegionHub(shard);
 
-        if (tp1.name().endsWith("Bell") || tp2.name().endsWith("Bell")) {
-            if (tp1.name().endsWith("Bell") && tp2.name().endsWith("Bell")) {
+        if (tp1.fullName.endsWith("Bell") || tp2.fullName.endsWith("Bell")) {
+            if (tp1.fullName.endsWith("Bell") && tp2.fullName.endsWith("Bell")) {
                 writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry, append);
-                text.append(tp1.name()).append(" -> ").append(tp2.name());
+                text.append(tp1.fullName).append(" -> ").append(tp2.fullName);
             } else {
-                if (tp1.name().endsWith("Bell")) {
-                    if (tp2.name().equals(hub.name())) {
+                if (tp1.fullName.endsWith("Bell")) {
+                    if (tp2.fullName.equals(hub.fullName)) {
                         writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry, Galengarde}, entry, append);
-                        text.append(tp1.name()).append(" -> Chantry -> Galengarde");
+                        text.append(tp1.fullName).append(" -> Chantry -> Galengarde");
                     } else {
-                        if (tp2.name().equals("Chantry of Repentance")) {
+                        if (tp2.fullName.equals("Chantry of Repentance")) {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry}, entry, append);
-                            text.append(tp1.name()).append(" -> ").append(tp2.name());
+                            text.append(tp1.fullName).append(" -> ").append(tp2.fullName);
                         }
                         else {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Chantry, Galengarde, tp2}, entry, append);
-                            text.append(tp1.name()).append(" -> Chantry -> Galengarde -> ").append(tp2.name());
+                            text.append(tp1.fullName).append(" -> Chantry -> Galengarde -> ").append(tp2.fullName);
                         }
                     }
                 } else {
-                    if (tp1.name().startsWith("Chantry")) {
+                    if (tp1.fullName.startsWith("Chantry")) {
                         writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry, append);
-                        text.append(tp1.name()).append(" -> ").append(tp2.name());
+                        text.append(tp1.fullName).append(" -> ").append(tp2.fullName);
                     } else {
-                        if (tp1.name().equals(hub.name())) {
+                        if (tp1.fullName.equals(hub.fullName)) {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{Galengarde, Chantry, tp2}, entry, append);
-                            text.append("Galengarde -> Chantry -> ").append(tp2.name());
+                            text.append("Galengarde -> Chantry -> ").append(tp2.fullName);
                         } else {
                             writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, Galengarde, Chantry, tp2}, entry, append);
-                            text.append(tp1.name()).append(" -> Galengarde -> Chantry -> ").append(tp2.name());
+                            text.append(tp1.fullName).append(" -> Galengarde -> Chantry -> ").append(tp2.fullName);
                         }
                     }
                 }
             }
         } else {
-            if (tp1.name().equals(hub.name()) || tp2.name().equals(hub.name())) {
+            if (tp1.fullName.equals(hub.fullName) || tp2.fullName.equals(hub.fullName)) {
                 writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, tp2}, entry, append);
-                text.append(tp1.name()).append(" -> ").append(tp2.name());
+                text.append(tp1.fullName).append(" -> ").append(tp2.fullName);
             } else {
                 writeWaypoints(alt ? altPath : waypoints, new Teleport[]{tp1, hub, tp2}, entry, append);
-                text.append(tp1.name()).append(" -> ").append(hub.name()).append(" -> ").append(tp2.name());
+                text.append(tp1.fullName).append(" -> ").append(hub.fullName).append(" -> ").append(tp2.fullName);
             }
         }
 
@@ -454,7 +454,7 @@ public class WaypointManager {
         if (append) return;
         collection.clear();
         for (Teleport tp : teleports) {
-            collection.add(new WaypointEntry(tp.name(), tp.name() + " reached.", new Waypoint(tp.x, tp.y, tp.z, null), false, null));
+            collection.add(new WaypointEntry(tp.fullName, tp.fullName + " reached.", new Waypoint(tp.x, tp.y, tp.z, null), false, null));
         }
         collection.add(entry);
     }
@@ -574,5 +574,11 @@ public class WaypointManager {
 
     public static boolean shouldRestore() {
         return sendRestoreMessage;
+    }
+
+    public static void updateBeaconColor() {
+        beaconColor[0] = ((HandbookConfig.INSTANCE.beaconColor & 16711680) >> 16) / 255.0F;
+        beaconColor[1] = ((HandbookConfig.INSTANCE.beaconColor & '\uff00') >> 8) / 255.0F;
+        beaconColor[2] = ((HandbookConfig.INSTANCE.beaconColor & 255)) / 255.0F;
     }
 }

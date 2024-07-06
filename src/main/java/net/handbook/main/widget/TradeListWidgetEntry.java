@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.TradeScreen;
 import net.minecraft.client.MinecraftClient;
@@ -60,17 +61,17 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
         RenderSystem.enableBlend();
         if (highlighted) {
             if (screen.markedEntries.getMarkedEntries("favTrades").contains(id))
-                context.fill(left, top + 1, left + 110, top + 19, 1358935040);
-            else context.fill(left, top + 1, left + 110, top + 19, 1688906410);
-            context.fill(left, top + 1, left + 1, top + 19, -1);
-            context.fill(left + 109, top + 1, left + 110, top + 19, -1);
-            context.fill(left, top + 1, left + 110, top + 2, -1);
-            context.fill(left, top + 18, left + 110, top + 19, -1);
+                context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.highlightFavColor);
+            else context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.highlightColor);
+            context.fill(left, top + 1, left + 1, top + 19, HandbookConfig.INSTANCE.bordersColor);
+            context.fill(left + 109, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.bordersColor);
+            context.fill(left, top + 1, left + 110, top + 2, HandbookConfig.INSTANCE.bordersColor);
+            context.fill(left, top + 18, left + 110, top + 19, HandbookConfig.INSTANCE.bordersColor);
         }
         else {
             if (screen.markedEntries.getMarkedEntries("favTrades").contains(id))
-                context.fill(left, top + 1, left + 110, top + 19, 2030023680);
-            else context.fill(left, top + 1, left + 110, top + 19, 866822826);
+                context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.favouriteColor);
+            else context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.tradeBackgroundColor);
         }
 
         ItemStack itemStack1 = trade.getOriginalFirstBuyItem();

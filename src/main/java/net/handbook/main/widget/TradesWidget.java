@@ -119,8 +119,7 @@ public class TradesWidget extends ClickableWidget {
         }
         MinecraftClient.getInstance().player.networkHandler.sendCommand(command.toString());
 
-        if (MinecraftClient.getInstance().currentScreen == null) return;
-        MinecraftClient.getInstance().currentScreen.close();
+        MinecraftClient.getInstance().currentScreen = null;
     }
 
     public void cancelSharing() {
@@ -149,5 +148,14 @@ public class TradesWidget extends ClickableWidget {
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
 
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (active && visible && isValidClickButton(button) && clicked(mouseX, mouseY)) {
+            onClick(mouseX, mouseY);
+            return true;
+        }
+        return false;
     }
 }

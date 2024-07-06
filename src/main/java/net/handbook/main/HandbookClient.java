@@ -120,22 +120,22 @@ public class HandbookClient implements ClientModInitializer {
                 switch (type) {
                     case "positioned" -> {
                         PositionedCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), PositionedCategory.class);
-                        LOGGER.info("Loading positioned category " + category.getTitle());
+                        LOGGER.info("Loading positioned category {}", category.getTitle());
                         handbookScreen.categories.add(category);
                     }
                     case "area" -> {
                         AreaCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), AreaCategory.class);
-                        LOGGER.info("Loading area category " + category.getTitle());
+                        LOGGER.info("Loading area category {}", category.getTitle());
                         handbookScreen.categories.add(category);
                     }
                     case "waypoint" -> {
                         WaypointCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointCategory.class);
-                        LOGGER.info("Loading waypoint category " + category.getTitle());
+                        LOGGER.info("Loading waypoint category {}", category.getTitle());
                         handbookScreen.categories.add(mergeWaypointEntries(category));
                     }
                     case "trader" -> {
                         TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
-                        LOGGER.info("Loading trader category " + category.getTitle());
+                        LOGGER.info("Loading trader category {}", category.getTitle());
                         if (category.getTitle().equals("EXCLUDE")) {
                             npcWriter.setBlacklist(category);
                             continue;
@@ -151,7 +151,7 @@ public class HandbookClient implements ClientModInitializer {
                     case "mark" -> LOGGER.info("Loading marked entries data.");
                     default -> {
                         Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
-                        LOGGER.info("Loading normal category " + category.getTitle());
+                        LOGGER.info("Loading normal category {}", category.getTitle());
                         handbookScreen.categories.add(category);
                     }
                 }
@@ -163,7 +163,8 @@ public class HandbookClient implements ClientModInitializer {
         for (BaseCategory category : handbookScreen.categories) {
             category.getEntries().sort(Comparator.comparing(Entry::getClearTitle));
         }
-        LOGGER.info("Loaded " + handbookScreen.categories.size() + " categories");
+        LOGGER.info("Loaded {} categories", handbookScreen.categories.size());
+        WaypointManager.updateBeaconColor();
     }
 
     private void registerEvents() {
@@ -180,10 +181,9 @@ public class HandbookClient implements ClientModInitializer {
                     //drain all presses
                 }
             }
-            npcWriter.findEntities();
             WaypointManager.tick();
             if (AreaSelector.isActive()) AreaSelector.emitParticles();
-            if (client.currentScreen instanceof HandbookScreen) handbookScreen.filterEntries();
+            if (client.currentScreen instanceof HandbookScreen) handbookScreen.filterEntries(true);
             if (client.currentScreen instanceof TradeScreen) tradeScreen.filterEntries();
             if (client.world != null && WaypointManager.shouldRestore())
                 WaypointManager.sendRestoreMessage();
@@ -246,7 +246,9 @@ public class HandbookClient implements ClientModInitializer {
                                                                 AreaSelector.movePoint(
                                                                         IntegerArgumentType.getInteger(ctx, "Point"),
                                                                         IntegerArgumentType.getInteger(ctx, "Dimension"),
-                                                                        IntegerArgumentType.getInteger(ctx, "Distance"))))))))
+                                                                        IntegerArgumentType.getInteger(ctx, "Distance")))))))
+                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.INSTANCE.massDelete(AreaSelector.getSelection()))))
+                        .then(literal("clear_trades").executes(ctx -> NPCWriter.INSTANCE.clearTrades()))
         ));
     }
 
@@ -258,8 +260,7 @@ public class HandbookClient implements ClientModInitializer {
             try {
                 waypoints = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointChain.class).getWaypoints();
             } catch (IOException e) {
-                LOGGER.error("Failed to read waypoint entry file " + entry.getID() + ".json. Trying to open it in-game" +
-                        " will likely cause a crash.");
+                LOGGER.error("Failed to read waypoint entry file {}.json. Trying to open it in-game will likely cause a crash.", entry.getID());
             }
             entry.setChain(new WaypointChain(waypoints));
         });

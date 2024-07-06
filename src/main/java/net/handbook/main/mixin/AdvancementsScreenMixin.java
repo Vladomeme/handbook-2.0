@@ -3,12 +3,11 @@ package net.handbook.main.mixin;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.widget.HandbookButtonWidget;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.advancement.AdvancementsScreen;
-import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,13 +18,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AdvancementsScreenMixin extends Screen {
 
     @Unique
-    TexturedButtonWidget button;
+    HandbookButtonWidget button;
 
     @Inject(method = "init", at = @At("TAIL"))
     public void init(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
-        addDrawableChild(button = new TexturedButtonWidget(width - 51, 1, 50, 11, 0, 0, 11,
-                new Identifier("handbook", "textures/button.png"), 50, 22, button -> HandbookClient.openHandbookScreen()));
+        addDrawableChild(button = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal, width - 51, 1,
+                50, 11, "Handbook", button -> HandbookClient.openHandbookScreen()));
     }
 
     @Inject(method = "render", at = @At("TAIL"))

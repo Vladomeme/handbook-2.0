@@ -38,7 +38,7 @@ public class LocationWriter {
 
         if (name.startsWith("\"")) name = name.replace("\"", "");
 
-        HandbookClient.LOGGER.info("ADDING NEW LOCATION: " + name);
+        HandbookClient.LOGGER.info("ADDING NEW LOCATION: {}", name);
         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("New location added: " + name +
                 ". Reload resources to see it in the handbook."));
 

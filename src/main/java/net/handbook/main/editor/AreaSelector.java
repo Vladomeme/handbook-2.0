@@ -1,6 +1,7 @@
 package net.handbook.main.editor;
 
 import net.handbook.main.HBMixinMethods;
+import net.handbook.main.config.HandbookConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -25,6 +26,10 @@ public class AreaSelector {
     //returns int because used in command
     @SuppressWarnings("SameReturnValue")
     public static int init() {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            chat.addMessage(Text.literal("Editor mode is disabled."));
+            return 1;
+        }
         chat = MinecraftClient.getInstance().inGameHud.getChatHud();
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player != null) {
@@ -157,5 +162,9 @@ public class AreaSelector {
 
     public static boolean isActive() {
         return active;
+    }
+
+    public static int[] getSelection() {
+        return coords;
     }
 }

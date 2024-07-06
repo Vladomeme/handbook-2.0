@@ -8,6 +8,7 @@
     "CharmDictionaryGuiMixin",
     "ChatHudMixin",
     "ClientPlayerInteractionManagerMixin",
+    "EntityMixin",
     "FileResourcePackProviderMixin",
     "ItemDictionaryGuiMixin",
     "MerchantScreenHandlerMixin",

@@ -2,6 +2,7 @@ package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
@@ -11,12 +12,10 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOfferList;
 
 import java.util.HashMap;
@@ -32,22 +31,22 @@ public class TradeScreen extends Screen {
     private TextRenderer tr;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
 
-    private TexturedButtonWidget backToHandbook;
+    private HandbookButtonWidget backToHandbook;
     private TextFieldWidget searchBox;
     private TradeListWidget favouritesWidget;
     private TradeListWidget resultsWidget;
-    private TexturedButtonWidget openTrader;
-    private TexturedButtonWidget share;
+    private HandbookButtonWidget openTrader;
+    private HandbookButtonWidget share;
 
-    private TexturedButtonWidget shareCost;
-    private TexturedButtonWidget shareTrader;
-    private TexturedButtonWidget shareFull;
-    private TexturedButtonWidget shareGlobal;
-    private TexturedButtonWidget shareLocal;
-    private TexturedButtonWidget shareWorld;
-    private TexturedButtonWidget shareLFG;
-    private TexturedButtonWidget shareReply;
-    private TexturedButtonWidget shareCancel;
+    private HandbookButtonWidget shareCost;
+    private HandbookButtonWidget shareTrader;
+    private HandbookButtonWidget shareFull;
+    private HandbookButtonWidget shareGlobal;
+    private HandbookButtonWidget shareLocal;
+    private HandbookButtonWidget shareWorld;
+    private HandbookButtonWidget shareLFG;
+    private HandbookButtonWidget shareReply;
+    private HandbookButtonWidget shareCancel;
 
     private TraderEntry trader;
     public TradeListWidgetEntry selectedEntry;
@@ -87,10 +86,9 @@ public class TradeScreen extends Screen {
     private void addElements() {
         int screenHeight = client.getWindow().getScaledHeight();
 
-        addDrawableChild(backToHandbook = new TexturedButtonWidget(
+        addDrawableChild(backToHandbook = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 40, screenHeight - 30, 50, 11,
-                0, 0, 11, new Identifier("handbook", "textures/button.png"),
-                50, 22, button -> client.setScreen(HandbookClient.handbookScreen)));
+                "Handbook", button -> client.setScreen(HandbookClient.handbookScreen)));
 
         addDrawableChild(searchBox = new TextFieldWidget(
                 tr, 131, 16, 260, 12, Text.of("")));
@@ -99,64 +97,56 @@ public class TradeScreen extends Screen {
         addDrawableChild(favouritesWidget = new TradeListWidget(5, 125, screenHeight - 70, 30, screenHeight - 40));
         addDrawableChild(resultsWidget = new TradeListWidget(135, 125, screenHeight - 70, 30, screenHeight - 40));
 
-        addDrawableChild(openTrader = new TexturedButtonWidget(
+        addDrawableChild(openTrader = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 265, screenHeight - 42, 70, 11,
-                0, 0, 11, new Identifier("handbook", "textures/open_trader.png"),
-                70, 22, button -> openTrader()));
+                "Open trader", button -> openTrader()));
         openTrader.active = false;
         openTrader.visible = false;
 
-        addDrawableChild(share = new TexturedButtonWidget(
-                265, screenHeight - 30, 35, 11,
-                0, 0, 11, new Identifier("handbook", "textures/share.png"),
-                35, 22, button -> startSharing()));
+        addDrawableChild(share = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
+                265, screenHeight - 30, 70, 11,
+                "Share", button -> startSharing()));
         share.active = false;
         share.visible = false;
 
-        addDrawableChild(shareGlobal = new TexturedButtonWidget(
+        addDrawableChild(shareGlobal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 380, screenHeight - 90, 36, 11,
-                0, 0, 11, new Identifier("handbook", "textures/location_global.png"),
-                36, 22, button -> share("g")));
+                "Global", button -> share("g")));
 
-        addDrawableChild(shareLocal = new TexturedButtonWidget(
+        addDrawableChild(shareLocal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 380, screenHeight - 78, 36, 11,
-                0, 0, 11, new Identifier("handbook", "textures/location_local.png"),
-                36, 22, button -> share("l")));
+                "Local", button -> share("l")));
 
-        addDrawableChild(shareWorld = new TexturedButtonWidget(
+        addDrawableChild(shareWorld = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 380, screenHeight - 66, 36, 11,
-                0, 0, 11, new Identifier("handbook", "textures/location_world.png"),
-                36, 22, button -> share("wc")));
+                "World", button -> share("wc")));
 
-        addDrawableChild(shareLFG = new TexturedButtonWidget(
+        addDrawableChild(shareLFG = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 380, screenHeight - 54, 36, 11,
-                0, 0, 11, new Identifier("handbook", "textures/location_lfg.png"),
-                36, 22, button -> share("lfg")));
+                "LFG", button -> share("lfg")));
 
-        addDrawableChild(shareReply = new TexturedButtonWidget(
+        addDrawableChild(shareReply = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 380, screenHeight - 42, 36, 11,
-                0, 0, 11, new Identifier("handbook", "textures/location_reply.png"),
-                36, 22, button -> share("r")));
+                "Reply", button -> share("r")));
 
-        addDrawableChild(shareCost = new TexturedButtonWidget(
+        addDrawableChild(shareCost = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 340, screenHeight - 78, 39, 11,
-                0, 0, 11, new Identifier("handbook", "textures/trade_cost.png"),
-                39, 22, button -> selectMode(TradesWidget.Mode.COST)));
+                "Cost", button -> selectMode(TradesWidget.Mode.COST)));
 
-        addDrawableChild(shareTrader = new TexturedButtonWidget(
+        addDrawableChild(shareTrader = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 340, screenHeight - 66, 39, 11,
-                0, 0, 11, new Identifier("handbook", "textures/trade_trader.png"),
-                39, 22, button -> selectMode(TradesWidget.Mode.TRADER)));
+                "Trader", button -> selectMode(TradesWidget.Mode.TRADER)));
 
-        addDrawableChild(shareFull = new TexturedButtonWidget(
+        addDrawableChild(shareFull = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 340, screenHeight - 54, 39, 11,
-                0, 0, 11, new Identifier("handbook", "textures/trade_full.png"),
-                39, 22, button -> selectMode(TradesWidget.Mode.FULL)));
+                "Full", button -> selectMode(TradesWidget.Mode.FULL)));
 
-        addDrawableChild(shareCancel = new TexturedButtonWidget(
+        addDrawableChild(shareCancel = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
                 342, screenHeight - 30, 36, 11,
-                0, 0, 11, new Identifier("handbook", "textures/location_cancel.png"),
-                36, 22, button -> cancelSharing()));
+                "Cancel", button -> {
+            worldButtonsState(false);
+            tradeButtonsState(false);
+        }));
         worldButtonsState(false);
         tradeButtonsState(false);
     }
@@ -167,26 +157,29 @@ public class TradeScreen extends Screen {
 
         MatrixStack matrices = context.getMatrices();
         RenderSystem.enableBlend();
-        context.fill(0, 0, width, 15, 0, 548055807);
+        context.fill(0, 0, width, 15, 0, HandbookConfig.INSTANCE.screenHeadColor);
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
         context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
-                (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1, -1, false);
+                (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1,
+                HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 
         matrices.push();
         matrices.scale(1.25f, 1.25f, 1);
         context.drawText(tr, Text.of("Trade Search").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
-                15, 3, -1, false);
+                15, 3, HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 
-        context.fill(130, 15, 131, height - 10, 100, -1);
-        context.fill(260, 29, 261, height - 10, 100, -1);
+        context.fill(130, 15, 131, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
+        context.fill(260, 29, 261, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
 
-        context.drawText(tr, Text.of("Favourite"),  21, 20, -1, false);
+        context.drawText(tr, Text.of("Favourite"),  21, 20,
+                HandbookConfig.INSTANCE.textColor, false);
         if (resultsWidget.children().isEmpty())
             context.drawText(tr, Text.of("Nothing found :("),
-                    197 - tr.getWidth("Nothing found :(") / 2, 35, -1, false);
+                    197 - tr.getWidth("Nothing found :(") / 2, 35,
+                    HandbookConfig.INSTANCE.textColor, false);
 
         if (trader != null) {
             matrices.push();
@@ -198,11 +191,11 @@ public class TradeScreen extends Screen {
             matrices.pop();
 
             context.drawText(tr, "Shard: " + (trader.getShard() != null ? trader.getShard() : "unknown"),
-                    10, 20, 16777215, false);
+                    10, 20, HandbookConfig.INSTANCE.textColor, false);
 
             int[] coords = trader.getPosition();
             context.drawText(tr, "Position: " + (coords != null ? coords[0] + ", " + coords[1] + ", " + coords[2] : "unknown"),
-                    10, 30, 16777215, false);
+                    10, 30, HandbookConfig.INSTANCE.textColor, false);
             matrices.pop();
         }
 
@@ -359,8 +352,7 @@ public class TradeScreen extends Screen {
         }
         MinecraftClient.getInstance().player.networkHandler.sendCommand(command.toString());
 
-        if (MinecraftClient.getInstance().currentScreen == null) return;
-        MinecraftClient.getInstance().currentScreen.close();
+        MinecraftClient.getInstance().currentScreen = null;
     }
 
     public void cancelSharing() {

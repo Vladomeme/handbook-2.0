@@ -5,9 +5,9 @@ import net.handbook.main.HBMixinMethods;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.AreaSelector;
 import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.category.AreaCategory;
 import net.handbook.main.resources.category.BaseCategory;
-import net.handbook.main.resources.category.PositionedCategory;
-import net.handbook.main.resources.entry.PositionedEntry;
+import net.handbook.main.resources.entry.AreaEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
@@ -73,22 +73,28 @@ public abstract class ChatHudMixin implements HBMixinMethods {
         String position = text.getString().substring(index).replace("Position: ", "");
 
         String[] coordinates = position.replace(" ", "").split(",", 3);
-        int x = Integer.parseInt(coordinates[0]);
-        int y = Integer.parseInt(coordinates[1]);
-        int z = Integer.parseInt(coordinates[2]);
 
-        MutableText modifiedText = Text.empty();
+        try {
+            int x = Integer.parseInt(coordinates[0]);
+            int y = Integer.parseInt(coordinates[1]);
+            int z = Integer.parseInt(coordinates[2]);
 
-        if (!message.getSiblings().isEmpty()) {
-            modifiedText = Text.literal(message.asTruncatedString(getTrunkLength(message.copy()))).setStyle(message.getStyle());
-            for (int i = 0; i < message.getSiblings().size() - 1; i++)
-                modifiedText.append(message.getSiblings().get(i));
+            MutableText modifiedText = Text.empty();
+
+            if (!message.getSiblings().isEmpty()) {
+                modifiedText = Text.literal(message.asTruncatedString(getTrunkLength(message.copy()))).setStyle(message.getStyle());
+                for (int i = 0; i < message.getSiblings().size() - 1; i++)
+                    modifiedText.append(message.getSiblings().get(i));
+            }
+            modifiedText.append(Text.literal(prePosition).setStyle(text.getStyle()));
+            modifiedText.append(WaypointManager.buildClickableMessage(position,
+                    "/handbook waypoint " + x + " " + y + " " + z, "Click to set a waypoint"));
+
+            return modifiedText;
+        } catch (Exception ignored) {
+            //unlucky
+            return message;
         }
-        modifiedText.append(Text.literal(prePosition).setStyle(text.getStyle()));
-        modifiedText.append(WaypointManager.buildClickableMessage(position,
-                "/handbook waypoint " + x + " " + y + " " + z, "Click to set a waypoint"));
-
-        return modifiedText;
     }
 
     @Unique
@@ -97,7 +103,7 @@ public abstract class ChatHudMixin implements HBMixinMethods {
         for (BaseCategory category : HandbookClient.handbookScreen.categories) {
             if (!category.getClearTitle().startsWith("POI")) continue;
 
-            for (PositionedEntry entry : ((PositionedCategory) category).getEntries()) {
+            for (AreaEntry entry : ((AreaCategory) category).getEntries()) {
                 if (!entry.getClearTitle().equals(POIName)) continue;
 
                 int[] coords = entry.getPosition();

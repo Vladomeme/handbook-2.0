@@ -66,7 +66,7 @@ public class DisplayWidget extends ClickableWidget {
                 }
                 else invalidImage = true;
             } catch (IOException e) {
-                HandbookClient.LOGGER.error("Invalid image name in entry " + entry.getTitle());
+                HandbookClient.LOGGER.error("Invalid image name in entry {}", entry.getTitle());
                 throw new RuntimeException(e);
             }
         }
@@ -113,23 +113,24 @@ public class DisplayWidget extends ClickableWidget {
 
         int y = 20;
         if (entry.getShard() != null) {
-            context.drawText(tr, "Shard: " + entry.getShard(), 10, y, 16777215, false);
+            context.drawText(tr, "Shard: " + entry.getShard(), 10, y, HandbookConfig.INSTANCE.textColor, false);
             y += 10;
         }
         int[] coords = entry.getPosition();
         if (coords != null) {
-            context.drawText(tr, "Position: " + coords[0] + ", " + coords[1] + ", " + coords[2], 10, y, 16777215, false);
+            context.drawText(tr, "Position: " + coords[0] + ", " + coords[1] + ", " + coords[2], 10, y,
+                    HandbookConfig.INSTANCE.textColor, false);
             y += 10;
         }
         y += 3;
 
         for (int i = 0; i < description.length ; i++) {
-            context.drawText(tr, description[i], 10, y + i * 10, 16777215, false);
+            context.drawText(tr, description[i], 10, y + i * 10, HandbookConfig.INSTANCE.textColor, false);
         }
 
         if (renderImage) {
             if (invalidImage) {
-                context.drawText(tr, "Invalid image", (int) (width * 0.5), 10, 16777215, false);
+                context.drawText(tr, "Invalid image", (int) (width * 0.5), 10, HandbookConfig.INSTANCE.textColor, false);
                 super.render(context, mouseX, mouseY, delta);
                 return;
             }
@@ -167,6 +168,7 @@ public class DisplayWidget extends ClickableWidget {
             }
 
             while (word.length() > maxLength) {
+                if (maxLength - lineLength < 0) break;
                 output.append(word, 0, maxLength - lineLength).append("\n");
                 word = word.substring(maxLength - lineLength);
                 lineLength = 0;
@@ -215,13 +217,12 @@ public class DisplayWidget extends ClickableWidget {
                 + entry.getClearTitle().replaceAll(" \\((.*?)\\)", "")
                 + " (" + entry.getShard() + ") | " + position);
 
-        if (client.currentScreen == null) return;
-        client.currentScreen.close();
+        client.currentScreen = null;
     }
 
     public void deleteEntry() {
         switch (screen.activeCategory.getTitle()) {
-            case "Location" -> HandbookClient.locationWriter.deleteEntry(entry.getTitle());
+            case "Locations" -> HandbookClient.locationWriter.deleteEntry(entry.getTitle());
             case "NPC" -> HandbookClient.npcWriter.deleteEntry(entry.getID());
             default -> {
                 client.inGameHud.getChatHud().addMessage(Text.of("Unable to delete an entry from this category."));
@@ -257,5 +258,14 @@ public class DisplayWidget extends ClickableWidget {
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
 
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (active && visible && isValidClickButton(button) && clicked(mouseX, mouseY)) {
+            onClick(mouseX, mouseY);
+            return true;
+        }
+        return false;
     }
 }

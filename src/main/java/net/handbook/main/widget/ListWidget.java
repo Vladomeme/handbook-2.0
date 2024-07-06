@@ -73,6 +73,12 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		return listWidth;
 	}
 
+	public void updateSizeShrink(int height, int top) {
+		this.height = height;
+		this.top = top;
+		this.bottom = top + height;
+	}
+
 	public void clear() {
 		clearEntries();
 	}

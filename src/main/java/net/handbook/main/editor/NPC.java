@@ -1,5 +1,6 @@
 package net.handbook.main.editor;
 
+import net.handbook.main.resources.entry.TraderEntry;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.village.TradeOffer;
@@ -13,6 +14,7 @@ public class NPC {
     final String shard;
     final int[] position;
     transient String offers;
+    transient boolean updateOffers = false;
     final String id;
 
     public NPC(String title, String world, double x, double y, double z) {
@@ -41,6 +43,8 @@ public class NPC {
                 .replace("\\\"", "\"")
                 .replace("\\\"", "\\\\\"")
                 .replace("\\u0027", "'");
+        String oldOffers = TraderEntry.getOffersRaw(id);
+        updateOffers = (oldOffers == null || !oldOffers.equals(this.offers));
     }
 
     public NbtCompound stripNbt(NbtCompound item) {

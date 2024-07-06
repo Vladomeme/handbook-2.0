@@ -1,6 +1,7 @@
 package net.handbook.main.editor;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.config.HandbookConfig;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.AdvancementManager;
 import net.minecraft.client.MinecraftClient;
@@ -16,6 +17,10 @@ public class AdvancementWriter {
     //returns int because it's used in command
     @SuppressWarnings("SameReturnValue")
     public static int dumpAdvancements(String root) {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.literal("Editor mode is disabled."));
+            return 1;
+        }
         if (MinecraftClient.getInstance().getNetworkHandler() == null) return 1;
 
         AdvancementManager manager = MinecraftClient.getInstance().getNetworkHandler().getAdvancementHandler().getManager();

@@ -5,7 +5,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.editor.NPCWriter;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 
 import java.io.IOException;
@@ -26,13 +25,26 @@ public class TraderEntry extends PositionedEntry {
         Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + id + ".txt");
         if (!Files.exists(path)) return null;
         try {
-            TradeOfferList offers = new TradeOfferList(StringNbtReader.parse(NPCWriter.decompressTrades(Files.readString(path))));
-            for (TradeOffer offer : offers) {
-                offer.disable();
-            }
-            return offers;
+            return new TradeOfferList(StringNbtReader.parse(NPCWriter.decompressTrades(Files.readString(path))));
         } catch (CommandSyntaxException | IOException e) {
             HandbookClient.LOGGER.error("Unable to read trader's offers. Data might be damaged.");
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean hasOffers() {
+        Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + id + ".txt");
+        return Files.exists(path);
+    }
+
+    public static String getOffersRaw(String id) {
+        Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + id + ".txt");
+        if (!Files.exists(path)) return null;
+        try {
+            return NPCWriter.decompressTrades(Files.readString(path));
+        } catch (IOException e) {
+            HandbookClient.LOGGER.error("Unable to read trader's offers.");
             throw new RuntimeException(e);
         }
     }

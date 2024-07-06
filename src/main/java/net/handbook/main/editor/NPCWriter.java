@@ -13,7 +13,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.text.Text;
 import net.minecraft.village.TradeOfferList;
 import org.apache.commons.io.IOUtils;
@@ -25,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
 
@@ -32,33 +32,29 @@ import java.util.zip.InflaterOutputStream;
 public class NPCWriter {
 
     public static final NPCWriter INSTANCE = read();
+    final transient MinecraftClient client = MinecraftClient.getInstance();
 
     String type = "trader";
     String title = "NPC";
     final List<NPC> entries = new ArrayList<>();
-    transient TraderCategory blacklist;
-    private transient int newCount = 0;
     static int x;
     static int y;
     static int z;
 
-    public void findEntities() {
-        if (!HandbookConfig.INSTANCE.enableScanner) return;
-        ClientWorld world = MinecraftClient.getInstance().world;
-        if (world == null) return;
-
-        world.getEntities().forEach(entity -> {
-            if (entity.getType().equals(EntityType.VILLAGER)) addNPC(entity, false);
-        });
-    }
+    transient TraderCategory blacklist;
+    private transient int newCount = 0;
 
     //returns int because it's used in command
     @SuppressWarnings("SameReturnValue")
     public int addNPC(Entity entity, boolean manual) {
-        ClientWorld world = MinecraftClient.getInstance().world;
+        if (!HandbookConfig.INSTANCE.editorMode && manual) {
+            client.inGameHud.getChatHud().addMessage(Text.literal("Editor mode is disabled."));
+            return 1;
+        }
+        ClientWorld world = client.world;
         if (world == null) return 1;
         if (!entity.hasCustomName() || entity.getScoreboardTeam() == null || !entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) {
-            if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+            if (manual) client.inGameHud.getChatHud().addMessage(
                     Text.of("§cERROR: This entity can not be added."));
             return 1;
         }
@@ -66,22 +62,22 @@ public class NPCWriter {
         for (NPC npc : entries) {
             if (npc.title.equals(entity.getCustomName().getString())
                     && npc.id.equals(NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
-                if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+                if (manual) client.inGameHud.getChatHud().addMessage(
                         Text.of("§cERROR: NPC is already added."));
                 return 1;
             }
         }
         for (Entry entry : blacklist.getEntries()) {
             if (entry.getID().equals(NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
-                if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+                if (manual) client.inGameHud.getChatHud().addMessage(
                         Text.of("§cERROR: NPC is already added."));
                 return 1;
             }
         }
 
-        if (manual) MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(
+        if (manual) client.inGameHud.getChatHud().addMessage(
                 Text.of("Added new NPC: " + entity.getCustomName().getString()));
-        HandbookClient.LOGGER.info("ADDING NEW NPC: " + entity.getCustomName().getString() + " " + entity.getType());
+        HandbookClient.LOGGER.info("ADDING NEW NPC: {} {}", entity.getCustomName().getString(), entity.getType());
 
         newCount++;
         entries.add(new NPC(entity.getCustomName().getString(), WaypointManager.getShard(),
@@ -89,11 +85,65 @@ public class NPCWriter {
         return 1;
     }
 
+    @SuppressWarnings("SameReturnValue")
+    public int massDelete(int[] area) {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            client.inGameHud.getChatHud().addMessage(Text.literal("Editor mode is disabled."));
+            return 1;
+        }
+        int counter = 0;
+        for (NPC npc : new ArrayList<>(entries)) {
+            int[] pos = npc.position;
+            if (!(npc.shard.equals(WaypointManager.getShard())
+                    && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
+                    && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
+                    && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
+            entries.remove(npc);
+            counter++;
+        }
+        AreaSelector.finish();
+        client.inGameHud.getChatHud().addMessage(Text.of("Deleted " + counter + " NPCs. "
+                + (counter > 0 ? counter > 10 ? "What a massacre..." : "Informative and unfortunate..." : "Swing and a miss...")));
+        return 1;
+    }
+
+    @SuppressWarnings("SameReturnValue")
+    public int clearTrades() {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            client.inGameHud.getChatHud().addMessage(Text.literal("Editor mode is disabled."));
+            return 1;
+        }
+        final int[] counter = {0};
+        try (Stream<Path> paths = Files.list(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/"))) {
+            paths.forEach(path -> {
+                String name = path.getFileName().toString();
+                if (!name.endsWith(".txt")) return;
+
+                String id = name.replace(".txt", "");
+                for (NPC npc : entries) {
+                    if (npc.id.equals(id)) return;
+                }
+                try {
+                    Files.delete(path);
+                    HandbookClient.LOGGER.info("deleted trades file: {}", path);
+                    counter[0]++;
+                } catch (Exception ignored) {
+                    //don't care
+                }
+            });
+            client.inGameHud.getChatHud().addMessage(Text.of("Deleted " + counter[0] + " (hopefully) unused trade files. "
+                    + (counter[0] > 0 ? "Why though?" : "hm?")));
+        } catch (Exception ignored) {
+            //don't care
+        }
+        return 1;
+    }
+
     public void deleteEntry(String id) {
         for (NPC entry : entries) {
             if (entry.id.equals(id)) {
                 entries.remove(entry);
-                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Entry removed: " + id));
+                client.inGameHud.getChatHud().addMessage(Text.of("Entry removed: " + id));
                 blacklist.getEntries().add(new TraderEntry(null, null, null, null, null, id));
                 try {
                     Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + id + ".txt"));
@@ -103,13 +153,13 @@ public class NPCWriter {
                 return;
             }
         }
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Unable to delete this entry"));
+        client.inGameHud.getChatHud().addMessage(Text.of("Unable to delete this entry"));
     }
 
     public void addOffers(TradeOfferList offers) {
         String name;
-        if (MinecraftClient.getInstance().currentScreen instanceof MerchantScreen) {
-            name = MinecraftClient.getInstance().currentScreen.getTitle().getString();
+        if (client.currentScreen instanceof MerchantScreen) {
+            name = client.currentScreen.getTitle().getString();
         }
         else return;
 
@@ -130,7 +180,7 @@ public class NPCWriter {
     //returns int because it's used in command
     @SuppressWarnings("SameReturnValue")
     public int write() {
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"npcs.json\" with " + entries.size() +
+        client.inGameHud.getChatHud().addMessage(Text.of("Saved \"npcs.json\" with " + entries.size() +
                 " NPCs total, " + newCount + " new NPCs."));
         Gson gson = new Gson();
         JsonWriter writer = null;
@@ -154,10 +204,11 @@ public class NPCWriter {
         for (NPC npc : entries) {
             if (npc.offers == null || npc.offers.isEmpty()) continue;
             try {
-                if (Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + npc.id + ".txt"))) continue;
+                if (!npc.updateOffers) continue;
+                npc.updateOffers = false;
 
                 Files.write(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + npc.id + ".txt"), compressTrades(npc.offers));
-                HandbookClient.LOGGER.info("Saving trades file " + npc.id + ".txt");
+                HandbookClient.LOGGER.info("Saving trades file {}.txt", npc.id);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

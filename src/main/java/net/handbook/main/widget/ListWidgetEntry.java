@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
@@ -54,18 +55,19 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
         RenderSystem.enableBlend();
         if (highlighted) {
             if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
-                context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 1358935040);
-            else context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 866822826);
+                context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, HandbookConfig.INSTANCE.highlightFavColor);
+            else context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, HandbookConfig.INSTANCE.highlightColor);
         }
         else {
             if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
-                context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, 2030023680);
+                context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, HandbookConfig.INSTANCE.favouriteColor);
         }
         RenderSystem.disableBlend();
 
         if (tr.getWidth(entry.getTitle()) > 150)
-            context.drawText(tr, tr.trimToWidth(entry.getTitle(), 147) + "...", left + 10, top, 16777215, false);
-        else context.drawText(tr, entry.getTitle(), left + 10, top, 16777215, false);
+            context.drawText(tr, tr.trimToWidth(entry.getTitle(), 147) + "...", left + 10, top,
+                    HandbookConfig.INSTANCE.textColor, false);
+        else context.drawText(tr, entry.getTitle(), left + 10, top, HandbookConfig.INSTANCE.textColor, false);
     }
 
     public void markEntry() {
