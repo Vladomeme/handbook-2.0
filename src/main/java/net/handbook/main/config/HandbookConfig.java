@@ -67,6 +67,7 @@ public class HandbookConfig {
     public boolean enabled = true;
     public boolean enableScanner = true;
     public boolean editorMode = false;
+    public boolean quickSaveTrades = false;
     public boolean alwaysContinue = false;
     public boolean editMessages = true;
 
@@ -114,6 +115,14 @@ public class HandbookConfig {
                                 If enabled, gives you access to a bunch of options to add,
                                 edit and remove entries.""")))
                                 .binding(false, () -> editorMode, newVal -> editorMode = newVal)
+                                .controller(TickBoxControllerBuilder::create).build())
+
+                        .option(Option.<Boolean>createBuilder()
+                                .name(Text.literal("Quick-save trades"))
+                                .description(OptionDescription.of(Text.literal("""
+                                If enabled, NPC trading screen will be instantly closed, but
+                                trades will be saved with a notification.""")))
+                                .binding(false, () -> quickSaveTrades, newVal -> quickSaveTrades = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()

@@ -2,8 +2,8 @@ package net.handbook.main.resources.entry;
 
 public class PositionedEntry extends Entry {
 
-    final String shard;
-    final int[] position;
+    String shard;
+    int[] position;
 
     public PositionedEntry(String title, String text, String image, String shard, int[] position) {
         super(title, text, image);
@@ -19,5 +19,10 @@ public class PositionedEntry extends Entry {
     @Override
     public int[] getPosition() {
         return position;
+    }
+
+    public void update(String title, String text, int[] position) {
+        super.update(title, text);
+        this.position = position;
     }
 }

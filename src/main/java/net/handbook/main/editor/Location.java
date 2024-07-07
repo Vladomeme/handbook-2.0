@@ -2,11 +2,11 @@ package net.handbook.main.editor;
 
 public class Location {
 
-    final String title;
-    final String text;
+    String title;
+    String text;
     final String image;
     final String shard;
-    final int[] position;
+    int[] position;
 
     public Location(String title, String world, double x, double y, double z) {
         this.title = title;

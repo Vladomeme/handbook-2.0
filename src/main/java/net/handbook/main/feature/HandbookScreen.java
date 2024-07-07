@@ -3,6 +3,7 @@ package net.handbook.main.feature;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.editor.EditScreen;
 import net.handbook.main.resources.category.BaseCategory;
 import net.handbook.main.resources.category.MarkCategory;
 import net.handbook.main.resources.entry.Entry;
@@ -44,6 +45,7 @@ public class HandbookScreen extends Screen {
     public HandbookButtonWidget shareLocation;
     public HandbookButtonWidget delete;
     public HandbookButtonWidget resetTrades;
+    public HandbookButtonWidget edit;
     //Trade widget
     public TradesWidget tradesWidget;
     public TradeListWidget tradeList;
@@ -168,7 +170,7 @@ public class HandbookScreen extends Screen {
                 "Share location", button -> worldButtonsState(true)));
 
         addDrawableChild(delete = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
-                screenWidth - 40, screenHeight - 30, 36, 11,
+                screenWidth - 73, screenHeight - 30, 69, 11,
                 "Delete", button -> displayWidget.deleteEntry()));
 
         addDrawableChild(resetTrades = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
@@ -180,6 +182,10 @@ public class HandbookScreen extends Screen {
             openTrades.visible = false;
             displayWidget.deleteTrade();
         }));
+
+        addDrawableChild(edit = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
+                screenWidth - 73, screenHeight - 54, 69, 11,
+                "Edit", button -> MinecraftClient.getInstance().setScreen(new EditScreen(displayWidget.getEntry()))));
 
         addDrawableChild(shareGlobal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 90, 36, 11,
@@ -365,6 +371,8 @@ public class HandbookScreen extends Screen {
         delete.visible = state;
         resetTrades.active = state;
         resetTrades.visible = state;
+        edit.active = state;
+        edit.visible = state;
     }
 
     public void tradeButtonsState(boolean state) {

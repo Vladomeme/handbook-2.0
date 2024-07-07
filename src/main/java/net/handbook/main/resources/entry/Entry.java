@@ -5,8 +5,8 @@ import net.minecraft.village.TradeOfferList;
 
 public class Entry {
 
-    final String title;
-    final String text;
+    String title;
+    String text;
     final String image;
 
     public Entry(String title, String text, String image) {
@@ -18,6 +18,11 @@ public class Entry {
     public void mouseClicked() {
         HandbookClient.handbookScreen.displayWidget.setEntry(this);
         HandbookClient.handbookScreen.openDisplay();
+    }
+
+    public void update(String title, String text) {
+        this.title = title;
+        this.text = text;
     }
 
     public String getTitle() {

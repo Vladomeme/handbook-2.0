@@ -27,8 +27,8 @@ public class TraderEntry extends PositionedEntry {
         try {
             return new TradeOfferList(StringNbtReader.parse(NPCWriter.decompressTrades(Files.readString(path))));
         } catch (CommandSyntaxException | IOException e) {
-            HandbookClient.LOGGER.error("Unable to read trader's offers. Data might be damaged.");
-            throw new RuntimeException(e);
+            HandbookClient.LOGGER.error("Unable to read trader's offers: {}. Data might be damaged. {}", id, e.getMessage());
+            return null;
         }
     }
 
@@ -44,8 +44,8 @@ public class TraderEntry extends PositionedEntry {
         try {
             return NPCWriter.decompressTrades(Files.readString(path));
         } catch (IOException e) {
-            HandbookClient.LOGGER.error("Unable to read trader's offers.");
-            throw new RuntimeException(e);
+            HandbookClient.LOGGER.error("Unable to read trader's offers: {}.", id);
+            return null;
         }
     }
 

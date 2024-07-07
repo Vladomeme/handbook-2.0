@@ -5,6 +5,7 @@ import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.entry.PositionedEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -17,11 +18,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class LocationWriter {
 
     public static final LocationWriter INSTANCE = read();
+    final transient MinecraftClient client = MinecraftClient.getInstance();
 
     String type = "positioned";
     String title = "Locations";
@@ -32,9 +35,8 @@ public class LocationWriter {
     @SuppressWarnings("SameReturnValue")
     public int addLocation(String name) {
         ClientWorld world = MinecraftClient.getInstance().world;
-        if (world == null) return 1;
         ClientPlayerEntity entity = MinecraftClient.getInstance().player;
-        if (entity == null) return 1;
+        if (world == null || entity == null) return 1;
 
         if (name.startsWith("\"")) name = name.replace("\"", "");
 
@@ -45,6 +47,19 @@ public class LocationWriter {
         newCount++;
         entries.add(new Location(name, WaypointManager.getShard(), entity.getX(), entity.getY(), entity.getZ()));
         return 1;
+    }
+
+    public void editEntry(PositionedEntry entry, String title, int[] position) {
+        for (Location location : entries) {
+            if (location.title.equals(title) && Arrays.equals(location.position, position)) {
+                location.title = entry.getTitle();
+                location.text = entry.getText();
+                location.position = entry.getPosition();
+                client.inGameHud.getChatHud().addMessage(Text.of("Entry edited."));
+                return;
+            }
+        }
+        client.inGameHud.getChatHud().addMessage(Text.of("Entry editing failed"));
     }
 
     public void deleteEntry(String title) {

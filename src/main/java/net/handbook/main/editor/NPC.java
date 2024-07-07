@@ -8,11 +8,11 @@ import net.minecraft.village.TradeOfferList;
 
 public class NPC {
 
-    final String title;
-    final String text;
+    String title;
+    String text;
     final String image;
     final String shard;
-    final int[] position;
+    int[] position;
     transient String offers;
     transient boolean updateOffers = false;
     final String id;

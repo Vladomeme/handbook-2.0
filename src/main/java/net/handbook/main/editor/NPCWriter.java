@@ -139,6 +139,19 @@ public class NPCWriter {
         return 1;
     }
 
+    public void editEntry(TraderEntry entry) {
+        for (NPC npc : entries) {
+            if (npc.id.equals(entry.getID())) {
+                npc.title = entry.getTitle();
+                npc.text = entry.getText();
+                npc.position = entry.getPosition();
+                client.inGameHud.getChatHud().addMessage(Text.of("Entry edited."));
+                return;
+            }
+        }
+        client.inGameHud.getChatHud().addMessage(Text.of("Entry editing failed"));
+    }
+
     public void deleteEntry(String id) {
         for (NPC entry : entries) {
             if (entry.id.equals(id)) {
@@ -235,11 +248,16 @@ public class NPCWriter {
     private static byte[] compressTrades(String text) {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (DeflaterOutputStream outputStream = new DeflaterOutputStream(byteStream)) {
-            outputStream.write(text.getBytes());
+            outputStream.write(stupidPlainLoreFix(text).getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return Base64.getEncoder().encode(byteStream.toByteArray());
+    }
+
+    private static String stupidPlainLoreFix(String text) {
+        return text.replace("THAT.\"\"", "THAT.\\\"\"")
+                .replace("hat!\"\"", "hat!\\\"\"");
     }
 
 

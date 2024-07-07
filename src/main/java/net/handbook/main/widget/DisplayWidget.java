@@ -95,6 +95,8 @@ public class DisplayWidget extends ClickableWidget {
                 && (screen.activeCategory.getTitle().equals("Locations") || screen.activeCategory.getTitle().equals("NPC"))) {
             screen.delete.visible = true;
             screen.delete.active = true;
+            screen.edit.visible = true;
+            screen.edit.active = true;
         }
     }
 
