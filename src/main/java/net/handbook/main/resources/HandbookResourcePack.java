@@ -27,6 +27,7 @@ public class HandbookResourcePack extends DirectoryResourcePack {
         this.closer = closer;
     }
 
+    @SuppressWarnings("RedundantArrayCreation")
     @Override
     public InputSupplier<InputStream> open(ResourceType type, Identifier id) {
         Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures/" + id.getPath());
@@ -39,6 +40,7 @@ public class HandbookResourcePack extends DirectoryResourcePack {
     }
 
 
+    @SuppressWarnings("RedundantArrayCreation")
     @Override
     public void findResources(ResourceType type, String namespace, String prefix, ResultConsumer consumer) {
         if (prefix.equals("font") || prefix.startsWith("textures")

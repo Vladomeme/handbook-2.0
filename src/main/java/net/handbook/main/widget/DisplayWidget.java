@@ -225,7 +225,7 @@ public class DisplayWidget extends ClickableWidget {
     public void deleteEntry() {
         switch (screen.activeCategory.getTitle()) {
             case "Locations" -> HandbookClient.locationWriter.deleteEntry(entry.getTitle());
-            case "NPC" -> HandbookClient.npcWriter.deleteEntry(entry.getID());
+            case "NPC" -> HandbookClient.npcWriter.deleteEntry(entry.getID(), entry.getTitle());
             default -> {
                 client.inGameHud.getChatHud().addMessage(Text.of("Unable to delete an entry from this category."));
                 return;

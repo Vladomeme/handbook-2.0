@@ -33,8 +33,11 @@ public class EditScreen extends Screen {
     private TextFieldWidget textField;
     private TextFieldWidget positionField;
     private TextFieldWidget areaField;
+    @SuppressWarnings("FieldCanBeLocal")
     private HandbookButtonWidget moveButton;
+    @SuppressWarnings("FieldCanBeLocal")
     private HandbookButtonWidget cancelButton;
+    @SuppressWarnings("FieldCanBeLocal")
     private HandbookButtonWidget saveButton;
 
     private int lastKey = 0;

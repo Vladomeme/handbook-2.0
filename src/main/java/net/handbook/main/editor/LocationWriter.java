@@ -76,8 +76,7 @@ public class LocationWriter {
     //returns int because it's used in command
     @SuppressWarnings({"ResultOfMethodCallIgnored", "SameReturnValue"})
     public int write() {
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Saved \"locations.json\" with " + entries.size() +
-                " locations total, " + newCount + " new locations."));
+        HandbookClient.LOGGER.info("Saved \"locations.json\" with {} locations total, {} new locations.", entries.size(), newCount);
         Gson gson = new Gson();
         JsonWriter writer = null;
         try {

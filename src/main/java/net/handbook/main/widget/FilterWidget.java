@@ -124,6 +124,7 @@ public class FilterWidget extends ClickableWidget {
         HandbookClient.handbookScreen.filterEntries(false);
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     public boolean checkEntry(Entry entry) {
         //text check
         if (!textField.getText().isEmpty() && (entry.getText() == null || !entry.getText().contains(textField.getText()))) return false;

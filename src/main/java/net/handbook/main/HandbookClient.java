@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.*;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.TradeScreen;
@@ -59,12 +60,12 @@ public class HandbookClient implements ClientModInitializer {
     public static KeyBinding openScreen;
     public static KeyBinding addLocation;
 
-    public static final HandbookScreen handbookScreen = HandbookScreen.INSTANCE;
-    public static final TradeScreen tradeScreen = TradeScreen.INSTANCE;
-    public static final LocationWriter locationWriter = LocationWriter.INSTANCE;
-    public static final NPCWriter npcWriter = NPCWriter.INSTANCE;
+    public static HandbookScreen handbookScreen;
+    public static TradeScreen tradeScreen;
+    public static LocationWriter locationWriter;
+    public static NPCWriter npcWriter;
 
-    static boolean firstLoad = false;
+    static boolean firstLoad = true;
 
     @Override
     public void onInitializeClient() {
@@ -77,34 +78,36 @@ public class HandbookClient implements ClientModInitializer {
 
             @Override
             public void reload(ResourceManager manager) {
-                onReload();
+                onReload(manager);
             }
         });
 
-        registerEvents();
         registerKeyBinds();
+        registerEvents();
         registerCommands();
 
         LOGGER.info("Handbook 2.0 loaded!");
     }
 
-    private void onReload() {
+    private void onReload(ResourceManager manager) {
         Gson gson = new Gson();
 
-        handbookScreen.categories.clear();
-        if (firstLoad) dumpAll();
-        firstLoad = true;
+        if (firstLoad) {
+            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/first_load"))) createAllFiles(manager);
 
-        try {
-            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades")))
-                Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades"));
-            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures")))
-                Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures"));
-            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints")))
-                Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints"));
-        } catch (IOException e) {
-            LOGGER.error("Failed to create handbook directories.");
-            return;
+            handbookScreen = HandbookScreen.INSTANCE;
+            tradeScreen = TradeScreen.INSTANCE;
+            locationWriter = LocationWriter.INSTANCE;
+            npcWriter = NPCWriter.INSTANCE;
+
+            WaypointManager.screen = handbookScreen;
+            HandbookConfig.read();
+
+            firstLoad = false;
+        }
+        else {
+            dumpAll();
+            handbookScreen.categories.clear();
         }
 
         File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
@@ -160,11 +163,34 @@ public class HandbookClient implements ClientModInitializer {
             }
         }
         handbookScreen.categories.sort(Comparator.comparing(BaseCategory::getTitle));
-        for (BaseCategory category : handbookScreen.categories) {
-            category.getEntries().sort(Comparator.comparing(Entry::getClearTitle));
-        }
+        for (BaseCategory category : handbookScreen.categories) Collections.sort(category.getEntries());
         LOGGER.info("Loaded {} categories", handbookScreen.categories.size());
-        WaypointManager.updateBeaconColor();
+        WaypointManager.updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
+    }
+
+    private void createAllFiles(ResourceManager manager) {
+        LOGGER.info("Looks like Handbook is loaded for the first time. Copying all files...");
+
+        Path home = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook");
+        try {
+            Files.createDirectories(Path.of(home + "/textures"));
+            Files.createDirectories(Path.of(home + "/trades"));
+            Files.createDirectories(Path.of(home + "/waypoints"));
+            Files.createFile(Path.of(home + "/first_load"));
+
+        } catch (IOException e) {
+            LOGGER.error("Failed to create handbook directories.");
+            return;
+        }
+
+        manager.findResources("handbook_default", id -> true).forEach((id, resource) -> {
+            Path path = Path.of(home + id.getPath().replace("handbook_default", ""));
+            try {
+                Files.write(path, resource.getInputStream().readAllBytes());
+            } catch (IOException e) {
+                LOGGER.error("Failed to copy handbook file: {}.", id.getPath());
+            }
+        });
     }
 
     private void registerEvents() {

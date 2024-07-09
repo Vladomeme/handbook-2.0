@@ -2,7 +2,7 @@ package net.handbook.main.resources.entry;
 
 public class PositionedEntry extends Entry {
 
-    String shard;
+    final String shard;
     int[] position;
 
     public PositionedEntry(String title, String text, String image, String shard, int[] position) {

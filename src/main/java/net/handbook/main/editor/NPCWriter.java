@@ -54,23 +54,19 @@ public class NPCWriter {
         ClientWorld world = client.world;
         if (world == null) return 1;
         if (!entity.hasCustomName() || entity.getScoreboardTeam() == null || !entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) {
-            if (manual) client.inGameHud.getChatHud().addMessage(
-                    Text.of("§cERROR: This entity can not be added."));
+            if (manual) client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This entity can not be added."));
             return 1;
         }
-
+        String newID = NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ());
         for (NPC npc : entries) {
-            if (npc.title.equals(entity.getCustomName().getString())
-                    && npc.id.equals(NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
-                if (manual) client.inGameHud.getChatHud().addMessage(
-                        Text.of("§cERROR: NPC is already added."));
+            if (npc.id.equals(newID)) {
+                if (manual) client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: NPC is already added."));
                 return 1;
             }
         }
         for (Entry entry : blacklist.getEntries()) {
-            if (entry.getID().equals(NPC.getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ()))) {
-                if (manual) client.inGameHud.getChatHud().addMessage(
-                        Text.of("§cERROR: NPC is already added."));
+            if (entry.getID().equals(newID)) {
+                if (manual) client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: NPC is blacklisted."));
                 return 1;
             }
         }
@@ -152,9 +148,9 @@ public class NPCWriter {
         client.inGameHud.getChatHud().addMessage(Text.of("Entry editing failed"));
     }
 
-    public void deleteEntry(String id) {
+    public void deleteEntry(String id, String title) {
         for (NPC entry : entries) {
-            if (entry.id.equals(id)) {
+            if (entry.id.equals(id) && entry.title.equals(title)) {
                 entries.remove(entry);
                 client.inGameHud.getChatHud().addMessage(Text.of("Entry removed: " + id));
                 blacklist.getEntries().add(new TraderEntry(null, null, null, null, null, id));
@@ -193,8 +189,7 @@ public class NPCWriter {
     //returns int because it's used in command
     @SuppressWarnings("SameReturnValue")
     public int write() {
-        client.inGameHud.getChatHud().addMessage(Text.of("Saved \"npcs.json\" with " + entries.size() +
-                " NPCs total, " + newCount + " new NPCs."));
+        HandbookClient.LOGGER.info("Saved \"npcs.json\" with {} NPCs total, {} new NPCs.", entries.size(), newCount);
         Gson gson = new Gson();
         JsonWriter writer = null;
         //ENTRIES

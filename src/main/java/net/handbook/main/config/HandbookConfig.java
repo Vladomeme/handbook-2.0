@@ -9,7 +9,6 @@ import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
-import net.handbook.main.feature.WaypointManager;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import org.apache.commons.io.IOUtils;
@@ -44,12 +43,10 @@ public class HandbookConfig {
     }
 
     public HandbookConfig write() {
-        WaypointManager.updateBeaconColor();
-
         Gson gson = new Gson();
         JsonWriter writer = null;
         try {
-            if (!Files.exists(FILE.toPath())) Files.createDirectories(FILE.toPath());
+            if (!FILE.exists()) Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook"));
             writer = gson.newJsonWriter(new FileWriter(FILE));
             writer.setIndent("    ");
             gson.toJson(gson.toJsonTree(this, HandbookConfig.class), writer);

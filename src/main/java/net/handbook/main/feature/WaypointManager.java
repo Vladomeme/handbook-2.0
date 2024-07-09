@@ -30,7 +30,7 @@ public class WaypointManager {
 
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final ChatHud chat = client.inGameHud.getChatHud();
-    private static final HandbookScreen screen = HandbookClient.handbookScreen;
+    public static HandbookScreen screen;
 
     private static final Queue<WaypointEntry> waypoints = new LinkedList<>();
     private static final List<WaypointEntry> altPath = new ArrayList<>();
@@ -79,6 +79,7 @@ public class WaypointManager {
         if (!isInPlayableArea(getShard(), entry.getWaypoint().x(), entry.getWaypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED)));
+        updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
         return 1;
     }
 
@@ -576,9 +577,9 @@ public class WaypointManager {
         return sendRestoreMessage;
     }
 
-    public static void updateBeaconColor() {
-        beaconColor[0] = ((HandbookConfig.INSTANCE.beaconColor & 16711680) >> 16) / 255.0F;
-        beaconColor[1] = ((HandbookConfig.INSTANCE.beaconColor & '\uff00') >> 8) / 255.0F;
-        beaconColor[2] = ((HandbookConfig.INSTANCE.beaconColor & 255)) / 255.0F;
+    public static void updateBeaconColor(int color) {
+        beaconColor[0] = ((color & 16711680) >> 16) / 255.0F;
+        beaconColor[1] = ((color & '\uff00') >> 8) / 255.0F;
+        beaconColor[2] = ((color & 255)) / 255.0F;
     }
 }

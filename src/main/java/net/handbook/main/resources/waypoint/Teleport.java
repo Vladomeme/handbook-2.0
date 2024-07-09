@@ -6,7 +6,7 @@ public enum Teleport {
     Sierhaven ("Sierhaven", "valley", -765,  107, 65,   true),
     Nyr       ("Nyr",       "valley", -140,  100, -80,  true),
     Farr      ("Farr",      "valley", 570,   100, 190,  true),
-    Highwatch ("Highwatch", "valley", 1170,  130, -110, true),
+    Highwatch ("Highwatch", "valley", 1190,  137, -114, true),
     Lowtide   ("Lowtide",   "valley", 710,   73,  480,  true),
     Oceangate ("Oceangate", "valley", -1634, 122, 98,   true),
     TaEldim   ("Ta'Eldim",  "valley", 480,   192, -350, true),
