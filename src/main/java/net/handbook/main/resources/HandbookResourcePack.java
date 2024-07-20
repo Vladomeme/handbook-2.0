@@ -39,7 +39,6 @@ public class HandbookResourcePack extends DirectoryResourcePack {
         return null;
     }
 
-
     @SuppressWarnings("RedundantArrayCreation")
     @Override
     public void findResources(ResourceType type, String namespace, String prefix, ResultConsumer consumer) {

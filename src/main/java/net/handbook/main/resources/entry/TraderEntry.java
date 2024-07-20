@@ -15,8 +15,13 @@ public class TraderEntry extends PositionedEntry {
 
     final String id;
 
-    public TraderEntry(String title, String text, String image, String shard, int[] position, String id) {
+    public TraderEntry(String title, String text, String image, String shard, int[] position) {
         super(title, text, image, shard, position);
+        this.id = NPCWriter.getID(title, position[0], position[1], position[2]);
+    }
+
+    public TraderEntry(String id) {
+        super(null, null, null, null, null);
         this.id = id;
     }
 
@@ -38,7 +43,7 @@ public class TraderEntry extends PositionedEntry {
         return Files.exists(path);
     }
 
-    public static String getOffersRaw(String id) {
+    public String getOffersRaw() {
         Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + id + ".txt");
         if (!Files.exists(path)) return null;
         try {

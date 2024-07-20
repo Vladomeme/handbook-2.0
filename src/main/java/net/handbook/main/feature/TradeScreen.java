@@ -31,6 +31,7 @@ public class TradeScreen extends Screen {
     private TextRenderer tr;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
 
+    @SuppressWarnings("unused")
     private HandbookButtonWidget backToHandbook;
     private TextFieldWidget searchBox;
     private TradeListWidget favouritesWidget;
@@ -67,14 +68,13 @@ public class TradeScreen extends Screen {
         addElements();
 
         offers.forEach((id, offers) -> resultsWidget.addEntries(offers, id));
+
         List<String> favourite = screen.markedEntries.getMarkedEntries("favTrades");
-        if (favourite != null) {
-            offers.forEach((id, offers) -> {
-                for (int i = 0; i < offers.size(); i++)
-                    if (favourite.contains(id + "&" + i)) favouritesWidget.addEntry(offers.get(i), id + "&" + i);
-            });
-        }
-        else screen.markedEntries.addCategory("favTrades");
+        if (favourite == null) screen.markedEntries.addCategory("favTrades");
+        else offers.forEach((id, offers) -> {
+            for (int i = 0; i < offers.size(); i++)
+                if (favourite.contains(id + "&" + i)) favouritesWidget.addEntry(offers.get(i), id + "&" + i);
+        });
 
         lastFilter = "";
         trader = null;
@@ -244,7 +244,7 @@ public class TradeScreen extends Screen {
 
     public void setTraderInfo(String id) {
         cancelSharing();
-        for (BaseCategory category : screen.categories) {
+        for (BaseCategory category : HandbookClient.getCategories()) {
             if (!category.getType().equals("trader") || category.getTitle().equals("EXCLUDE")) continue;
 
             for (Entry entry : category.getEntries()) {
@@ -259,7 +259,7 @@ public class TradeScreen extends Screen {
             }
         }
         trader = new TraderEntry("Unknown trader", "Could not find a trader with this id: " + id,
-                null, "unknown", new int[]{0, 0, 0}, "kappa123");
+                "", "unknown", new int[]{0, 0, 0});
         openTrader.active = false;
         openTrader.visible = false;
     }

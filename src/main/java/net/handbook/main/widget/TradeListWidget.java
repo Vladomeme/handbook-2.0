@@ -56,7 +56,4 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 		return listWidth;
 	}
 
-	public int getBottom() {
-		return bottom;
-	}
 }

@@ -11,6 +11,7 @@ import dev.xpple.clientarguments.arguments.CEntityArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -26,7 +27,6 @@ import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
-import net.handbook.main.resources.entry.WaypointChain;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.client.MinecraftClient;
@@ -62,8 +62,7 @@ public class HandbookClient implements ClientModInitializer {
 
     public static HandbookScreen handbookScreen;
     public static TradeScreen tradeScreen;
-    public static LocationWriter locationWriter;
-    public static NPCWriter npcWriter;
+    public static final List<CategoryWriter<? extends BaseCategory>> writers = new ArrayList<>();
 
     static boolean firstLoad = true;
 
@@ -97,8 +96,6 @@ public class HandbookClient implements ClientModInitializer {
 
             handbookScreen = HandbookScreen.INSTANCE;
             tradeScreen = TradeScreen.INSTANCE;
-            locationWriter = LocationWriter.INSTANCE;
-            npcWriter = NPCWriter.INSTANCE;
 
             WaypointManager.screen = handbookScreen;
             HandbookConfig.read();
@@ -106,8 +103,9 @@ public class HandbookClient implements ClientModInitializer {
             firstLoad = false;
         }
         else {
-            dumpAll();
-            handbookScreen.categories.clear();
+            NPCWriter.saveTrades();
+            writers.forEach(CategoryWriter::write);
+            writers.clear();
         }
 
         File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
@@ -122,49 +120,44 @@ public class HandbookClient implements ClientModInitializer {
                 String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
                 switch (type) {
                     case "positioned" -> {
-                        PositionedCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), PositionedCategory.class);
-                        LOGGER.info("Loading positioned category {}", category.getTitle());
-                        handbookScreen.categories.add(category);
+                        CategoryWriter<PositionedCategory> writer = new CategoryWriter<>(PositionedCategory.class, file.toPath());
+                        writers.add(writer);
+                        if (writer.category.getTitle().equals("Locations")) LocationWriter.writer = writer;
                     }
-                    case "area" -> {
-                        AreaCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), AreaCategory.class);
-                        LOGGER.info("Loading area category {}", category.getTitle());
-                        handbookScreen.categories.add(category);
-                    }
-                    case "waypoint" -> {
-                        WaypointCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointCategory.class);
-                        LOGGER.info("Loading waypoint category {}", category.getTitle());
-                        handbookScreen.categories.add(mergeWaypointEntries(category));
-                    }
+                    case "area" -> writers.add(new CategoryWriter<>(AreaCategory.class, file.toPath()));
+                    case "waypoint" -> writers.add(new CategoryWriter<>(WaypointCategory.class, file.toPath()));
                     case "trader" -> {
-                        TraderCategory category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), TraderCategory.class);
-                        LOGGER.info("Loading trader category {}", category.getTitle());
-                        if (category.getTitle().equals("EXCLUDE")) {
-                            npcWriter.setBlacklist(category);
+                        CategoryWriter<TraderCategory> writer = new CategoryWriter<>(TraderCategory.class, file.toPath());
+                        writers.add(writer);
+                        if (writer.category.getTitle().equals("EXCLUDE")) {
+                            NPCWriter.blacklist = writer;
+                            LOGGER.info("Loaded trader blacklist");
                             continue;
                         }
-                        else handbookScreen.categories.add(category);
-
+                        NPCWriter.writer = writer;
                         tradeScreen.clear();
-                        for (TraderEntry entry : category.getEntries()) {
+                        for (TraderEntry entry : writer.category.getEntries()) {
                             TradeOfferList offers = entry.getOffers();
                             if (offers != null) tradeScreen.addEntries(offers, entry.getID());
                         }
                     }
-                    case "mark" -> LOGGER.info("Loading marked entries data.");
-                    default -> {
-                        Category category = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), Category.class);
-                        LOGGER.info("Loading normal category {}", category.getTitle());
-                        handbookScreen.categories.add(category);
+                    case "mark" -> {
+                        LOGGER.info("Loaded marked entries data.");
+                        handbookScreen.markedEntries = (new Gson()).fromJson(
+                                Files.readString(file.toPath(), StandardCharsets.UTF_8), MarkCategory.class);
+                        continue;
                     }
+                    default -> writers.add(new CategoryWriter<>(Category.class, file.toPath()));
                 }
+                LOGGER.info("Loaded {} category {}", type, writers.get(writers.size() - 1).category.getTitle());
             } catch (IOException | JsonSyntaxException e) {
-                throw new RuntimeException(e);
+                LOGGER.info("Failed to read category file {}", file.toPath());
+                LOGGER.info(e.getMessage());
             }
         }
-        handbookScreen.categories.sort(Comparator.comparing(BaseCategory::getTitle));
-        for (BaseCategory category : handbookScreen.categories) Collections.sort(category.getEntries());
-        LOGGER.info("Loaded {} categories", handbookScreen.categories.size());
+        Collections.sort(writers);
+        writers.forEach(writer -> Collections.sort(writer.category.getEntries()));
+        LOGGER.info("Loaded {} categories", writers.size());
         WaypointManager.updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
     }
 
@@ -193,6 +186,7 @@ public class HandbookClient implements ClientModInitializer {
         });
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     private void registerEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (openScreen.wasPressed()) {
@@ -222,6 +216,11 @@ public class HandbookClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
         });
+
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            NPCWriter.saveTrades();
+            writers.forEach(CategoryWriter::write);
+        });
     }
 
     private void registerKeyBinds() {
@@ -233,18 +232,15 @@ public class HandbookClient implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 literal("handbook")
                         .then(literal("dump")
-                                .then(literal("NPC").executes(ctx -> npcWriter.write()))
-                                .then(literal("locations").executes(ctx -> locationWriter.write()))
                                 .then(literal("advancements")
                                         .then(argument("Root", StringArgumentType.string()).executes(ctx ->
-                                                AdvancementWriter.dumpAdvancements(StringArgumentType.getString(ctx, "Root")))))
-                                .then(literal("all").executes(ctx -> dumpAll())))
+                                                AdvancementWriter.dumpAdvancements(StringArgumentType.getString(ctx, "Root"))))))
                         .then(literal("add")
                                 .then(literal("location").then(argument("Name", StringArgumentType.string())
                                         .suggests(this::getSuggestions).executes(ctx ->
-                                                locationWriter.addLocation(StringArgumentType.getString(ctx, "Name")))))
+                                                LocationWriter.add(StringArgumentType.getString(ctx, "Name")))))
                                 .then(literal("NPC").then(argument("Target", CEntityArgumentType.entity()).executes(ctx ->
-                                        npcWriter.addNPC(CEntityArgumentType.getCEntity(ctx, "Target"), true)))))
+                                        NPCWriter.add(CEntityArgumentType.getCEntity(ctx, "Target"), true)))))
                         .then(literal("waypoint")
                                 .then(argument("x", IntegerArgumentType.integer())
                                         .then(argument("y", IntegerArgumentType.integer())
@@ -273,24 +269,9 @@ public class HandbookClient implements ClientModInitializer {
                                                                         IntegerArgumentType.getInteger(ctx, "Point"),
                                                                         IntegerArgumentType.getInteger(ctx, "Dimension"),
                                                                         IntegerArgumentType.getInteger(ctx, "Distance")))))))
-                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.INSTANCE.massDelete(AreaSelector.getSelection()))))
-                        .then(literal("clear_trades").executes(ctx -> NPCWriter.INSTANCE.clearTrades()))
+                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection()))))
+                        .then(literal("clear_trades").executes(ctx -> NPCWriter.clear()))
         ));
-    }
-
-    private WaypointCategory mergeWaypointEntries(WaypointCategory category) {
-        category.getEntries().forEach(entry -> {
-            Gson gson = new Gson();
-            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints/" + entry.getID() + ".json");
-            WaypointEntry[] waypoints = new WaypointEntry[0];
-            try {
-                waypoints = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), WaypointChain.class).getWaypoints();
-            } catch (IOException e) {
-                LOGGER.error("Failed to read waypoint entry file {}.json. Trying to open it in-game will likely cause a crash.", entry.getID());
-            }
-            entry.setChain(new WaypointChain(waypoints));
-        });
-        return category;
     }
 
     public static void openHandbookScreen() {
@@ -305,21 +286,20 @@ public class HandbookClient implements ClientModInitializer {
         client.setScreen(new LocationScreen(Text.of("")));
     }
 
-    //returns int because it's used in command
-    @SuppressWarnings("SameReturnValue")
-    public static int dumpAll() {
-        npcWriter.write();
-        locationWriter.write();
-        handbookScreen.markedEntries.write();
-        LOGGER.info("Saved all handbook entries.");
-        return 1;
+    public static List<BaseCategory> getCategories() {
+        List<BaseCategory> list = new ArrayList<>();
+        writers.forEach(writer -> {
+            if (!writer.category.getTitle().equals("EXCLUDE")) list.add(writer.category);
+        });
+        return list;
     }
 
+    @SuppressWarnings("unused")
     private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
-        for (BaseCategory category : handbookScreen.categories) {
-            if (!category.getTitle().equals("Locations")) continue;
+        for (CategoryWriter<?> writer : writers) {
+            if (!writer.category.getTitle().equals("Locations")) continue;
 
-            for (Entry entry : category.getEntries()) {
+            for (Entry entry : writer.category.getEntries()) {
                 if (entry.getClearTitle().toLowerCase().contains(builder.getInput().toLowerCase()
                         .replace("/handbook add location ", ""))) builder.suggest(entry.getClearTitle());
             }

@@ -100,7 +100,7 @@ public abstract class ChatHudMixin implements HBMixinMethods {
     @Unique
     private void suggestBountyWaypoint(String message) {
         String POIName = message.replace("Your bounty for today is ", "").replace("!", "");
-        for (BaseCategory category : HandbookClient.handbookScreen.categories) {
+        for (BaseCategory category : HandbookClient.getCategories()) {
             if (!category.getClearTitle().startsWith("POI")) continue;
 
             for (AreaEntry entry : ((AreaCategory) category).getEntries()) {

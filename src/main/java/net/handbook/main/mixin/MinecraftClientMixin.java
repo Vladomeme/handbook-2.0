@@ -1,6 +1,5 @@
 package net.handbook.main.mixin;
 
-import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.WaypointManager;
 import net.minecraft.client.MinecraftClient;
@@ -19,6 +18,5 @@ public abstract class MinecraftClientMixin {
             WaypointManager.saveWaypoints();
             WaypointManager.clear();
         }
-        HandbookClient.dumpAll();
     }
 }

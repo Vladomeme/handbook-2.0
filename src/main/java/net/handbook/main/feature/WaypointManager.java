@@ -150,6 +150,7 @@ public class WaypointManager {
                 particleZ + (Math.random() - Math.random()) * 0.5, 0, 0, 0);
     }
 
+    @SuppressWarnings("ConstantConditions") //context.consumers() might be null
     public static void renderBeacon(WorldRenderContext context) {
         if (waypoints.peek() == null || paused || !HandbookConfig.INSTANCE.renderBeacon) return;
         Waypoint waypoint = waypoints.peek().getWaypoint();
@@ -199,6 +200,7 @@ public class WaypointManager {
     }
 
     //returns int because it's used in command
+    @SuppressWarnings("ConstantConditions") //fake NPEs after peek()
     public static int onWaypointReached(ClientPlayerEntity player, ClientWorld world) {
         if (paused || waypoints.isEmpty()) return 1;
 
@@ -238,6 +240,7 @@ public class WaypointManager {
     }
 
     //returns int because it's used in command
+    @SuppressWarnings("ConstantConditions") //fake NPEs after peek()
     public static int continuePath() {
         ClientWorld world = client.world;
         ClientPlayerEntity player = client.player;
@@ -461,6 +464,7 @@ public class WaypointManager {
     }
 
     //returns int because it's used in command
+    @SuppressWarnings("ConstantConditions") //fake NPEs after peek()
     public static int setAltPath() {
         if (waypoints.peek().inChain()) {
             if (altPath.isEmpty()) {
@@ -522,6 +526,7 @@ public class WaypointManager {
         waypoints.clear();
     }
 
+    @SuppressWarnings("ConstantConditions") //world can't be null
     public static String getShard() {
         return client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
     }

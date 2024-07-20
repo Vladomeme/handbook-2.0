@@ -4,6 +4,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.editor.CategoryWriter;
+import net.handbook.main.editor.LocationWriter;
+import net.handbook.main.editor.NPCWriter;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.entry.Entry;
@@ -224,8 +227,8 @@ public class DisplayWidget extends ClickableWidget {
 
     public void deleteEntry() {
         switch (screen.activeCategory.getTitle()) {
-            case "Locations" -> HandbookClient.locationWriter.deleteEntry(entry.getTitle());
-            case "NPC" -> HandbookClient.npcWriter.deleteEntry(entry.getID(), entry.getTitle());
+            case "Locations" -> LocationWriter.delete(entry);
+            case "NPC" -> NPCWriter.delete(entry);
             default -> {
                 client.inGameHud.getChatHud().addMessage(Text.of("Unable to delete an entry from this category."));
                 return;

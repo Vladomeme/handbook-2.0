@@ -26,8 +26,6 @@ public class EditScreen extends Screen {
     private final TextRenderer tr = client.textRenderer;
 
     private final Entry entry;
-    private String oldTitle;
-    private int[] oldPosition;
 
     private TextFieldWidget nameField;
     private TextFieldWidget textField;
@@ -35,9 +33,9 @@ public class EditScreen extends Screen {
     private TextFieldWidget areaField;
     @SuppressWarnings("FieldCanBeLocal")
     private HandbookButtonWidget moveButton;
-    @SuppressWarnings("FieldCanBeLocal")
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private HandbookButtonWidget cancelButton;
-    @SuppressWarnings("FieldCanBeLocal")
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private HandbookButtonWidget saveButton;
 
     private int lastKey = 0;
@@ -55,10 +53,6 @@ public class EditScreen extends Screen {
     @Override
     protected void init() {
         addElements();
-        if (entry instanceof PositionedEntry) {
-            oldTitle = entry.getTitle();
-            oldPosition = entry.getPosition();
-        }
         super.init();
     }
 
@@ -98,17 +92,21 @@ public class EditScreen extends Screen {
         if (entry instanceof PositionedEntry && !(entry instanceof TraderEntry)) {
             int[] pos = entry.getPosition();
             if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2]);
-
-            //pos = entry.getArea();
-            //if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2] + ", " + pos[3] + ", " + pos[4] + ", " + pos[5]);
         }
         else {
             positionField.active = false;
             positionField.setPlaceholder(Text.of("unavailable").getWithStyle(style).get(0));
             moveButton.active = false;
         }
-        areaField.active = false;
-        areaField.setPlaceholder(Text.of("unavailable").getWithStyle(style).get(0));
+
+        if (entry instanceof AreaEntry) {
+            int[] pos = entry.getArea();
+            if (pos != null) areaField.setText(pos[0] + ", " + pos[1] + ", " + pos[2] + ", " + pos[3] + ", " + pos[4] + ", " + pos[5]);
+        }
+        else {
+            areaField.active = false;
+            areaField.setPlaceholder(Text.of("unavailable").getWithStyle(style).get(0));
+        }
     }
 
     @Override
@@ -143,20 +141,24 @@ public class EditScreen extends Screen {
     }
 
     private void save() {
-        if (entry instanceof AreaEntry) {
-            int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : entry.getPosition();
-            int[] area = areaField.active ? checkCoordinates(areaField.getText(), 6) : entry.getArea();
+        if (entry instanceof AreaEntry e) {
+            int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.getPosition();
+            int[] area = areaField.active ? checkCoordinates(areaField.getText(), 6) : e.getArea();
             if (pos == null || area == null) return;
 
-            ((AreaEntry) entry).update(nameField.getText(), textField.getText(), pos, area);
+            e.update(nameField.getText(), textField.getText(), pos, area);
         }
-        else if (entry instanceof PositionedEntry) {
-            int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : entry.getPosition();
+        else if (entry instanceof PositionedEntry e) {
+            int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.getPosition();
             if (pos == null) return;
 
-            ((PositionedEntry) entry).update(nameField.getText(), textField.getText(), pos);
-            if (entry instanceof TraderEntry) HandbookClient.npcWriter.editEntry((TraderEntry) entry);
-            else HandbookClient.locationWriter.editEntry((PositionedEntry) entry, oldTitle, oldPosition);
+            e.update(nameField.getText(), textField.getText(), pos);
+        }
+        for (CategoryWriter<?> writer : HandbookClient.writers) {
+            if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
+
+            writer.shouldUpdate = true;
+            break;
         }
         close();
     }
@@ -166,6 +168,7 @@ public class EditScreen extends Screen {
         positionField.setText((int) client.player.getX() + ", " + (int) client.player.getY() + ", " + (int) client.player.getZ());
     }
 
+    @SuppressWarnings("DataFlowIssue")
     private int[] checkCoordinates(String line, int length) {
         try {
             int[] pos = Arrays.stream(line.replace(" ", "").split(",")).mapToInt(Integer::parseInt).toArray();
@@ -174,30 +177,30 @@ public class EditScreen extends Screen {
                 return pos;
             }
         }
-        catch (Exception ignored) {
-            //unlucky
-        }
+        catch (Exception ignored) {}
         positionField.setEditableColor(Formatting.RED.getColorValue());
         return null;
     }
+
+    //todo wtf??
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         lastKey = keyCode;
 
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
-        } else if (client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
+        }
+        else if (client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
             close();
             return true;
         }
         return true;
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
     public void close() {
         if (lastKey != 69) {
-            client.player.closeScreen();
+            if (client.player != null) client.player.closeScreen();
             super.close();
         }
     }

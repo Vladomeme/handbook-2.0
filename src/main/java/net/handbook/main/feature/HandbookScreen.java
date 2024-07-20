@@ -20,9 +20,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOfferList;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class HandbookScreen extends Screen {
 
     public static final HandbookScreen INSTANCE = new HandbookScreen(Text.of(""));
@@ -32,6 +29,7 @@ public class HandbookScreen extends Screen {
 
     //First column
     public ListWidget categoriesWidget;
+    @SuppressWarnings("unused")
     public HandbookButtonWidget openTradesScreen;
     //Second column
     public ListWidget optionsWidget;
@@ -64,8 +62,7 @@ public class HandbookScreen extends Screen {
     public HandbookButtonWidget clearWaypoint;
     public HandbookButtonWidget continueWaypoint;
 
-    public final List<BaseCategory> categories = new ArrayList<>();
-    public final MarkCategory markedEntries = MarkCategory.read();
+    public MarkCategory markedEntries;
     public BaseCategory activeCategory;
     public ListWidgetEntry selectedEntry;
 
@@ -83,12 +80,12 @@ public class HandbookScreen extends Screen {
         client = MinecraftClient.getInstance();
         tr = client.textRenderer;
 
-        if (categories.isEmpty()) {
+        if (HandbookClient.getCategories().isEmpty()) {
             close();
             client.inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
             return;
         }
-        activeCategory = categories.get(0);
+        activeCategory = HandbookClient.getCategories().get(0);
 
         addElements();
 
@@ -113,7 +110,7 @@ public class HandbookScreen extends Screen {
 
         int maxWidth = 0;
 
-        for (BaseCategory category : categories) {
+        for (BaseCategory category : HandbookClient.getCategories()) {
             int width = tr.getWidth(category.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -124,7 +121,7 @@ public class HandbookScreen extends Screen {
         addDrawableChild(categoriesWidget = new ListWidget(
                 maxWidth, screenHeight - 70, 30, screenHeight - 40));
         categoriesWidget.setLeftPos(20);
-        categoriesWidget.setEntries(categories, "category");
+        categoriesWidget.setEntries(HandbookClient.getCategories(), "category");
         categoriesWidget.children().get(0).updateHighlight(true);
         activeCategory = (BaseCategory) categoriesWidget.children().get(0).entry;
 

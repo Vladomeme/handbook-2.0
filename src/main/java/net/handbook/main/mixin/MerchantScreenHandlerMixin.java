@@ -1,7 +1,7 @@
 package net.handbook.main.mixin;
 
-import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.editor.NPCWriter;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -23,7 +23,7 @@ public abstract class MerchantScreenHandlerMixin extends ScreenHandler {
 
     @Inject(method = "setOffers", at = @At("TAIL"))
     public void setOffers(TradeOfferList offers, CallbackInfo ci) {
-        if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.enableScanner) HandbookClient.npcWriter.addOffers(offers);
+        if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.enableScanner) NPCWriter.addOffers(offers);
         if (HandbookConfig.INSTANCE.quickSaveTrades) {
             MinecraftClient client = MinecraftClient.getInstance();
             ClientWorld world = client.world;
@@ -37,6 +37,7 @@ public abstract class MerchantScreenHandlerMixin extends ScreenHandler {
         }
     }
 
+    @SuppressWarnings("unused")
     protected MerchantScreenHandlerMixin(@Nullable ScreenHandlerType<?> type, int syncId) {
         super(type, syncId);
     }

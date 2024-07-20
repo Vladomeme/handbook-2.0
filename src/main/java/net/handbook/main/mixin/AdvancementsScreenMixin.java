@@ -36,6 +36,7 @@ public abstract class AdvancementsScreenMixin extends Screen {
         RenderSystem.disableBlend();
     }
 
+    @SuppressWarnings("unused")
     protected AdvancementsScreenMixin(Text title) {
         super(title);
     }

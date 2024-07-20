@@ -18,6 +18,6 @@ public abstract class EntityMixin  {
         if (!HandbookConfig.INSTANCE.enableScanner) return;
 
         Entity e = ((Entity) (Object) this);
-        if (e.getType().equals(EntityType.VILLAGER)) NPCWriter.INSTANCE.addNPC(e, false);
+        if (e.getType().equals(EntityType.VILLAGER)) NPCWriter.add(e, false);
     }
 }

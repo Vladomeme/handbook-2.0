@@ -35,7 +35,7 @@ public class HandbookConfig {
         try {
             return new Gson().fromJson(reader = new FileReader(FILE), HandbookConfig.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            HandbookClient.LOGGER.error(e.getMessage());
             throw new RuntimeException(e);
         } finally {
             IOUtils.closeQuietly(reader);
@@ -52,7 +52,7 @@ public class HandbookConfig {
             gson.toJson(gson.toJsonTree(this, HandbookConfig.class), writer);
         } catch (Exception e) {
             HandbookClient.LOGGER.error("Couldn't save config");
-            e.printStackTrace();
+            HandbookClient.LOGGER.error(e.getMessage());
             throw new RuntimeException(e);
         } finally {
             IOUtils.closeQuietly(writer);

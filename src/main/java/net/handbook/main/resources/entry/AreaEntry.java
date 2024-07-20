@@ -4,6 +4,7 @@ public class AreaEntry extends PositionedEntry {
 
     int[] area;
 
+    @SuppressWarnings("unused")
     public AreaEntry(String title, String text, String image, String shard, int[] position, int[] area) {
         super(title, text, image, shard, position);
         this.area = area;

@@ -9,6 +9,7 @@ import net.handbook.main.widget.HandbookButtonWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
@@ -17,8 +18,9 @@ import net.minecraft.text.Text;
 
 public class LocationScreen extends Screen {
 
-    private static final MinecraftClient client = MinecraftClient.getInstance();
-    private static final TextRenderer tr = client.textRenderer;
+    private final MinecraftClient client = MinecraftClient.getInstance();
+    private final ChatHud chat = client.inGameHud.getChatHud();
+    private final TextRenderer tr = client.textRenderer;
 
     private static TextFieldWidget textField;
 
@@ -34,7 +36,7 @@ public class LocationScreen extends Screen {
 
     @Override
     protected void init() {
-        for (BaseCategory category : HandbookClient.handbookScreen.categories) {
+        for (BaseCategory category : HandbookClient.getCategories()) {
             if (category.getTitle().equals("Locations")) {
                 addElements();
                 textField.setFocused(true);
@@ -44,7 +46,7 @@ public class LocationScreen extends Screen {
             }
         }
         close();
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("\"Locations\" category not found!"));
+        chat.addMessage(Text.of("\"Locations\" category not found!"));
     }
 
     private void addElements() {
@@ -82,20 +84,20 @@ public class LocationScreen extends Screen {
 
     private void save() {
         if (textField.getText().isEmpty()) {
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Can't add a location without a name."));
+            chat.addMessage(Text.of("Can't add a location without a name."));
             close();
             return;
         }
-        for (BaseCategory category : HandbookClient.handbookScreen.categories) {
+        for (BaseCategory category : HandbookClient.getCategories()) {
             if (!category.getTitle().equals("Locations")) continue;
             for (Entry entry : category.getEntries()) {
                 if (entry.getTitle().equals(textField.getText())) {
-                    MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Entry with that name already exists."));
+                    chat.addMessage(Text.of("Entry with that name already exists."));
                     close();
                     return;
                 }
             }
-            HandbookClient.locationWriter.addLocation(textField.getText());
+            LocationWriter.addLocation(textField.getText());
             close();
         }
     }

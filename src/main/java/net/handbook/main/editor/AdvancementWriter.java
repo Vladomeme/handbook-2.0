@@ -50,6 +50,7 @@ public class AdvancementWriter {
         return 1;
     }
 
+    @SuppressWarnings("DataFlowIssue")
     private static StringBuilder childrenLoop(StringBuilder output, Advancement advancement, boolean loopFurther) {
         if (!((Set<Advancement>) advancement.getChildren()).isEmpty()) {
             output.append("{\"title\":\"").append(advancement.getDisplay().getTitle().getString())

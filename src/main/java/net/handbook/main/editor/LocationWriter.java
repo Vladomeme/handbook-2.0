@@ -1,110 +1,49 @@
 package net.handbook.main.editor;
 
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonWriter;
-import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.category.PositionedCategory;
+import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.PositionedEntry;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
-import org.apache.commons.io.IOUtils;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class LocationWriter {
 
-    public static final LocationWriter INSTANCE = read();
-    final transient MinecraftClient client = MinecraftClient.getInstance();
+    final static MinecraftClient client = MinecraftClient.getInstance();
+    final static ChatHud chat = client.inGameHud.getChatHud();
 
-    String type = "positioned";
-    String title = "Locations";
-    final List<Location> entries = new ArrayList<>();
-    private transient int newCount = 0;
+    public static CategoryWriter<PositionedCategory> writer;
 
-    //returns int because it's used in command
     @SuppressWarnings("SameReturnValue")
-    public int addLocation(String name) {
-        ClientWorld world = MinecraftClient.getInstance().world;
-        ClientPlayerEntity entity = MinecraftClient.getInstance().player;
-        if (world == null || entity == null) return 1;
+    public static int add(String name) {
+        addLocation(name);
+        return 1;
+    }
+
+    public static void addLocation(String name) {
+        ClientWorld world = client.world;
+        ClientPlayerEntity entity = client.player;
+        if (world == null || entity == null) return;
 
         if (name.startsWith("\"")) name = name.replace("\"", "");
 
         HandbookClient.LOGGER.info("ADDING NEW LOCATION: {}", name);
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("New location added: " + name +
-                ". Reload resources to see it in the handbook."));
+        chat.addMessage(Text.of("New location added: " + name + "."));
 
-        newCount++;
-        entries.add(new Location(name, WaypointManager.getShard(), entity.getX(), entity.getY(), entity.getZ()));
-        return 1;
+        writer.category.getEntries().add(new PositionedEntry(name, "", "", WaypointManager.getShard(),
+                new int[]{(int) entity.getX(), (int) entity.getY(), (int) entity.getZ()}));
+        writer.shouldUpdate = true;
     }
 
-    public void editEntry(PositionedEntry entry, String title, int[] position) {
-        for (Location location : entries) {
-            if (location.title.equals(title) && Arrays.equals(location.position, position)) {
-                location.title = entry.getTitle();
-                location.text = entry.getText();
-                location.position = entry.getPosition();
-                client.inGameHud.getChatHud().addMessage(Text.of("Entry edited."));
-                return;
-            }
+    public static void delete(Entry entry) {
+        if (writer.category.getEntries().remove((PositionedEntry) entry)) {
+            writer.shouldUpdate = true;
+            chat.addMessage(Text.of("Entry removed: " + entry.getTitle()));
         }
-        client.inGameHud.getChatHud().addMessage(Text.of("Entry editing failed"));
-    }
-
-    public void deleteEntry(String title) {
-        for (Location entry : entries) {
-            if (entry.title.equals(title)) {
-                entries.remove(entry);
-                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Entry removed: " + title));
-                return;
-            }
-        }
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Unable to delete this entry"));
-    }
-
-    //returns int because it's used in command
-    @SuppressWarnings({"ResultOfMethodCallIgnored", "SameReturnValue"})
-    public int write() {
-        HandbookClient.LOGGER.info("Saved \"locations.json\" with {} locations total, {} new locations.", entries.size(), newCount);
-        Gson gson = new Gson();
-        JsonWriter writer = null;
-        try {
-            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "locations.json");
-            file.getParentFile().mkdirs();
-            writer = gson.newJsonWriter(new FileWriter(file));
-            writer.setIndent("    ");
-            gson.toJson(this, LocationWriter.class, writer);
-            newCount = 0;
-        } catch (Exception e) {
-            HandbookClient.LOGGER.error("Couldn't save locations.json.");
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } finally {
-            IOUtils.closeQuietly(writer);
-        }
-        return 1;
-    }
-
-    public static LocationWriter read() {
-        Gson gson = new Gson();
-        try {
-            File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "locations.json");
-            return gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), LocationWriter.class);
-        }
-        catch (Exception e) {
-            HandbookClient.LOGGER.error("Could not find locations.json in config/handbook/. A new file will be created when dumping.");
-        }
-        return new LocationWriter();
+        else chat.addMessage(Text.of("Failed to delete this entry"));
     }
 }
