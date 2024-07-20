@@ -12,6 +12,11 @@ abstract public class BaseEntry {
         this.image = image;
     }
 
+    public void update(String title, String text) {
+        this.title = title;
+        this.text = text;
+    }
+
     public abstract void mouseClicked();
 
     public String getTitle() {

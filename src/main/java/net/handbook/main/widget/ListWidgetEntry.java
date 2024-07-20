@@ -6,13 +6,16 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.editor.EditScreen;
 import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.entry.BaseEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
@@ -85,6 +88,11 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (Screen.hasShiftDown() && HandbookConfig.INSTANCE.editorMode) {
+            MinecraftClient.getInstance().setScreen(new EditScreen(entry, !type.equals("entry"),
+                    (entry instanceof Category c) ? c.getType() : screen.activeCategory.getType()));
+            return true;
+        }
         if (button == 1) markEntry();
         else this.button.mouseClicked(mouseX, mouseY, button);
         return super.mouseClicked(mouseX, mouseY, button);

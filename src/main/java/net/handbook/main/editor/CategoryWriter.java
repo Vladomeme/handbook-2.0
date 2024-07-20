@@ -27,6 +27,13 @@ public class CategoryWriter implements Comparable<CategoryWriter> {
         this.category = read();
     }
 
+    public CategoryWriter(Category category) {
+        this.category = category;
+        this.path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/" +
+                category.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "") + ".json");
+        this.shouldUpdate = true;
+    }
+
     public Category read() {
         try {
             Category category = (new Gson()).fromJson(Files.readString(path, StandardCharsets.UTF_8), Category.class);

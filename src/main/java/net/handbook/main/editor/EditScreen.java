@@ -3,10 +3,9 @@ package net.handbook.main.editor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.resources.entry.AreaEntry;
-import net.handbook.main.resources.entry.Entry;
-import net.handbook.main.resources.entry.PositionedEntry;
-import net.handbook.main.resources.entry.TraderEntry;
+import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.category.Category;
+import net.handbook.main.resources.entry.*;
 import net.handbook.main.widget.HandbookButtonWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -18,6 +17,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class EditScreen extends Screen {
@@ -25,13 +25,15 @@ public class EditScreen extends Screen {
     private final MinecraftClient client = MinecraftClient.getInstance();
     private final TextRenderer tr = client.textRenderer;
 
-    private final Entry entry;
+    private final BaseEntry entry;
+    private final boolean isCategory;
+    private final String type;
 
-    private TextFieldWidget nameField;
+    private TextFieldWidget typeField;
+    private TextFieldWidget titleField;
     private TextFieldWidget textField;
     private TextFieldWidget positionField;
     private TextFieldWidget areaField;
-    @SuppressWarnings("FieldCanBeLocal")
     private HandbookButtonWidget moveButton;
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private HandbookButtonWidget cancelButton;
@@ -42,16 +44,26 @@ public class EditScreen extends Screen {
     final int centerX;
     final int centerY;
 
-    public EditScreen(Entry entry) {
+    public EditScreen(BaseEntry entry, boolean isCategory, String type) {
         super(Text.of(""));
 
         this.entry = entry;
+        this.isCategory = isCategory;
+        this.type = type;
         this.centerX = client.getWindow().getScaledWidth() / 2;
         this.centerY = client.getWindow().getScaledHeight() / 2;
     }
 
     @Override
     protected void init() {
+        if (type.equals("waypoint")) {
+            client.inGameHud.getChatHud().addMessage(Text.of("Can't edit an entry of this type."));
+            close();
+        }
+        if (type.equals("trader") && entry == null) {
+            client.inGameHud.getChatHud().addMessage(Text.of("Can't add an entry of this type."));
+            close();
+        }
         addElements();
         super.init();
     }
@@ -59,9 +71,13 @@ public class EditScreen extends Screen {
     private void addElements() {
         Style style = Style.EMPTY.withItalic(true).withColor(-10197916);
 
-        addDrawableChild(nameField = new TextFieldWidget(tr, centerX - 80, centerY - 68, 160, 12, Text.of("")));
-        nameField.setPlaceholder(Text.of("name").getWithStyle(style).get(0));
-        nameField.setMaxLength(9999);
+        addDrawableChild(typeField = new TextFieldWidget(tr, centerX - 80, centerY - 84, 160, 12, Text.of("")));
+        typeField.setPlaceholder(Text.of("name").getWithStyle(style).get(0));
+        typeField.setMaxLength(9999);
+
+        addDrawableChild(titleField = new TextFieldWidget(tr, centerX - 80, centerY - 68, 160, 12, Text.of("")));
+        titleField.setPlaceholder(Text.of("name").getWithStyle(style).get(0));
+        titleField.setMaxLength(9999);
 
         addDrawableChild(textField = new TextFieldWidget(tr, centerX - 80, centerY - 52, 160, 12, Text.of("")));
         textField.setPlaceholder(Text.of("text").getWithStyle(style).get(0));
@@ -84,28 +100,72 @@ public class EditScreen extends Screen {
                 centerX - 60, centerY, 36, 11, "Cancel", button -> close()));
 
         addDrawableChild(saveButton = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                centerX + 24, centerY, 36, 11, "Save", button -> save()));
+                centerX + 24, centerY, 36, 11, "Save", button -> {
+            if (isCategory) saveCategory();
+            else saveEntry();
+        }));
 
-        if (entry.getTitle() != null) nameField.setText(entry.getTitle());
-        if (entry.getText() != null) textField.setText(entry.getText());
-
-        if (entry instanceof PositionedEntry && !(entry instanceof TraderEntry)) {
-            int[] pos = entry.getPosition();
-            if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2]);
+        setVisibility();
+        if (entry == null) {
+            if (type.equals("positioned") || type.equals("area")) changePosition();
+            return;
         }
-        else {
+
+        Text text = Text.of("unavailable").getWithStyle(style).get(0);
+        typeField.active = false;
+        typeField.setPlaceholder(text);
+
+        fillFields();
+    }
+
+    private void setVisibility() {
+        Style style = Style.EMPTY.withItalic(true).withColor(-10197916);
+        Text text = Text.of("unavailable").getWithStyle(style).get(0);
+
+        if (isCategory) {
+            textField.active = false;
+            textField.setPlaceholder(text);
             positionField.active = false;
-            positionField.setPlaceholder(Text.of("unavailable").getWithStyle(style).get(0));
-            moveButton.active = false;
-        }
-
-        if (entry instanceof AreaEntry) {
-            int[] pos = entry.getArea();
-            if (pos != null) areaField.setText(pos[0] + ", " + pos[1] + ", " + pos[2] + ", " + pos[3] + ", " + pos[4] + ", " + pos[5]);
-        }
-        else {
+            positionField.setPlaceholder(text);
             areaField.active = false;
-            areaField.setPlaceholder(Text.of("unavailable").getWithStyle(style).get(0));
+            areaField.setPlaceholder(text);
+            return;
+        }
+        typeField.active = false;
+        typeField.setPlaceholder(text);
+        switch (type) {
+            case "normal, trader" -> {
+                positionField.active = false;
+                positionField.setPlaceholder(text);
+                areaField.active = false;
+                areaField.setPlaceholder(text);
+                moveButton.active = false;
+            }
+            case "positioned" -> {
+                areaField.active = false;
+                areaField.setPlaceholder(text);
+            }
+            case "area" -> {}
+        }
+    }
+
+    private void fillFields() {
+        if (entry.getTitle() != null) titleField.setText(entry.getTitle());
+
+        if (isCategory) return;
+
+        if (entry.getText() != null) textField.setText(entry.getText());
+        switch (type) {
+            case "positioned" -> {
+                int[] pos = ((Entry) entry).getPosition();
+                if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2]);
+            }
+            case "area" -> {
+                int[] pos = ((Entry) entry).getPosition();
+                if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2]);
+                pos = ((Entry) entry).getArea();
+                if (pos != null) areaField.setText(pos[0] + ", " + pos[1] + ", " + pos[2] + ", " + pos[3] + ", " + pos[4] + ", " + pos[5]);
+            }
         }
     }
 
@@ -123,10 +183,12 @@ public class EditScreen extends Screen {
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1, HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 
-        context.fill(centerX - 130, centerY - 100, centerX + 130, centerY + 15, HandbookConfig.INSTANCE.tradeBackgroundColor);
-        context.drawBorder(centerX - 131, centerY - 101, 262, 117, HandbookConfig.INSTANCE.bordersColor);
-        context.drawCenteredTextWithShadow(tr, "Entry editing", centerX, centerY - 93, HandbookConfig.INSTANCE.textColor);
+        context.fill(centerX - 130, centerY - 116, centerX + 130, centerY + 15, HandbookConfig.INSTANCE.tradeBackgroundColor);
+        context.drawBorder(centerX - 131, centerY - 117, 262, 117, HandbookConfig.INSTANCE.bordersColor);
+        context.drawCenteredTextWithShadow(tr, "Entry editing", centerX, centerY - 109, HandbookConfig.INSTANCE.textColor);
 
+        context.drawText(tr, Text.of("Type"), centerX - 85 - tr.getWidth("Type"), centerY - 82,
+                HandbookConfig.INSTANCE.textColor, false);
         context.drawText(tr, Text.of("Name"), centerX - 85 - tr.getWidth("Name"), centerY - 66,
                 HandbookConfig.INSTANCE.textColor, false);
         context.drawText(tr, Text.of("Text"), centerX - 85 - tr.getWidth("Text"), centerY - 50,
@@ -140,21 +202,54 @@ public class EditScreen extends Screen {
         RenderSystem.disableBlend();
     }
 
-    private void save() {
+    private void saveCategory() {
+        if (titleField.getText().isEmpty()) return;
+        if (entry == null)
+            HandbookClient.writers.add(new CategoryWriter(
+                new Category(typeField.getText(), titleField.getText(), "", "", new ArrayList<>())));
+        else entry.update(titleField.getText(), entry.getText());
+    }
+
+    private void saveEntry() {
+        if (titleField.getText().isEmpty()) return;
+        if (entry == null) {
+            for (CategoryWriter writer : HandbookClient.writers) {
+                if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
+
+                switch (type) {
+                    case "normal" -> writer.add(new Entry(titleField.getText(), textField.getText(), ""));
+                    case "positioned" -> {
+                        int[] pos = checkCoordinates(positionField.getText(), 3);
+                        if (pos != null) writer.add(new PositionedEntry(titleField.getText(), textField.getText(),
+                                "", WaypointManager.getShard(), pos));
+                    }
+                    case "area" -> {
+                        int[] pos = checkCoordinates(positionField.getText(), 3);
+                        int[] area = checkCoordinates(areaField.getText(), 6);
+                        if (pos != null || area != null)writer.add(new AreaEntry(titleField.getText(), textField.getText(),
+                                "", WaypointManager.getShard(), pos, area));
+                    }
+                }
+                writer.shouldUpdate = true;
+                break;
+            }
+            return;
+        }
+
         if (entry instanceof AreaEntry e) {
             int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.getPosition();
             int[] area = areaField.active ? checkCoordinates(areaField.getText(), 6) : e.getArea();
             if (pos == null || area == null) return;
 
-            e.update(nameField.getText(), textField.getText(), pos, area);
+            e.update(titleField.getText(), textField.getText(), pos, area);
         }
         else if (entry instanceof PositionedEntry e) {
             int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.getPosition();
             if (pos == null) return;
 
-            e.update(nameField.getText(), textField.getText(), pos);
+            e.update(titleField.getText(), textField.getText(), pos);
         }
-        else entry.update(nameField.getText(), textField.getText());
+        else if (entry instanceof Entry e) e.update(titleField.getText(), textField.getText());
 
         for (CategoryWriter writer : HandbookClient.writers) {
             if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;

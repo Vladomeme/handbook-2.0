@@ -78,6 +78,7 @@ public class HandbookConfig {
     public int textColor = -1;
     public int buttonInactiveColor = -2236963;
     public int buttonNegativeColor = -1823700;
+    public int buttonPositiveColor = -6226016;
     public int buttonActiveColor = -9737764;
     public int tradeBackgroundColor = 866822826;
     public int favouriteColor = 2030023680;
@@ -192,6 +193,12 @@ public class HandbookConfig {
                                 .name(Text.literal("Negative button color"))
                                 .binding(new Color(-1823700, true),
                                         () -> new Color(buttonNegativeColor, true), newVal -> buttonNegativeColor = newVal.getRGB())
+                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true)).build())
+
+                        .option(Option.<Color>createBuilder()
+                                .name(Text.literal("Positive button color"))
+                                .binding(new Color(-6226016, true),
+                                        () -> new Color(buttonPositiveColor, true), newVal -> buttonPositiveColor = newVal.getRGB())
                                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true)).build())
 
                         .option(Option.<Color>createBuilder()

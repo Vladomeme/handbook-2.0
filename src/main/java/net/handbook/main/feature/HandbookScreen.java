@@ -31,11 +31,13 @@ public class HandbookScreen extends Screen {
     public ListWidget categoriesWidget;
     @SuppressWarnings("unused")
     public HandbookButtonWidget openTradesScreen;
+    public HandbookButtonWidget addCategory;
     //Second column
     public ListWidget optionsWidget;
     public TextFieldWidget searchBox;
     public TexturedButtonWidget filterButton;
     public FilterWidget filterWidget;
+    public HandbookButtonWidget addEntry;
     //Display widget
     public DisplayWidget displayWidget;
     public HandbookButtonWidget setWaypoint;
@@ -43,7 +45,6 @@ public class HandbookScreen extends Screen {
     public HandbookButtonWidget shareLocation;
     public HandbookButtonWidget delete;
     public HandbookButtonWidget resetTrades;
-    public HandbookButtonWidget edit;
     //Trade widget
     public TradesWidget tradesWidget;
     public TradeListWidget tradeList;
@@ -86,9 +87,7 @@ public class HandbookScreen extends Screen {
             return;
         }
         activeCategory = HandbookClient.getCategories().get(0);
-
         addElements();
-
         super.init();
     }
 
@@ -119,13 +118,20 @@ public class HandbookScreen extends Screen {
         line1x = maxWidth + 11;
 
         addDrawableChild(categoriesWidget = new ListWidget(
-                maxWidth, screenHeight - 70, 30, screenHeight - 40));
+                maxWidth, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 90 : 70), 30,
+                screenHeight - (HandbookConfig.INSTANCE.editorMode ? 60 : 40)));
         categoriesWidget.setLeftPos(20);
         categoriesWidget.setEntries(HandbookClient.getCategories(), "category");
         categoriesWidget.children().get(0).updateHighlight(true);
         activeCategory = (Category) categoriesWidget.children().get(0).entry;
 
         maxWidth = 0;
+
+        addDrawableChild(addCategory = new HandbookButtonWidget(HandbookButtonWidget.Type.Positive,
+                line1x / 2 - tr.getWidth("Add"), screenHeight - 45, 30, 11,
+                "Add", button -> client.setScreen(new EditScreen(null, true, ""))));
+        addCategory.visible = HandbookConfig.INSTANCE.editorMode;
+        addCategory.active = HandbookConfig.INSTANCE.editorMode;
 
         addDrawableChild(openTradesScreen = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 line1x / 2 - 37, screenHeight - 30, 75, 11,
@@ -139,12 +145,19 @@ public class HandbookScreen extends Screen {
         maxWidth = maxWidth + 10;
 
         addDrawableChild(optionsWidget = new ListWidget(
-                maxWidth + 6, screenHeight - 60, 30, screenHeight - 30));
+                maxWidth + 6, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30,
+                screenHeight - (HandbookConfig.INSTANCE.editorMode ? 50 : 30)));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
         optionsWidget.setEntries(((Category) categoriesWidget.children().get(0).entry).getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
+
+        addDrawableChild(addEntry = new HandbookButtonWidget(HandbookButtonWidget.Type.Positive,
+                (line2x - line1x) / 2 - tr.getWidth("Add"), screenHeight - 45, 30, 11,
+                "Add", button -> client.setScreen(new EditScreen(null, false, activeCategory.getType()))));
+        addEntry.visible = HandbookConfig.INSTANCE.editorMode;
+        addEntry.active = HandbookConfig.INSTANCE.editorMode;
 
         addDrawableChild(searchBox = new TextFieldWidget(
                 tr, line1x + 16, 16, line2x - line1x - 16, 12, Text.of("")));
@@ -179,10 +192,6 @@ public class HandbookScreen extends Screen {
             openTrades.visible = false;
             displayWidget.deleteTrade();
         }));
-
-        addDrawableChild(edit = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                screenWidth - 73, screenHeight - 54, 69, 11,
-                "Edit", button -> MinecraftClient.getInstance().setScreen(new EditScreen(displayWidget.getEntry()))));
 
         addDrawableChild(shareGlobal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 90, 36, 11,
@@ -334,7 +343,8 @@ public class HandbookScreen extends Screen {
         filterWidget.active = !filterWidget.active;
         if (filterWidget.active) {
             filterWidget.open();
-            optionsWidget.updateSizeShrink(screenHeight - 62 - filterWidget.getHeight(), 32 + filterWidget.getHeight());
+            optionsWidget.updateSizeShrink(screenHeight - (HandbookConfig.INSTANCE.editorMode ? 82 : 62)
+                    - filterWidget.getHeight(), 32 + filterWidget.getHeight());
         }
         else {
             filterWidget.unfocus();
@@ -368,8 +378,6 @@ public class HandbookScreen extends Screen {
         delete.visible = state;
         resetTrades.active = state;
         resetTrades.visible = state;
-        edit.active = state;
-        edit.visible = state;
     }
 
     public void tradeButtonsState(boolean state) {
@@ -408,7 +416,8 @@ public class HandbookScreen extends Screen {
         maxWidth = Math.min(maxWidth, 150);
         maxWidth = maxWidth + 10;
 
-        optionsWidget.updateSize(maxWidth + 6, screenHeight - 60, 30, screenHeight - 30);
+        optionsWidget.updateSize(maxWidth + 6, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60),
+                30, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 50 : 30));
         optionsWidget.listWidth = maxWidth + 6;
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
         optionsWidget.setEntries(category.getEntries(), "entry");

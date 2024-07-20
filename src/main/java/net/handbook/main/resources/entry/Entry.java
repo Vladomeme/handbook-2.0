@@ -16,11 +16,6 @@ public class Entry extends BaseEntry implements Comparable<Entry> {
         HandbookClient.handbookScreen.openDisplay();
     }
 
-    public void update(String title, String text) {
-        this.title = title;
-        this.text = text;
-    }
-
     public String getShard() {
         return null;
     }

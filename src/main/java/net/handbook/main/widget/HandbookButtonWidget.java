@@ -45,12 +45,14 @@ public class HandbookButtonWidget extends ButtonWidget {
 
     private int getColor(int mouseX, int mouseY) {
         return isMouseOver(mouseX, mouseY) ? HandbookConfig.INSTANCE.buttonActiveColor : type.equals(Type.Normal) ?
-                HandbookConfig.INSTANCE.buttonInactiveColor : HandbookConfig.INSTANCE.buttonNegativeColor;
+                HandbookConfig.INSTANCE.buttonInactiveColor : type.equals(Type.Positive) ?
+                HandbookConfig.INSTANCE.buttonPositiveColor : HandbookConfig.INSTANCE.buttonNegativeColor;
     }
 
     public enum Type {
         Normal,
-        Negative
+        Negative,
+        Positive
     }
 
     @Override
