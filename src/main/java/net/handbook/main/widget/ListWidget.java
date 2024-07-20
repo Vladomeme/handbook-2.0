@@ -4,6 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.resources.entry.BaseEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ElementListWidget;
 
@@ -27,7 +28,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		setRenderHeader(false, 0);
 	}
 
-	public void setEntries(List<? extends net.handbook.main.resources.entry.Entry> entries, String type) {
+	public void setEntries(List<? extends BaseEntry> entries, String type) {
 		clearEntries();
 		setScrollAmount(0);
 
@@ -40,7 +41,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		if (type.equals("entry")) category = screen.activeCategory.getTitle();
 		else category = "Categories";
 
-		for (net.handbook.main.resources.entry.Entry entry : entries) {
+		for (BaseEntry entry : entries) {
 			if (entry.getTitle().equals("EXCLUDE")) continue;
 
 			if (screen.markedEntries.getMarkedEntries(category) == null) {

@@ -131,7 +131,7 @@ public class FilterWidget extends ClickableWidget {
         //shard check
         if (!shardField.getText().isEmpty() && (entry.getShard() == null || !entry.getShard().contains(shardField.getText()))) return false;
         //trader check
-        if (traderCheckbox.isChecked() && entry.getOffers() == null) return false;
+        if (traderCheckbox.isChecked() && !entry.hasOffers()) return false;
 
         //all active filters passed
         return true;

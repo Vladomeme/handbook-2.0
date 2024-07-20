@@ -2,7 +2,6 @@ package net.handbook.main.editor;
 
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.WaypointManager;
-import net.handbook.main.resources.category.PositionedCategory;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.PositionedEntry;
 import net.minecraft.client.MinecraftClient;
@@ -16,7 +15,7 @@ public class LocationWriter {
     final static MinecraftClient client = MinecraftClient.getInstance();
     final static ChatHud chat = client.inGameHud.getChatHud();
 
-    public static CategoryWriter<PositionedCategory> writer;
+    public static CategoryWriter writer;
 
     @SuppressWarnings("SameReturnValue")
     public static int add(String name) {
@@ -40,7 +39,7 @@ public class LocationWriter {
     }
 
     public static void delete(Entry entry) {
-        if (writer.category.getEntries().remove((PositionedEntry) entry)) {
+        if (writer.category.getEntries().remove(entry)) {
             writer.shouldUpdate = true;
             chat.addMessage(Text.of("Entry removed: " + entry.getTitle()));
         }

@@ -3,7 +3,7 @@ package net.handbook.main.editor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.resources.category.BaseCategory;
+import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.widget.HandbookButtonWidget;
 import net.minecraft.client.MinecraftClient;
@@ -36,7 +36,7 @@ public class LocationScreen extends Screen {
 
     @Override
     protected void init() {
-        for (BaseCategory category : HandbookClient.getCategories()) {
+        for (Category category : HandbookClient.getCategories()) {
             if (category.getTitle().equals("Locations")) {
                 addElements();
                 textField.setFocused(true);
@@ -88,7 +88,7 @@ public class LocationScreen extends Screen {
             close();
             return;
         }
-        for (BaseCategory category : HandbookClient.getCategories()) {
+        for (Category category : HandbookClient.getCategories()) {
             if (!category.getTitle().equals("Locations")) continue;
             for (Entry entry : category.getEntries()) {
                 if (entry.getTitle().equals(textField.getText())) {
@@ -106,12 +106,8 @@ public class LocationScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         lastKey = keyCode;
 
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        } else if (client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
-            close();
-            return true;
-        }
+        if (!super.keyPressed(keyCode, scanCode, modifiers)
+                && client.options.inventoryKey.matchesKey(keyCode, scanCode)) close();
         return true;
     }
 

@@ -26,7 +26,6 @@ import net.handbook.main.feature.TradeScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
 import net.handbook.main.resources.entry.Entry;
-import net.handbook.main.resources.entry.TraderEntry;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.client.MinecraftClient;
@@ -36,7 +35,6 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.village.TradeOfferList;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +60,7 @@ public class HandbookClient implements ClientModInitializer {
 
     public static HandbookScreen handbookScreen;
     public static TradeScreen tradeScreen;
-    public static final List<CategoryWriter<? extends BaseCategory>> writers = new ArrayList<>();
+    public static final List<CategoryWriter> writers = new ArrayList<>();
 
     static boolean firstLoad = true;
 
@@ -89,10 +87,8 @@ public class HandbookClient implements ClientModInitializer {
     }
 
     private void onReload(ResourceManager manager) {
-        Gson gson = new Gson();
-
         if (firstLoad) {
-            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/first_load"))) createAllFiles(manager);
+            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/first_load"))) copyAllFiles(manager);
 
             handbookScreen = HandbookScreen.INSTANCE;
             tradeScreen = TradeScreen.INSTANCE;
@@ -102,43 +98,35 @@ public class HandbookClient implements ClientModInitializer {
 
             firstLoad = false;
         }
-        else {
-            NPCWriter.saveTrades();
-            writers.forEach(CategoryWriter::write);
-            writers.clear();
-        }
+        else save();
 
         File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
         if (files == null) {
             LOGGER.error("No handbook categories found!");
             return;
         }
+        tradeScreen.clear();
 
         for (File file : files) {
             if (!file.getName().endsWith("json") || file.getName().equals("config.json")) continue;
             try {
-                String type = gson.fromJson(Files.readString(Path.of(file.getPath()), StandardCharsets.UTF_8), CategoryType.class).getType();
+                CategoryWriter writer = new CategoryWriter(file.toPath());
+                String type = writer.category.getType();
                 switch (type) {
                     case "positioned" -> {
-                        CategoryWriter<PositionedCategory> writer = new CategoryWriter<>(PositionedCategory.class, file.toPath());
                         writers.add(writer);
                         if (writer.category.getTitle().equals("Locations")) LocationWriter.writer = writer;
                     }
-                    case "area" -> writers.add(new CategoryWriter<>(AreaCategory.class, file.toPath()));
-                    case "waypoint" -> writers.add(new CategoryWriter<>(WaypointCategory.class, file.toPath()));
                     case "trader" -> {
-                        CategoryWriter<TraderCategory> writer = new CategoryWriter<>(TraderCategory.class, file.toPath());
                         writers.add(writer);
                         if (writer.category.getTitle().equals("EXCLUDE")) {
                             NPCWriter.blacklist = writer;
                             LOGGER.info("Loaded trader blacklist");
                             continue;
                         }
-                        NPCWriter.writer = writer;
-                        tradeScreen.clear();
-                        for (TraderEntry entry : writer.category.getEntries()) {
-                            TradeOfferList offers = entry.getOffers();
-                            if (offers != null) tradeScreen.addEntries(offers, entry.getID());
+                        if (writer.category.getTitle().equals("NPC")) NPCWriter.writer = writer;
+                        for (Entry entry : writer.category.getEntries()) {
+                            if (entry.hasOffers()) tradeScreen.addEntries(entry.getOffers(), entry.getID());
                         }
                     }
                     case "mark" -> {
@@ -147,7 +135,7 @@ public class HandbookClient implements ClientModInitializer {
                                 Files.readString(file.toPath(), StandardCharsets.UTF_8), MarkCategory.class);
                         continue;
                     }
-                    default -> writers.add(new CategoryWriter<>(Category.class, file.toPath()));
+                    default -> writers.add(writer);
                 }
                 LOGGER.info("Loaded {} category {}", type, writers.get(writers.size() - 1).category.getTitle());
             } catch (IOException | JsonSyntaxException e) {
@@ -161,7 +149,7 @@ public class HandbookClient implements ClientModInitializer {
         WaypointManager.updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
     }
 
-    private void createAllFiles(ResourceManager manager) {
+    private void copyAllFiles(ResourceManager manager) {
         LOGGER.info("Looks like Handbook is loaded for the first time. Copying all files...");
 
         Path home = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook");
@@ -191,15 +179,11 @@ public class HandbookClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (openScreen.wasPressed()) {
                 if (!(client.currentScreen instanceof HandbookScreen)) openHandbookScreen();
-                while (openScreen.wasPressed()) {
-                    //drain all presses
-                }
+                while (openScreen.wasPressed()) {}
             }
             if (addLocation.wasPressed()) {
                 if (!(client.currentScreen instanceof LocationScreen)) openLocationScreen();
-                while (addLocation.wasPressed()) {
-                    //drain all presses
-                }
+                while (addLocation.wasPressed()) {}
             }
             WaypointManager.tick();
             if (AreaSelector.isActive()) AreaSelector.emitParticles();
@@ -217,10 +201,7 @@ public class HandbookClient implements ClientModInitializer {
             if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
         });
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-            NPCWriter.saveTrades();
-            writers.forEach(CategoryWriter::write);
-        });
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
     }
 
     private void registerKeyBinds() {
@@ -286,17 +267,24 @@ public class HandbookClient implements ClientModInitializer {
         client.setScreen(new LocationScreen(Text.of("")));
     }
 
-    public static List<BaseCategory> getCategories() {
-        List<BaseCategory> list = new ArrayList<>();
+    public static List<Category> getCategories() {
+        List<Category> list = new ArrayList<>();
         writers.forEach(writer -> {
             if (!writer.category.getTitle().equals("EXCLUDE")) list.add(writer.category);
         });
         return list;
     }
 
+    private static void save() {
+        NPCWriter.saveTrades();
+        handbookScreen.markedEntries.write();
+        writers.forEach(CategoryWriter::write);
+        writers.clear();
+    }
+
     @SuppressWarnings("unused")
     private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
-        for (CategoryWriter<?> writer : writers) {
+        for (CategoryWriter writer : writers) {
             if (!writer.category.getTitle().equals("Locations")) continue;
 
             for (Entry entry : writer.category.getEntries()) {

@@ -4,7 +4,7 @@ import net.handbook.main.resources.waypoint.Waypoint;
 
 public class WaypointEntry extends Entry {
 
-    WaypointChain waypoints;
+    WaypointEntry[] waypoints;
     final Waypoint waypoint;
     final boolean pause;
     boolean chain = false;
@@ -12,17 +12,27 @@ public class WaypointEntry extends Entry {
 
     public WaypointEntry(String title, String text, Waypoint waypoint, boolean pause, String id) {
         super(title, text, null);
-        this.waypoints = new WaypointChain(new WaypointEntry[]{this});
+        this.waypoints = new WaypointEntry[]{this};
         this.waypoint = waypoint;
         this.pause = pause;
         this.id = id;
+    }
+
+    @Override
+    public WaypointEntry[] getWaypoints() {
+        return waypoints;
+    }
+
+    @Override
+    public String getID() {
+        return id;
     }
 
     public Waypoint getWaypoint() {
         return waypoint;
     }
 
-    public void setChain(WaypointChain waypoints) {
+    public void setChain(WaypointEntry[] waypoints) {
         this.waypoints = waypoints;
     }
 
@@ -37,14 +47,5 @@ public class WaypointEntry extends Entry {
 
     public boolean shouldPause() {
         return pause;
-    }
-    @Override
-    public WaypointEntry[] getWaypoints() {
-        return waypoints.getWaypoints();
-    }
-
-    @Override
-    public String getID() {
-        return id;
     }
 }

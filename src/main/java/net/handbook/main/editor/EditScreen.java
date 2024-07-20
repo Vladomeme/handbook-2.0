@@ -154,7 +154,9 @@ public class EditScreen extends Screen {
 
             e.update(nameField.getText(), textField.getText(), pos);
         }
-        for (CategoryWriter<?> writer : HandbookClient.writers) {
+        else entry.update(nameField.getText(), textField.getText());
+
+        for (CategoryWriter writer : HandbookClient.writers) {
             if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
 
             writer.shouldUpdate = true;
@@ -182,18 +184,12 @@ public class EditScreen extends Screen {
         return null;
     }
 
-    //todo wtf??
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         lastKey = keyCode;
 
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-        else if (client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
-            close();
-            return true;
-        }
+        if (!super.keyPressed(keyCode, scanCode, modifiers)
+                && client.options.inventoryKey.matchesKey(keyCode, scanCode)) close();
         return true;
     }
 

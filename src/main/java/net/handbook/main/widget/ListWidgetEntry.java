@@ -7,7 +7,7 @@ import net.fabricmc.api.Environment;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.BaseEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -27,13 +27,13 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     private final HandbookScreen screen = HandbookClient.handbookScreen;
 
     private final String type;
-    public final Entry entry;
+    public final BaseEntry entry;
     private boolean highlighted = false;
 
     public final TexturedButtonWidget button;
     public final List<ClickableWidget> list;
 
-    public ListWidgetEntry(Entry entry, int width, String type) {
+    public ListWidgetEntry(BaseEntry entry, int width, String type) {
         this.entry = entry;
         this.type = type;
 

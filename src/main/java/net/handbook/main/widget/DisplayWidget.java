@@ -68,9 +68,9 @@ public class DisplayWidget extends ClickableWidget {
                     invalidImage = false;
                 }
                 else invalidImage = true;
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 HandbookClient.LOGGER.error("Invalid image name in entry {}", entry.getTitle());
-                throw new RuntimeException(e);
             }
         }
         else renderImage = false;
@@ -82,7 +82,7 @@ public class DisplayWidget extends ClickableWidget {
             screen.shareLocation.visible = true;
             screen.shareLocation.active = true;
         }
-        if (entry.getOffers() != null) {
+        if (entry.hasOffers()) {
             screen.openTrades.visible = true;
             screen.openTrades.active = true;
             if (HandbookConfig.INSTANCE.editorMode) {
@@ -94,8 +94,7 @@ public class DisplayWidget extends ClickableWidget {
             screen.setWaypoint.visible = true;
             screen.setWaypoint.active = true;
         }
-        if ((HandbookConfig.INSTANCE.editorMode)
-                && (screen.activeCategory.getTitle().equals("Locations") || screen.activeCategory.getTitle().equals("NPC"))) {
+        if ((HandbookConfig.INSTANCE.editorMode)) {
             screen.delete.visible = true;
             screen.delete.active = true;
             screen.edit.visible = true;
@@ -230,11 +229,14 @@ public class DisplayWidget extends ClickableWidget {
             case "Locations" -> LocationWriter.delete(entry);
             case "NPC" -> NPCWriter.delete(entry);
             default -> {
-                client.inGameHud.getChatHud().addMessage(Text.of("Unable to delete an entry from this category."));
-                return;
+                for (CategoryWriter writer : HandbookClient.writers) {
+                    if (!writer.category.equals(screen.activeCategory)) continue;
+
+                    writer.delete(entry);
+                    writer.shouldUpdate = true;
+                }
             }
         }
-        screen.activeCategory.getEntries().remove(entry);
         double scroll = screen.optionsWidget.getScrollAmount();
         screen.optionsWidget.setEntries(screen.activeCategory.getEntries(), "entry");
         screen.optionsWidget.setScrollAmount(scroll);
@@ -245,9 +247,8 @@ public class DisplayWidget extends ClickableWidget {
     public void deleteTrade() {
         try {
             Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + entry.getID() + ".txt"));
-        } catch (IOException e) {
-            //don't care
         }
+        catch (IOException ignored) {}
         client.inGameHud.getChatHud().addMessage(Text.of("Removed trades. Interact with the villager again to update them."));
     }
 

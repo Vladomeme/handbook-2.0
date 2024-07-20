@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.EditScreen;
-import net.handbook.main.resources.category.BaseCategory;
+import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.category.MarkCategory;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.widget.*;
@@ -63,7 +63,7 @@ public class HandbookScreen extends Screen {
     public HandbookButtonWidget continueWaypoint;
 
     public MarkCategory markedEntries;
-    public BaseCategory activeCategory;
+    public Category activeCategory;
     public ListWidgetEntry selectedEntry;
 
     public int line1x;
@@ -110,7 +110,7 @@ public class HandbookScreen extends Screen {
 
         int maxWidth = 0;
 
-        for (BaseCategory category : HandbookClient.getCategories()) {
+        for (Category category : HandbookClient.getCategories()) {
             int width = tr.getWidth(category.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -123,7 +123,7 @@ public class HandbookScreen extends Screen {
         categoriesWidget.setLeftPos(20);
         categoriesWidget.setEntries(HandbookClient.getCategories(), "category");
         categoriesWidget.children().get(0).updateHighlight(true);
-        activeCategory = (BaseCategory) categoriesWidget.children().get(0).entry;
+        activeCategory = (Category) categoriesWidget.children().get(0).entry;
 
         maxWidth = 0;
 
@@ -131,7 +131,7 @@ public class HandbookScreen extends Screen {
                 line1x / 2 - 37, screenHeight - 30, 75, 11,
                 "Trade Search", button -> client.setScreen(HandbookClient.tradeScreen)));
 
-        for (Entry entry : ((BaseCategory) categoriesWidget.children().get(0).entry).getEntries()) {
+        for (Entry entry : ((Category) categoriesWidget.children().get(0).entry).getEntries()) {
             int width = tr.getWidth(entry.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -141,7 +141,7 @@ public class HandbookScreen extends Screen {
         addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 6, screenHeight - 60, 30, screenHeight - 30));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(((BaseCategory) categoriesWidget.children().get(0).entry).getEntries(), "entry");
+        optionsWidget.setEntries(((Category) categoriesWidget.children().get(0).entry).getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
@@ -396,7 +396,7 @@ public class HandbookScreen extends Screen {
         shareFull.setPosition(x, y);
     }
 
-    public void setEntries(BaseCategory category) {
+    public void setEntries(Category category) {
         int screenHeight = client.getWindow().getScaledHeight();
         int screenWidth = client.getWindow().getScaledWidth();
         int maxWidth = 0;
@@ -461,12 +461,8 @@ public class HandbookScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         lastKey = keyCode;
 
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        } else if (client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
-            close();
-            return true;
-        }
+        if (!super.keyPressed(keyCode, scanCode, modifiers)
+                && client.options.inventoryKey.matchesKey(keyCode, scanCode)) close();
         return true;
     }
 

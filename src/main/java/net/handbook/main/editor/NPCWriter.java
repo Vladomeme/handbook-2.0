@@ -4,7 +4,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.WaypointManager;
-import net.handbook.main.resources.category.TraderCategory;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
 import net.minecraft.client.MinecraftClient;
@@ -34,8 +33,8 @@ public class NPCWriter {
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final ChatHud chat = client.inGameHud.getChatHud();
 
-    public static CategoryWriter<TraderCategory> writer;
-    public static CategoryWriter<TraderCategory> blacklist;
+    public static CategoryWriter writer;
+    public static CategoryWriter blacklist;
     static final HashMap<String, byte[]> updatedOffers = new HashMap<>();
 
     static int x;
@@ -94,7 +93,7 @@ public class NPCWriter {
             return false;
         }
         String newID = getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ());
-        for (TraderEntry entry : writer.category.getEntries()) {
+        for (Entry entry : writer.category.getEntries()) {
             if (!entry.getID().equals(newID)) continue;
             if (manual) chat.addMessage(Text.of("§cERROR: NPC is already added."));
             return false;
@@ -114,7 +113,7 @@ public class NPCWriter {
             return;
         }
         int counter = 0;
-        for (TraderEntry entry : new ArrayList<>(writer.category.getEntries())) {
+        for (Entry entry : new ArrayList<>(writer.category.getEntries())) {
             int[] pos = entry.getPosition();
             if (!(entry.getShard().equals(WaypointManager.getShard())
                     && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
@@ -141,7 +140,7 @@ public class NPCWriter {
                 if (!name.endsWith(".txt")) return;
 
                 String id = name.replace(".txt", "");
-                for (TraderEntry entry : writer.category.getEntries()) {
+                for (Entry entry : writer.category.getEntries()) {
                     if (entry.getID().equals(id)) return;
                 }
                 try {
@@ -158,7 +157,7 @@ public class NPCWriter {
     }
 
     public static void delete(Entry entry) {
-        if (writer.category.getEntries().remove((TraderEntry) entry)) {
+        if (writer.category.getEntries().remove(entry)) {
             blacklist.category.getEntries().add(new TraderEntry(entry.getID()));
             try {
                 Files.deleteIfExists(Path.of(PATH + entry.getID() + ".txt"));
@@ -173,7 +172,7 @@ public class NPCWriter {
     public static void addOffers(TradeOfferList offers) {
         if (!(client.currentScreen instanceof MerchantScreen screen)) return;
 
-        for (TraderEntry entry : writer.category.getEntries()) {
+        for (Entry entry : writer.category.getEntries()) {
             if (!entry.getID().equals(getID(screen.getTitle().getString(), x, y, z))) continue;
 
             NbtCompound offersNbt = new NbtCompound();
@@ -191,7 +190,7 @@ public class NPCWriter {
                     .replace("\\\"", "\"")
                     .replace("\\\"", "\\\\\"")
                     .replace("\\u0027", "'");
-            String oldOffers = entry.getOffersRaw();
+            String oldOffers = ((TraderEntry) entry).getOffersRaw();
 
             if (oldOffers == null || !oldOffers.equals(newOffers))
                 updatedOffers.put(entry.getID(), compressTrades(newOffers));

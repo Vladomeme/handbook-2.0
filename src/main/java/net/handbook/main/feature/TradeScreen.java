@@ -3,7 +3,7 @@ package net.handbook.main.feature;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.resources.category.BaseCategory;
+import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
 import net.handbook.main.widget.*;
@@ -244,7 +244,7 @@ public class TradeScreen extends Screen {
 
     public void setTraderInfo(String id) {
         cancelSharing();
-        for (BaseCategory category : HandbookClient.getCategories()) {
+        for (Category category : HandbookClient.getCategories()) {
             if (!category.getType().equals("trader") || category.getTitle().equals("EXCLUDE")) continue;
 
             for (Entry entry : category.getEntries()) {
@@ -391,12 +391,8 @@ public class TradeScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         lastKey = keyCode;
 
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        } else if (client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
-            close();
-            return true;
-        }
+        if (!super.keyPressed(keyCode, scanCode, modifiers)
+                && client.options.inventoryKey.matchesKey(keyCode, scanCode)) close();
         return true;
     }
 

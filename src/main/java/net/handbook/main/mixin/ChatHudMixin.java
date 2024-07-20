@@ -5,9 +5,8 @@ import net.handbook.main.HBMixinMethods;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.AreaSelector;
 import net.handbook.main.feature.WaypointManager;
-import net.handbook.main.resources.category.AreaCategory;
-import net.handbook.main.resources.category.BaseCategory;
-import net.handbook.main.resources.entry.AreaEntry;
+import net.handbook.main.resources.category.Category;
+import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
@@ -100,10 +99,10 @@ public abstract class ChatHudMixin implements HBMixinMethods {
     @Unique
     private void suggestBountyWaypoint(String message) {
         String POIName = message.replace("Your bounty for today is ", "").replace("!", "");
-        for (BaseCategory category : HandbookClient.getCategories()) {
+        for (Category category : HandbookClient.getCategories()) {
             if (!category.getClearTitle().startsWith("POI")) continue;
 
-            for (AreaEntry entry : ((AreaCategory) category).getEntries()) {
+            for (Entry entry : category.getEntries()) {
                 if (!entry.getClearTitle().equals(POIName)) continue;
 
                 int[] coords = entry.getPosition();
