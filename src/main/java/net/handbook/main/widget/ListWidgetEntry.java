@@ -10,6 +10,7 @@ import net.handbook.main.editor.EditScreen;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.entry.BaseEntry;
+import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -90,7 +91,7 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (Screen.hasShiftDown() && HandbookConfig.INSTANCE.editorMode) {
             MinecraftClient.getInstance().setScreen(new EditScreen(entry, !type.equals("entry"),
-                    (entry instanceof Category c) ? c.getType() : screen.activeCategory.getType()));
+                    (entry instanceof Category<? extends Entry> c) ? c.getType() : screen.activeCategory.getType()));
             return true;
         }
         if (button == 1) markEntry();

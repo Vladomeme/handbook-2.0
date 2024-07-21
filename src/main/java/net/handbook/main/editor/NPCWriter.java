@@ -33,8 +33,8 @@ public class NPCWriter {
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final ChatHud chat = client.inGameHud.getChatHud();
 
-    public static CategoryWriter writer;
-    public static CategoryWriter blacklist;
+    public static CategoryWriter<TraderEntry> writer;
+    public static CategoryWriter<TraderEntry> blacklist;
     static final HashMap<String, byte[]> updatedOffers = new HashMap<>();
 
     static int x;
@@ -113,7 +113,7 @@ public class NPCWriter {
             return;
         }
         int counter = 0;
-        for (Entry entry : new ArrayList<>(writer.category.getEntries())) {
+        for (TraderEntry entry : new ArrayList<>(writer.category.getEntries())) {
             int[] pos = entry.getPosition();
             if (!(entry.getShard().equals(WaypointManager.getShard())
                     && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
@@ -156,7 +156,7 @@ public class NPCWriter {
         catch (Exception ignored) {}
     }
 
-    public static void delete(Entry entry) {
+    public static void delete(TraderEntry entry) {
         if (writer.category.getEntries().remove(entry)) {
             blacklist.category.getEntries().add(new TraderEntry(entry.getID()));
             try {
@@ -172,7 +172,7 @@ public class NPCWriter {
     public static void addOffers(TradeOfferList offers) {
         if (!(client.currentScreen instanceof MerchantScreen screen)) return;
 
-        for (Entry entry : writer.category.getEntries()) {
+        for (TraderEntry entry : writer.category.getEntries()) {
             if (!entry.getID().equals(getID(screen.getTitle().getString(), x, y, z))) continue;
 
             NbtCompound offersNbt = new NbtCompound();
@@ -190,7 +190,7 @@ public class NPCWriter {
                     .replace("\\\"", "\"")
                     .replace("\\\"", "\\\\\"")
                     .replace("\\u0027", "'");
-            String oldOffers = ((TraderEntry) entry).getOffersRaw();
+            String oldOffers = entry.getOffersRaw();
 
             if (oldOffers == null || !oldOffers.equals(newOffers))
                 updatedOffers.put(entry.getID(), compressTrades(newOffers));

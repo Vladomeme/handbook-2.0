@@ -1,12 +1,12 @@
 package net.handbook.main.editor;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.resources.category.Category;
-import net.handbook.main.resources.entry.Entry;
-import net.handbook.main.resources.entry.WaypointEntry;
+import net.handbook.main.resources.entry.*;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,28 +15,28 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class CategoryWriter implements Comparable<CategoryWriter> {
+public class CategoryWriter<E extends Entry> implements Comparable<CategoryWriter<E>> {
 
-    public final Category category;
+    public final Category<E> category;
     private final Path path;
 
     public boolean shouldUpdate = false;
 
-    public CategoryWriter(Path path) {
+    public CategoryWriter(Path path, TypeToken<Category<E>> typeToken) {
         this.path = path;
-        this.category = read();
+        this.category = read(typeToken);
     }
 
-    public CategoryWriter(Category category) {
+    public CategoryWriter(Category<E> category) {
         this.category = category;
         this.path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/" +
                 category.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "") + ".json");
         this.shouldUpdate = true;
     }
 
-    public Category read() {
+    public Category<E> read(TypeToken<Category<E>> typeToken) {
         try {
-            Category category = (new Gson()).fromJson(Files.readString(path, StandardCharsets.UTF_8), Category.class);
+            Category<E> category = (new Gson()).fromJson(Files.readString(path, StandardCharsets.UTF_8), typeToken.getType());
 
             if (category.getType().equals("waypoint")) return mergeWaypointEntries(category);
             return category;
@@ -68,29 +68,32 @@ public class CategoryWriter implements Comparable<CategoryWriter> {
         shouldUpdate = false;
     }
 
+    @SuppressWarnings("unchecked")
     public void add(Entry entry) {
-        category.getEntries().add(entry);
+        category.getEntries().add((E) entry);
     }
 
+    @SuppressWarnings("unchecked")
     public void delete(Entry entry) {
-        category.getEntries().remove(entry);
+        category.getEntries().remove((E) entry);
     }
 
-    public Category mergeWaypointEntries(Category category) {
+    private Category<E> mergeWaypointEntries(Category<E> category) {
         category.getEntries().forEach(entry -> {
             Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/waypoints/" + entry.getID() + ".json");
             try {
                 ((WaypointEntry) entry).setChain(
-                        (new Gson()).fromJson(Files.readString(path, StandardCharsets.UTF_8), WaypointEntry[].class));
+                        (new Gson()).fromJson(Files.readString(path, StandardCharsets.UTF_8), WaypointEntry.class).getWaypoints());
             } catch (IOException e) {
-                HandbookClient.LOGGER.error("Failed to read waypoint entry file {}.json. No idea what would happen if you open it.", entry.getID());
+                HandbookClient.LOGGER.error("Failed to read waypoint entry file {}.json." +
+                        "No idea what would happen if you open it.", entry.getID());
             }
         });
         return category;
     }
 
     @Override
-    public int compareTo(@NotNull CategoryWriter o) {
+    public int compareTo(@NotNull CategoryWriter<E> o) {
         return category.getTitle().compareTo(o.category.getTitle());
     }
 }

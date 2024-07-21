@@ -17,12 +17,11 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class EditScreen extends Screen {
 
-    private final MinecraftClient client = MinecraftClient.getInstance();
+    private static final MinecraftClient client = MinecraftClient.getInstance();
     private final TextRenderer tr = client.textRenderer;
 
     private final BaseEntry entry;
@@ -54,16 +53,20 @@ public class EditScreen extends Screen {
         this.centerY = client.getWindow().getScaledHeight() / 2;
     }
 
-    @Override
-    protected void init() {
+    public static void open(BaseEntry entry, boolean isCategory, String type) {
         if (type.equals("waypoint")) {
-            client.inGameHud.getChatHud().addMessage(Text.of("Can't edit an entry of this type."));
-            close();
+            client.inGameHud.getChatHud().addMessage(Text.of("Can't add/edit an entry of this type."));
+            return;
         }
         if (type.equals("trader") && entry == null) {
             client.inGameHud.getChatHud().addMessage(Text.of("Can't add an entry of this type."));
-            close();
+            return;
         }
+        client.setScreen(new EditScreen(entry, isCategory, type));
+    }
+
+    @Override
+    protected void init() {
         addElements();
         super.init();
     }
@@ -72,7 +75,8 @@ public class EditScreen extends Screen {
         Style style = Style.EMPTY.withItalic(true).withColor(-10197916);
 
         addDrawableChild(typeField = new TextFieldWidget(tr, centerX - 80, centerY - 84, 160, 12, Text.of("")));
-        typeField.setPlaceholder(Text.of("name").getWithStyle(style).get(0));
+        typeField.setPlaceholder(Text.of("type").getWithStyle(style).get(0));
+        typeField.setChangedListener(this::checkType);
         typeField.setMaxLength(9999);
 
         addDrawableChild(titleField = new TextFieldWidget(tr, centerX - 80, centerY - 68, 160, 12, Text.of("")));
@@ -129,12 +133,13 @@ public class EditScreen extends Screen {
             positionField.setPlaceholder(text);
             areaField.active = false;
             areaField.setPlaceholder(text);
+            moveButton.active = false;
             return;
         }
         typeField.active = false;
         typeField.setPlaceholder(text);
         switch (type) {
-            case "normal, trader" -> {
+            case "normal", "trader" -> {
                 positionField.active = false;
                 positionField.setPlaceholder(text);
                 areaField.active = false;
@@ -184,8 +189,9 @@ public class EditScreen extends Screen {
         matrices.pop();
 
         context.fill(centerX - 130, centerY - 116, centerX + 130, centerY + 15, HandbookConfig.INSTANCE.tradeBackgroundColor);
-        context.drawBorder(centerX - 131, centerY - 117, 262, 117, HandbookConfig.INSTANCE.bordersColor);
-        context.drawCenteredTextWithShadow(tr, "Entry editing", centerX, centerY - 109, HandbookConfig.INSTANCE.textColor);
+        context.drawBorder(centerX - 131, centerY - 117, 262, 133, HandbookConfig.INSTANCE.bordersColor);
+        context.drawCenteredTextWithShadow(tr, entry == null ? "Adding entry..." : "Editing entry...",
+                centerX, centerY - 109, HandbookConfig.INSTANCE.textColor);
 
         context.drawText(tr, Text.of("Type"), centerX - 85 - tr.getWidth("Type"), centerY - 82,
                 HandbookConfig.INSTANCE.textColor, false);
@@ -202,18 +208,30 @@ public class EditScreen extends Screen {
         RenderSystem.disableBlend();
     }
 
+    @SuppressWarnings("DuplicateBranchesInSwitch")
     private void saveCategory() {
         if (titleField.getText().isEmpty()) return;
-        if (entry == null)
-            HandbookClient.writers.add(new CategoryWriter(
-                new Category(typeField.getText(), titleField.getText(), "", "", new ArrayList<>())));
+        if (entry == null) {
+            String type = typeField.getText();
+            String title = titleField.getText();
+            if (!checkType(type)) return;
+            HandbookClient.writers.add(
+                    switch (type) {
+                        case "normal" -> new CategoryWriter<>(new Category<>(type, title));
+                        case "positioned" -> new CategoryWriter<PositionedEntry>(new Category<>(type, title));
+                        case "area" -> new CategoryWriter<AreaEntry>(new Category<>(type, title));
+                        case "trader" -> new CategoryWriter<TraderEntry>(new Category<>(type, title));
+                        default -> throw new IllegalStateException("Unexpected value: " + type);
+                    });
+        }
         else entry.update(titleField.getText(), entry.getText());
+        close();
     }
 
     private void saveEntry() {
         if (titleField.getText().isEmpty()) return;
         if (entry == null) {
-            for (CategoryWriter writer : HandbookClient.writers) {
+            for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
                 if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
 
                 switch (type) {
@@ -226,13 +244,15 @@ public class EditScreen extends Screen {
                     case "area" -> {
                         int[] pos = checkCoordinates(positionField.getText(), 3);
                         int[] area = checkCoordinates(areaField.getText(), 6);
-                        if (pos != null || area != null)writer.add(new AreaEntry(titleField.getText(), textField.getText(),
+                        if (pos != null || area != null) writer.add(new AreaEntry(titleField.getText(), textField.getText(),
                                 "", WaypointManager.getShard(), pos, area));
                     }
                 }
                 writer.shouldUpdate = true;
                 break;
             }
+            client.inGameHud.getChatHud().addMessage(Text.of("Entry added."));
+            if (HandbookConfig.INSTANCE.autoClose) close();
             return;
         }
 
@@ -251,13 +271,14 @@ public class EditScreen extends Screen {
         }
         else if (entry instanceof Entry e) e.update(titleField.getText(), textField.getText());
 
-        for (CategoryWriter writer : HandbookClient.writers) {
+        for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
             if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
 
             writer.shouldUpdate = true;
             break;
         }
-        close();
+        client.inGameHud.getChatHud().addMessage(Text.of("Entry updated."));
+        if (HandbookConfig.INSTANCE.autoClose) close();
     }
 
     private void changePosition() {
@@ -270,13 +291,23 @@ public class EditScreen extends Screen {
         try {
             int[] pos = Arrays.stream(line.replace(" ", "").split(",")).mapToInt(Integer::parseInt).toArray();
             if (pos.length == length) {
-                positionField.setEditableColor(Formatting.WHITE.getColorValue());
+                (length == 3 ? positionField : areaField).setEditableColor(Formatting.WHITE.getColorValue());
                 return pos;
             }
         }
         catch (Exception ignored) {}
-        positionField.setEditableColor(Formatting.RED.getColorValue());
+        (length == 3 ? positionField : areaField).setEditableColor(Formatting.RED.getColorValue());
         return null;
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    private boolean checkType(String type) {
+        if (type.equals("normal") || type.equals("positioned") || type.equals("area") || type.equals("trader")) {
+            typeField.setEditableColor(Formatting.WHITE.getColorValue());
+            return true;
+        }
+        typeField.setEditableColor(Formatting.RED.getColorValue());
+        return false;
     }
 
     @Override

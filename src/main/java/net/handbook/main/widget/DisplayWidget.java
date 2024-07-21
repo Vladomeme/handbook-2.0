@@ -10,6 +10,8 @@ import net.handbook.main.editor.NPCWriter;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.PositionedEntry;
+import net.handbook.main.resources.entry.TraderEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -97,8 +99,6 @@ public class DisplayWidget extends ClickableWidget {
         if ((HandbookConfig.INSTANCE.editorMode)) {
             screen.delete.visible = true;
             screen.delete.active = true;
-            screen.edit.visible = true;
-            screen.edit.active = true;
         }
     }
 
@@ -226,10 +226,10 @@ public class DisplayWidget extends ClickableWidget {
 
     public void deleteEntry() {
         switch (screen.activeCategory.getTitle()) {
-            case "Locations" -> LocationWriter.delete(entry);
-            case "NPC" -> NPCWriter.delete(entry);
+            case "Locations" -> LocationWriter.delete((PositionedEntry) entry);
+            case "NPC" -> NPCWriter.delete((TraderEntry) entry);
             default -> {
-                for (CategoryWriter writer : HandbookClient.writers) {
+                for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
                     if (!writer.category.equals(screen.activeCategory)) continue;
 
                     writer.delete(entry);

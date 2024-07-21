@@ -64,7 +64,7 @@ public class HandbookScreen extends Screen {
     public HandbookButtonWidget continueWaypoint;
 
     public MarkCategory markedEntries;
-    public Category activeCategory;
+    public Category<? extends Entry> activeCategory;
     public ListWidgetEntry selectedEntry;
 
     public int line1x;
@@ -109,7 +109,7 @@ public class HandbookScreen extends Screen {
 
         int maxWidth = 0;
 
-        for (Category category : HandbookClient.getCategories()) {
+        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
             int width = tr.getWidth(category.getTitle());
             if (width > maxWidth) maxWidth = width;
         }
@@ -123,13 +123,13 @@ public class HandbookScreen extends Screen {
         categoriesWidget.setLeftPos(20);
         categoriesWidget.setEntries(HandbookClient.getCategories(), "category");
         categoriesWidget.children().get(0).updateHighlight(true);
-        activeCategory = (Category) categoriesWidget.children().get(0).entry;
+        activeCategory = (Category<? extends Entry>) categoriesWidget.children().get(0).entry;
 
         maxWidth = 0;
 
         addDrawableChild(addCategory = new HandbookButtonWidget(HandbookButtonWidget.Type.Positive,
-                line1x / 2 - tr.getWidth("Add"), screenHeight - 45, 30, 11,
-                "Add", button -> client.setScreen(new EditScreen(null, true, ""))));
+                line1x / 2 - 20, screenHeight - 45, 40, 11,
+                "Add", button -> EditScreen.open(null, true, "")));
         addCategory.visible = HandbookConfig.INSTANCE.editorMode;
         addCategory.active = HandbookConfig.INSTANCE.editorMode;
 
@@ -137,25 +137,28 @@ public class HandbookScreen extends Screen {
                 line1x / 2 - 37, screenHeight - 30, 75, 11,
                 "Trade Search", button -> client.setScreen(HandbookClient.tradeScreen)));
 
-        for (Entry entry : ((Category) categoriesWidget.children().get(0).entry).getEntries()) {
-            int width = tr.getWidth(entry.getTitle());
-            if (width > maxWidth) maxWidth = width;
+        if (((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries().isEmpty()) maxWidth = 110;
+        else {
+            for (Entry entry : ((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries()) {
+                int width = tr.getWidth(entry.getTitle());
+                if (width > maxWidth) maxWidth = width;
+            }
+            maxWidth = Math.min(maxWidth, 150);
+            maxWidth = maxWidth + 10;
         }
-        maxWidth = Math.min(maxWidth, 150);
-        maxWidth = maxWidth + 10;
 
         addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 6, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30,
                 screenHeight - (HandbookConfig.INSTANCE.editorMode ? 50 : 30)));
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(((Category) categoriesWidget.children().get(0).entry).getEntries(), "entry");
+        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
 
         addDrawableChild(addEntry = new HandbookButtonWidget(HandbookButtonWidget.Type.Positive,
-                (line2x - line1x) / 2 - tr.getWidth("Add"), screenHeight - 45, 30, 11,
-                "Add", button -> client.setScreen(new EditScreen(null, false, activeCategory.getType()))));
+                        line1x + (line2x - line1x) / 2 - 20, screenHeight - 45, 40, 11,
+                "Add", button -> EditScreen.open(null, false, activeCategory.getType())));
         addEntry.visible = HandbookConfig.INSTANCE.editorMode;
         addEntry.active = HandbookConfig.INSTANCE.editorMode;
 
@@ -404,17 +407,20 @@ public class HandbookScreen extends Screen {
         shareFull.setPosition(x, y);
     }
 
-    public void setEntries(Category category) {
+    public void setEntries(Category<? extends Entry> category) {
         int screenHeight = client.getWindow().getScaledHeight();
         int screenWidth = client.getWindow().getScaledWidth();
         int maxWidth = 0;
 
-        for (Entry entry : category.getEntries()) {
-            int width = tr.getWidth(entry.getTitle());
-            if (width > maxWidth) maxWidth = width;
+        if (category.getEntries().isEmpty()) maxWidth = 110;
+        else {
+            for (Entry entry : category.getEntries()) {
+                int width = tr.getWidth(entry.getTitle());
+                if (width > maxWidth) maxWidth = width;
+            }
+            maxWidth = Math.min(maxWidth, 150);
+            maxWidth = maxWidth + 10;
         }
-        maxWidth = Math.min(maxWidth, 150);
-        maxWidth = maxWidth + 10;
 
         optionsWidget.updateSize(maxWidth + 6, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60),
                 30, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 50 : 30));
@@ -422,6 +428,7 @@ public class HandbookScreen extends Screen {
         optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
         optionsWidget.setEntries(category.getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
+        addEntry.setX(line1x + (line2x - line1x) / 2 - 20);
         searchBox.setWidth(line2x - line1x - 16);
 
         maxWidth = screenWidth - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;

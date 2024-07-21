@@ -5,14 +5,22 @@ import net.handbook.main.resources.entry.BaseEntry;
 import net.handbook.main.resources.entry.Entry;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class Category extends BaseEntry implements Comparable<Category> {
+public class Category<E extends Entry> extends BaseEntry implements Comparable<Category<?>> {
 
     final String type;
-    final List<Entry> entries;
+    final List<E> entries;
 
-    public Category(String type, String title, String text, String image, List<Entry> entries) {
+    public Category(String type, String title) {
+        super(title, null, null);
+        this.type = type;
+        this.entries = new ArrayList<>();
+    }
+
+    @SuppressWarnings("unused")
+    public Category(String type, String title, String text, String image, List<E> entries) {
         super(title, text, image);
         this.type = type;
         this.entries = entries;
@@ -28,7 +36,7 @@ public class Category extends BaseEntry implements Comparable<Category> {
         return type;
     }
 
-    public List<Entry> getEntries() {
+    public List<E> getEntries() {
         return entries;
     }
 

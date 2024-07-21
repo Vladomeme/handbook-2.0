@@ -36,7 +36,7 @@ public class LocationScreen extends Screen {
 
     @Override
     protected void init() {
-        for (Category category : HandbookClient.getCategories()) {
+        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
             if (category.getTitle().equals("Locations")) {
                 addElements();
                 textField.setFocused(true);
@@ -88,7 +88,7 @@ public class LocationScreen extends Screen {
             close();
             return;
         }
-        for (Category category : HandbookClient.getCategories()) {
+        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
             if (!category.getTitle().equals("Locations")) continue;
             for (Entry entry : category.getEntries()) {
                 if (entry.getTitle().equals(textField.getText())) {

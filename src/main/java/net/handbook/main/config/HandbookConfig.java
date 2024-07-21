@@ -65,6 +65,7 @@ public class HandbookConfig {
     public boolean enableScanner = true;
     public boolean editorMode = false;
     public boolean quickSaveTrades = false;
+    public boolean autoClose = true;
     public boolean alwaysContinue = false;
     public boolean editMessages = true;
 
@@ -121,6 +122,14 @@ public class HandbookConfig {
                                 If enabled, NPC trading screen will be instantly closed, but
                                 trades will be saved with a notification.""")))
                                 .binding(false, () -> quickSaveTrades, newVal -> quickSaveTrades = newVal)
+                                .controller(TickBoxControllerBuilder::create).build())
+
+                        .option(Option.<Boolean>createBuilder()
+                                .name(Text.literal("Close after adding entries"))
+                                .description(OptionDescription.of(Text.literal("""
+                                If enabled, entry editing/adding screen will be auto closed
+                                if action was successful.""")))
+                                .binding(true, () -> autoClose, newVal -> autoClose = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()

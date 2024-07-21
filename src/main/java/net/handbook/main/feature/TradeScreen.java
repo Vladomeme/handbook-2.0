@@ -244,7 +244,7 @@ public class TradeScreen extends Screen {
 
     public void setTraderInfo(String id) {
         cancelSharing();
-        for (Category category : HandbookClient.getCategories()) {
+        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
             if (!category.getType().equals("trader") || category.getTitle().equals("EXCLUDE")) continue;
 
             for (Entry entry : category.getEntries()) {

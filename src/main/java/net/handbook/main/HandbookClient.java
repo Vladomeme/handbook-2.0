@@ -1,7 +1,9 @@
 package net.handbook.main;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -25,8 +27,7 @@ import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.TradeScreen;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.*;
-import net.handbook.main.resources.entry.Entry;
-import net.handbook.main.resources.entry.WaypointEntry;
+import net.handbook.main.resources.entry.*;
 import net.handbook.main.resources.waypoint.Waypoint;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -60,7 +61,7 @@ public class HandbookClient implements ClientModInitializer {
 
     public static HandbookScreen handbookScreen;
     public static TradeScreen tradeScreen;
-    public static final List<CategoryWriter> writers = new ArrayList<>();
+    public static final List<CategoryWriter<? extends Entry>> writers = new ArrayList<>();
 
     static boolean firstLoad = true;
 
@@ -86,6 +87,7 @@ public class HandbookClient implements ClientModInitializer {
         LOGGER.info("Handbook 2.0 loaded!");
     }
 
+    @SuppressWarnings("DuplicateBranchesInSwitch")
     private void onReload(ResourceManager manager) {
         if (firstLoad) {
             if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/first_load"))) copyAllFiles(manager);
@@ -110,14 +112,27 @@ public class HandbookClient implements ClientModInitializer {
         for (File file : files) {
             if (!file.getName().endsWith("json") || file.getName().equals("config.json")) continue;
             try {
-                CategoryWriter writer = new CategoryWriter(file.toPath());
-                String type = writer.category.getType();
+                String s = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+                String type = JsonParser.parseString(s).getAsJsonObject().get("type").getAsString();
                 switch (type) {
+                    case "normal" -> {
+                        CategoryWriter<Entry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
+                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
+                        writers.add(writer);
+                    }
                     case "positioned" -> {
+                        CategoryWriter<PositionedEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
+                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
                         writers.add(writer);
                         if (writer.category.getTitle().equals("Locations")) LocationWriter.writer = writer;
                     }
+                    case "area" -> {
+                        CategoryWriter<AreaEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
+                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
+                        writers.add(writer);
+                    }
                     case "trader" -> {
+                        CategoryWriter<TraderEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
                         writers.add(writer);
                         if (writer.category.getTitle().equals("EXCLUDE")) {
                             NPCWriter.blacklist = writer;
@@ -129,13 +144,17 @@ public class HandbookClient implements ClientModInitializer {
                             if (entry.hasOffers()) tradeScreen.addEntries(entry.getOffers(), entry.getID());
                         }
                     }
+                    case "waypoint" -> {
+                        CategoryWriter<WaypointEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
+                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
+                        writers.add(writer);
+                    }
                     case "mark" -> {
                         LOGGER.info("Loaded marked entries data.");
                         handbookScreen.markedEntries = (new Gson()).fromJson(
                                 Files.readString(file.toPath(), StandardCharsets.UTF_8), MarkCategory.class);
                         continue;
                     }
-                    default -> writers.add(writer);
                 }
                 LOGGER.info("Loaded {} category {}", type, writers.get(writers.size() - 1).category.getTitle());
             } catch (IOException | JsonSyntaxException e) {
@@ -143,8 +162,8 @@ public class HandbookClient implements ClientModInitializer {
                 LOGGER.info(e.getMessage());
             }
         }
-        Collections.sort(writers);
-        writers.forEach(writer -> Collections.sort(writer.category.getEntries()));
+        writers.sort(null);
+        writers.forEach(writer -> writer.category.getEntries().sort(null));
         LOGGER.info("Loaded {} categories", writers.size());
         WaypointManager.updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
     }
@@ -267,8 +286,8 @@ public class HandbookClient implements ClientModInitializer {
         client.setScreen(new LocationScreen(Text.of("")));
     }
 
-    public static List<Category> getCategories() {
-        List<Category> list = new ArrayList<>();
+    public static List<Category<? extends Entry>> getCategories() {
+        List<Category<? extends Entry>> list = new ArrayList<>();
         writers.forEach(writer -> {
             if (!writer.category.getTitle().equals("EXCLUDE")) list.add(writer.category);
         });
@@ -284,7 +303,7 @@ public class HandbookClient implements ClientModInitializer {
 
     @SuppressWarnings("unused")
     private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
-        for (CategoryWriter writer : writers) {
+        for (CategoryWriter<? extends Entry> writer : writers) {
             if (!writer.category.getTitle().equals("Locations")) continue;
 
             for (Entry entry : writer.category.getEntries()) {

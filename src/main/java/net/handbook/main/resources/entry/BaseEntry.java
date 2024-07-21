@@ -24,7 +24,7 @@ abstract public class BaseEntry {
     }
 
     public String getClearTitle() {
-        return title.replaceAll("§.", "");
+        return title == null ? null : title.replaceAll("§.", "");
     }
 
     public String getText() {
