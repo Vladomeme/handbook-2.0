@@ -391,7 +391,7 @@ public class WaypointManager {
         return getDistance(tp.x, tp.y, tp.z, x, y, z);
     }
 
-    private static int getDistance(int x1, int y1, int z1, int x2, int y2, int z2) {
+    public static int getDistance(int x1, int y1, int z1, int x2, int y2, int z2) {
         return (int) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
     }
 

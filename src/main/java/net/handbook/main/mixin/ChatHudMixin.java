@@ -115,8 +115,8 @@ public abstract class ChatHudMixin implements HBMixinMethods {
     }
 
     @Unique
-    public void handbook$unblockChat() {
-        handbook$removeLastMessages(11);
+    public void handbook$unblockChat(int deleteMessages) {
+        handbook$removeLastMessages(deleteMessages);
         for (Text message : blockedMessages)
             addMessage(message);
         blockedMessages.clear();

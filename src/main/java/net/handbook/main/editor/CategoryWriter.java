@@ -42,7 +42,7 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
             return category;
         }
         catch (Exception e) {
-            HandbookClient.LOGGER.error("Couldn't read file {}" , path);
+            HandbookClient.LOGGER.error("Couldn't read file {}", path);
             return null;
         }
     }
@@ -50,6 +50,7 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
     @SuppressWarnings("ResultOfMethodCallIgnored") //for .mkdirs()
     public void write() {
         if (!shouldUpdate) return;
+        HandbookClient.LOGGER.info("Saved handbook category {}", category.getClearTitle());
 
         Gson gson = new Gson();
         JsonWriter writer = null;
