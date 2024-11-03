@@ -30,7 +30,7 @@ public class HandbookButtonWidget extends ButtonWidget {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         if (!visible) return;
 
         int color = getColor(mouseX, mouseY);

@@ -60,7 +60,7 @@ public class DisplayWidget extends ClickableWidget {
 
         if (entry.hasImage()) {
             try {
-                id = new Identifier("handbook", entry.getImage());
+                id = new Identifier("handbook_images", entry.getImage());
                 Optional<Resource> resource = client.getResourceManager().getResource(id);
                 if (resource.isPresent()) {
                     BufferedImage image = ImageIO.read(resource.get().getInputStream());
@@ -103,7 +103,7 @@ public class DisplayWidget extends ClickableWidget {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         if (entry == null || !visible) return;
 
         MatrixStack matrices = context.getMatrices();
@@ -254,11 +254,6 @@ public class DisplayWidget extends ClickableWidget {
 
     public Entry getEntry() {
         return entry;
-    }
-
-    @Override
-    protected void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
-
     }
 
     @Override

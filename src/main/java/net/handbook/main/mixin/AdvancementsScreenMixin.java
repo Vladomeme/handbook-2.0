@@ -1,6 +1,5 @@
 package net.handbook.main.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.widget.HandbookButtonWidget;
@@ -30,10 +29,7 @@ public abstract class AdvancementsScreenMixin extends Screen {
     @Inject(method = "render", at = @At("TAIL"))
     public void render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
-        RenderSystem.enableBlend();
         button.render(context, mouseX, mouseY, delta);
-        super.render(context, mouseX, mouseY, delta);
-        RenderSystem.disableBlend();
     }
 
     @SuppressWarnings("unused")

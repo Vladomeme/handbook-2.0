@@ -41,6 +41,4 @@ public abstract class MerchantScreenHandlerMixin extends ScreenHandler {
     protected MerchantScreenHandlerMixin(@Nullable ScreenHandlerType<?> type, int syncId) {
         super(type, syncId);
     }
-
-
 }

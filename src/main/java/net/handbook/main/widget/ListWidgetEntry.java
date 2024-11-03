@@ -17,10 +17,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
-import net.minecraft.client.gui.widget.TexturedButtonWidget;
-import net.minecraft.util.Identifier;
+import net.minecraft.text.Text;
 
 import java.util.List;
 
@@ -34,18 +34,18 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     public final BaseEntry entry;
     private boolean highlighted = false;
 
-    public final TexturedButtonWidget button;
+    public final ButtonWidget button;
     public final List<ClickableWidget> list;
 
     public ListWidgetEntry(BaseEntry entry, int width, String type) {
         this.entry = entry;
         this.type = type;
 
-        button = new TexturedButtonWidget(0, 0, width, 12, 0, 0, 0,
-                new Identifier("handbook", "empty"), button -> {
+        button = ButtonWidget.builder(Text.of(""), button -> {
             updateHighlight(true);
             entry.mouseClicked();
-        });
+        }).position(0, 0).build();
+        button.setDimensions(width, 12);
         list = ImmutableList.of(button);
     }
 

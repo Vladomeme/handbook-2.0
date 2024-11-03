@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'fabric-loom' version '1.8-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -16,6 +16,10 @@ repositories {
 	}
 	maven { url 'https://maven.isxander.dev/releases' }
 	maven { url "https://maven.terraformersmc.com/releases/" }
+    maven { 
+        url "https://maven.nucleoid.xyz/"
+        name "Nucleoid"
+    }
 }
 
 dependencies {
@@ -24,12 +28,13 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modImplementation("dev.isxander:yet-another-config-lib:3.4.4+1.20.1-fabric")
+	modImplementation("dev.isxander:yet-another-config-lib:3.6.1+1.20.4-fabric")
 	modCompileOnly("com.terraformersmc:modmenu:${project.modmenu}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-	modImplementation "dev.xpple:clientarguments:1.5"
-	include "dev.xpple:clientarguments:1.5"
+    modImplementation("eu.pb4:placeholder-api:2.4.0-pre.1+1.20.4")
+	modImplementation "dev.xpple:clientarguments:1.7"
+	include "dev.xpple:clientarguments:1.7"
 	modImplementation files(".gradle/monumenta-item-dictionary-1.5.1-1.20.1.jar")
 }
 

@@ -10,6 +10,8 @@ import net.handbook.main.widget.HandbookButtonWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
@@ -177,18 +179,21 @@ public class EditScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (client.player == null) return;
-        renderBackground(context);
+        renderBackground(context, mouseX, mouseY, delta);
 
+        context.fill(0, 0, width, 15, 1, HandbookConfig.INSTANCE.screenHeadColor);
         MatrixStack matrices = context.getMatrices();
         RenderSystem.enableBlend();
-        context.fill(0, 0, width, 15, 0, HandbookConfig.INSTANCE.screenHeadColor);
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
+        matrices.translate(0, 0, 1);
         context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1, HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 
-        context.fill(centerX - 130, centerY - 116, centerX + 130, centerY + 15, HandbookConfig.INSTANCE.tradeBackgroundColor);
+        matrices.push();
+        matrices.translate(0, 0, 1);
+        context.fill(centerX - 130, centerY - 116, centerX + 130, centerY + 15, 0, HandbookConfig.INSTANCE.tradeBackgroundColor);
         context.drawBorder(centerX - 131, centerY - 117, 262, 133, HandbookConfig.INSTANCE.bordersColor);
         context.drawCenteredTextWithShadow(tr, entry == null ? "Adding entry..." : "Editing entry...",
                 centerX, centerY - 109, HandbookConfig.INSTANCE.textColor);
@@ -204,7 +209,9 @@ public class EditScreen extends Screen {
         context.drawText(tr, Text.of("Area"), centerX - 85 - tr.getWidth("Area"), centerY - 18,
                 HandbookConfig.INSTANCE.textColor, false);
 
-        super.render(context, mouseX, mouseY, delta);
+        for (Element element : children())
+            ((Drawable) element).render(context, mouseX, mouseY, delta);
+        matrices.pop();
         RenderSystem.disableBlend();
     }
 

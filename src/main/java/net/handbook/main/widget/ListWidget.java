@@ -6,6 +6,7 @@ import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.entry.BaseEntry;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.widget.ElementListWidget;
 
 import java.util.ArrayList;
@@ -18,13 +19,12 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 
 	public int listWidth;
 
-	public ListWidget(int width, int height, int top, int bottom) {
-		super(MinecraftClient.getInstance(), width, height, top, bottom, 12);
+	public ListWidget(int width, int height, int y) {
+		super(MinecraftClient.getInstance(), width, height, y, 12);
 
 		listWidth = width;
 
 		setRenderBackground(false);
-		setRenderHorizontalShadows(false);
 		setRenderHeader(false, 0);
 	}
 
@@ -66,7 +66,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 
 	@Override
 	protected int getScrollbarPositionX() {
-		return right - 11;
+		return getX() + getWidth() + 3;
 	}
 
 	@Override
@@ -74,10 +74,27 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		return listWidth;
 	}
 
-	public void updateSizeShrink(int height, int top) {
+	public void updateSizeShrink(int height, int y) {
 		this.height = height;
-		this.top = top;
-		this.bottom = top + height;
+		this.setY(y);
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		updateScrollingState(mouseX, mouseY, button);
+		if (isMouseOver(mouseX, mouseY)) {
+			ListWidgetEntry entry = this.getEntryAtPosition(mouseX, mouseY);
+			if (entry != null) {
+				if (entry.mouseClicked(mouseX, mouseY, button)) {
+					ListWidgetEntry entry2 = this.getFocused();
+					if (entry2 != entry && entry2 != null) ((ParentElement)entry2).setFocused(null);
+					this.setFocused(entry);
+					setDragging(true);
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	public void clear() {

@@ -24,7 +24,7 @@ public class FilterWidget extends ClickableWidget {
     private TextFieldWidget shardField;
     private TextFieldWidget textField;
 
-    private final Identifier checkTexture = new Identifier("handbook", "textures/check.png");
+    private final Identifier checkTexture = new Identifier("handbook", "textures/gui/sprites/check.png");
 
     public FilterWidget(int x, int y, int width, int height) {
         super(x, y, width, height, Text.of(""));
@@ -32,7 +32,8 @@ public class FilterWidget extends ClickableWidget {
     }
 
     private void init() {
-        traderCheckbox = new CheckboxWidget(0, 0, 18, 18, Text.of(""), false);
+        traderCheckbox = CheckboxWidget.builder(Text.of(""), tr).pos(0, 0).checked(false).build();
+        traderCheckbox.setDimensions(18, 18);
         shardField = new TextFieldWidget(tr, 0, 0, 100, 14, Text.of(""));
         textField = new TextFieldWidget(tr, 0, 0, 100, 14, Text.of(""));
         textField.setChangedListener(s -> onUpdate());
@@ -74,7 +75,7 @@ public class FilterWidget extends ClickableWidget {
     }
 
     @Override
-    protected void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
+    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         if (!visible) return;
 
         MatrixStack matrices = context.getMatrices();
@@ -112,7 +113,7 @@ public class FilterWidget extends ClickableWidget {
             context.fill(x, y, x + 18, y + 1, color);
             context.fill(x, y + 17, x + 18, y + 18, color);
             if (traderCheckbox.isChecked()) {
-                context.drawTexture(checkTexture, x, y - 1, 0, 0, 18, 18, 18, 18);
+                context.drawGuiTexture(checkTexture, x, y - 1, 18, 18);
             }
             RenderSystem.disableBlend();
             context.drawText(tr, "Trader ", traderCheckbox.getX() + 22, traderCheckbox.getY() + 3,

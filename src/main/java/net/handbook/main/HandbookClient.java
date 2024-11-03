@@ -157,7 +157,8 @@ public class HandbookClient implements ClientModInitializer {
                     }
                 }
                 LOGGER.info("Loaded {} category {}", type, writers.get(writers.size() - 1).category.getTitle());
-            } catch (IOException | JsonSyntaxException e) {
+            }
+            catch (IOException | JsonSyntaxException e) {
                 LOGGER.info("Failed to read category file {}", file.toPath());
                 LOGGER.info(e.getMessage());
             }

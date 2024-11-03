@@ -28,7 +28,7 @@ public class TradesWidget extends ClickableWidget {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         if (!visible) return;
 
         MatrixStack matrices = context.getMatrices();
@@ -138,11 +138,6 @@ public class TradesWidget extends ClickableWidget {
         COST,
         TRADER,
         FULL
-    }
-
-    @Override
-    protected void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
-
     }
 
     @Override

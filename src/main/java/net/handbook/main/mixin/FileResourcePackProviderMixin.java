@@ -3,10 +3,7 @@ package net.handbook.main.mixin;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.resources.HandbookResourcePack;
-import net.minecraft.resource.FileResourcePackProvider;
-import net.minecraft.resource.ResourcePackProfile;
-import net.minecraft.resource.ResourcePackSource;
-import net.minecraft.resource.ResourceType;
+import net.minecraft.resource.*;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,10 +21,10 @@ public abstract class FileResourcePackProviderMixin {
         Path path =  Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/textures");
         if (path.toFile().exists() && HandbookConfig.INSTANCE.enabled) {
             profileAdder.accept(ResourcePackProfile.create(
-                    "handbook",
+                    "handbook_images",
                     Text.of("Handbook 2.0 Resources"),
                     true,
-                    name -> new HandbookResourcePack(path, null),
+                    HandbookResourcePack.createPackFactory(new HandbookResourcePack(path, null)),
                     ResourceType.CLIENT_RESOURCES,
                     ResourcePackProfile.InsertionPosition.BOTTOM,
                     ResourcePackSource.BUILTIN

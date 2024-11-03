@@ -39,6 +39,20 @@ public class HandbookResourcePack extends DirectoryResourcePack {
         return null;
     }
 
+    public static ResourcePackProfile.PackFactory createPackFactory(ResourcePack pack) {
+        return new ResourcePackProfile.PackFactory() {
+            @Override
+            public ResourcePack open(String name) {
+                return pack;
+            }
+
+            @Override
+            public ResourcePack openWithOverlays(String name, ResourcePackProfile.Metadata metadata) {
+                return pack;
+            }
+        };
+    }
+
     @SuppressWarnings("RedundantArrayCreation")
     @Override
     public void findResources(ResourceType type, String namespace, String prefix, ResultConsumer consumer) {
@@ -60,7 +74,7 @@ public class HandbookResourcePack extends DirectoryResourcePack {
     @Override
     public Set<String> getNamespaces(ResourceType type) {
         Set<String> set = new HashSet<>();
-        set.add("handbook");
+        set.add("handbook_images");
         return set;
     }
 
@@ -73,7 +87,7 @@ public class HandbookResourcePack extends DirectoryResourcePack {
 
     @Override
     public String getName() {
-        return "Handbook Resources";
+        return "handbook_images";
     }
 
     @Override

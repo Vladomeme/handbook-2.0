@@ -11,6 +11,7 @@ import net.handbook.main.widget.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
@@ -114,13 +115,12 @@ public class HandbookScreen extends Screen {
             if (width > maxWidth) maxWidth = width;
         }
 
-        maxWidth = maxWidth + 20;
-        line1x = maxWidth + 11;
+        maxWidth += 20;
+        line1x = maxWidth + 20;
 
         addDrawableChild(categoriesWidget = new ListWidget(
-                maxWidth, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 90 : 70), 30,
-                screenHeight - (HandbookConfig.INSTANCE.editorMode ? 60 : 40)));
-        categoriesWidget.setLeftPos(20);
+                maxWidth + 3, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 90 : 70), 30));
+        categoriesWidget.setX(20);
         categoriesWidget.setEntries(HandbookClient.getCategories(), "category");
         categoriesWidget.children().get(0).updateHighlight(true);
         activeCategory = (Category<? extends Entry>) categoriesWidget.children().get(0).entry;
@@ -148,9 +148,8 @@ public class HandbookScreen extends Screen {
         }
 
         addDrawableChild(optionsWidget = new ListWidget(
-                maxWidth + 6, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30,
-                screenHeight - (HandbookConfig.INSTANCE.editorMode ? 50 : 30)));
-        optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
+                maxWidth + 12, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30));
+        optionsWidget.setX(30 + categoriesWidget.listWidth);
         optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
@@ -163,12 +162,13 @@ public class HandbookScreen extends Screen {
         addEntry.active = HandbookConfig.INSTANCE.editorMode;
 
         addDrawableChild(searchBox = new TextFieldWidget(
-                tr, line1x + 16, 16, line2x - line1x - 16, 12, Text.of("")));
+                tr, line1x + 16, 15, line2x - line1x - 16, 14, Text.of("")));
         searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
 
         addDrawableChild(filterButton = new TexturedButtonWidget(line1x + 2, 16, 12, 12,
-                0, 0, 12, new Identifier("handbook", "textures/filter_button.png"),
-                12, 24, button -> toggleFilterWidget()));
+                new ButtonTextures(new Identifier("handbook", "textures/gui/sprites/filter_unfocused.png"),
+                new Identifier("handbook", "textures/gui/sprites/filter_focused.png")),
+                button -> toggleFilterWidget()));
 
         addDrawableChild(filterWidget = new FilterWidget(line1x + 2, 30, 0, 0));
         filterWidget.active = false;
@@ -272,23 +272,26 @@ public class HandbookScreen extends Screen {
         tradesWidget.visible = false;
         tradesWidget.active = false;
 
-        addDrawableChild(tradeList = new TradeListWidget(10000, 130, screenHeight - 100, 50, screenHeight - 50));
+        addDrawableChild(tradeList = new TradeListWidget(10000, 130, screenHeight - 100, 50));
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context);
+        renderBackground(context, mouseX, mouseY, delta);
 
         RenderSystem.enableBlend();
-        context.fill(0, 0, width, 15, 0, HandbookConfig.INSTANCE.screenHeadColor);
+        context.fill(0, 0, width, 15, 1, HandbookConfig.INSTANCE.screenHeadColor);
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
+        matrices.translate(0, 0, 1);
         context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1,
                 HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 
+        matrices.push();
+        matrices.translate(0, 0, 1);
         if (optionsWidget.children().isEmpty())
             context.drawText(tr, Text.of("Nothing found :("),
                     line1x + (line2x - line1x) / 2 - tr.getWidth("Nothing found :(") / 2,
@@ -306,13 +309,14 @@ public class HandbookScreen extends Screen {
             context.fill(x, y, x + 12, y + 1, HandbookConfig.INSTANCE.favouriteColor);
             context.fill(x, y + 11, x + 12, y + 12, HandbookConfig.INSTANCE.favouriteColor);
         }
+        matrices.pop();
         RenderSystem.disableBlend();
     }
 
     public void openTrades(TradeOfferList trades, String name) {
         tradesWidget.visible = true;
         tradesWidget.setName(name);
-        tradeList.setLeftPos(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        tradeList.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         tradeList.setEntries(trades, displayWidget.getEntry().getID());
 
         displayWidget.visible = false;
@@ -325,7 +329,7 @@ public class HandbookScreen extends Screen {
 
     public void openDisplay() {
         tradesWidget.visible = false;
-        tradeList.setLeftPos(10000);
+        tradeList.setX(10000);
 
         displayWidget.visible = true;
         back.active = false;
@@ -351,7 +355,7 @@ public class HandbookScreen extends Screen {
         }
         else {
             filterWidget.unfocus();
-            optionsWidget.updateSizeShrink(screenHeight - 60, 30);
+            optionsWidget.updateSizeShrink(screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30);
         }
     }
 
@@ -422,10 +426,9 @@ public class HandbookScreen extends Screen {
             maxWidth = maxWidth + 10;
         }
 
-        optionsWidget.updateSize(maxWidth + 6, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60),
-                30, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 50 : 30));
-        optionsWidget.listWidth = maxWidth + 6;
-        optionsWidget.setLeftPos(25 + categoriesWidget.listWidth);
+        optionsWidget.setDimensions(maxWidth + 10, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60));
+        optionsWidget.setPosition(30 + categoriesWidget.listWidth, 30);
+        optionsWidget.listWidth = maxWidth + 10;
         optionsWidget.setEntries(category.getEntries(), "entry");
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
         addEntry.setX(line1x + (line2x - line1x) / 2 - 20);
@@ -482,6 +485,13 @@ public class HandbookScreen extends Screen {
         return true;
     }
 
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        categoriesWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        optionsWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        tradeList.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
     @SuppressWarnings("ConstantConditions")
     @Override
     public void close() {

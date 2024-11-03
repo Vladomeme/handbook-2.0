@@ -2,24 +2,27 @@ package net.handbook.main.widget;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.handbook.main.HandbookClient;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.widget.ElementListWidget;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 
 @Environment(EnvType.CLIENT)
 public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 
+	private boolean scrolling;
 	public final int listWidth;
 
-	public TradeListWidget(int left, int width, int height, int top, int bottom) {
-		super(MinecraftClient.getInstance(), width, height, top, bottom, 24);
+	public TradeListWidget(int left, int width, int height, int y) {
+		super(MinecraftClient.getInstance(), width, height, y, 24);
 
 		listWidth = width;
-		setLeftPos(left);
+		setX(left);
 
 		setRenderBackground(false);
-		setRenderHorizontalShadows(false);
 		setRenderHeader(false, 0);
 	}
 
@@ -48,7 +51,7 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 
 	@Override
 	protected int getScrollbarPositionX() {
-		return right - 11;
+		return getX() + getWidth() - 10;
 	}
 
 	@Override
@@ -56,4 +59,45 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 		return listWidth;
 	}
 
+	@Override
+	protected void updateScrollingState(double mouseX, double mouseY, int button) {
+		scrolling = button == 0 && mouseX >= (double) getScrollbarPositionX() && mouseX < (double) (getScrollbarPositionX() + 6);
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		updateScrollingState(mouseX, mouseY, button);
+		if (isMouseOver(mouseX, mouseY)) {
+			TradeListWidgetEntry entry = getEntryAtPosition(mouseX, mouseY);
+			if (entry != null) {
+				if (entry.mouseClicked(mouseX, mouseY, button)) {
+					TradeListWidgetEntry entry2 = getFocused();
+					if (entry2 != entry && entry2 != null) ((ParentElement) entry2).setFocused(null);
+					setFocused(entry);
+					setDragging(true);
+					return true;
+				}
+				return scrolling;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+		if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
+		else if (button == 0 && scrolling) {
+			if (mouseY < (double) getY()) setScrollAmount(0.0);
+			else if (mouseY > (double)this.getBottom()) setScrollAmount(getMaxScroll());
+			else {
+				double d = Math.max(1, this.getMaxScroll());
+				int i = this.height;
+				int j = MathHelper.clamp((int) ((float) (i * i) / (float) getMaxPosition()), 32, i - 8);
+				double e = Math.max(1.0, d / (double) (i - j));
+				setScrollAmount(getScrollAmount() + deltaY * e);
+			}
+			return true;
+		}
+		else return false;
+	}
 }

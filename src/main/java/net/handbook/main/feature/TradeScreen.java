@@ -91,11 +91,11 @@ public class TradeScreen extends Screen {
                 "Handbook", button -> client.setScreen(HandbookClient.handbookScreen)));
 
         addDrawableChild(searchBox = new TextFieldWidget(
-                tr, 131, 16, 260, 12, Text.of("")));
+                tr, 131, 15, 260, 14, Text.of("")));
         searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
 
-        addDrawableChild(favouritesWidget = new TradeListWidget(5, 125, screenHeight - 70, 30, screenHeight - 40));
-        addDrawableChild(resultsWidget = new TradeListWidget(135, 125, screenHeight - 70, 30, screenHeight - 40));
+        addDrawableChild(favouritesWidget = new TradeListWidget(5, 125, screenHeight - 70, 30));
+        addDrawableChild(resultsWidget = new TradeListWidget(135, 125, screenHeight - 70, 30));
 
         addDrawableChild(openTrader = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 265, screenHeight - 42, 70, 11,
@@ -153,13 +153,14 @@ public class TradeScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context);
+        renderBackground(context, mouseX, mouseY, delta);
 
         MatrixStack matrices = context.getMatrices();
         RenderSystem.enableBlend();
-        context.fill(0, 0, width, 15, 0, HandbookConfig.INSTANCE.screenHeadColor);
+        context.fill(0, 0, width, 15, 10, HandbookConfig.INSTANCE.screenHeadColor);
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
+        matrices.translate(0, 0, 20);
         context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1,
                 HandbookConfig.INSTANCE.textColor, false);
@@ -167,6 +168,7 @@ public class TradeScreen extends Screen {
 
         matrices.push();
         matrices.scale(1.25f, 1.25f, 1);
+        matrices.translate(0, 0, 20);
         context.drawText(tr, Text.of("Trade Search").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
                 15, 3, HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
@@ -174,12 +176,15 @@ public class TradeScreen extends Screen {
         context.fill(130, 15, 131, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
         context.fill(260, 29, 261, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
 
+        matrices.push();
+        matrices.translate(0, 0, 20);
         context.drawText(tr, Text.of("Favourite"),  21, 20,
                 HandbookConfig.INSTANCE.textColor, false);
         if (resultsWidget.children().isEmpty())
             context.drawText(tr, Text.of("Nothing found :("),
                     197 - tr.getWidth("Nothing found :(") / 2, 35,
                     HandbookConfig.INSTANCE.textColor, false);
+        matrices.pop();
 
         if (trader != null) {
             matrices.push();
@@ -385,6 +390,13 @@ public class TradeScreen extends Screen {
         shareTrader.visible = state;
         shareFull.active = state;
         shareFull.visible = state;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        favouritesWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        resultsWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
     @Override

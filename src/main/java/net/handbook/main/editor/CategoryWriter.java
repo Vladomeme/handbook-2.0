@@ -60,10 +60,12 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
             writer = gson.newJsonWriter(new FileWriter(file));
             writer.setIndent("    ");
             gson.toJson(category, Category.class, writer);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             HandbookClient.LOGGER.error("Couldn't save file {}", path);
             HandbookClient.LOGGER.error(e.getMessage());
-        } finally {
+        }
+        finally {
             IOUtils.closeQuietly(writer);
         }
         shouldUpdate = false;

@@ -180,9 +180,9 @@ public class NPCWriter {
             for (TradeOffer tradeOffer : offers) {
                 NbtCompound tradeNbt = new NbtCompound();
 
-                tradeNbt.put("buy", stripNbt(tradeOffer.getOriginalFirstBuyItem().writeNbt(new NbtCompound())));
-                tradeNbt.put("buyB", stripNbt(tradeOffer.getSecondBuyItem().writeNbt(new NbtCompound())));
-                tradeNbt.put("sell", stripNbt(tradeOffer.getSellItem().writeNbt(new NbtCompound())));
+                tradeNbt.put("buy", tradeOffer.getOriginalFirstBuyItem().writeNbt(new NbtCompound()));
+                tradeNbt.put("buyB", tradeOffer.getSecondBuyItem().writeNbt(new NbtCompound()));
+                tradeNbt.put("sell", tradeOffer.getSellItem().writeNbt(new NbtCompound()));
                 offerList.add(tradeNbt);
             }
             offersNbt.put("Recipes", offerList);
@@ -195,12 +195,6 @@ public class NPCWriter {
             if (oldOffers == null || !oldOffers.equals(newOffers))
                 updatedOffers.put(entry.getID(), compressTrades(newOffers));
         }
-    }
-
-    private static NbtCompound stripNbt(NbtCompound item) {
-        item.getCompound("tag").remove("Monumenta");
-        item.getCompound("tag").remove("AttributeModifiers");
-        return item;
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored") //for .mkdirs()

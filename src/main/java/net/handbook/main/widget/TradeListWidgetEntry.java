@@ -14,10 +14,11 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
-import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOffer;
 
@@ -28,21 +29,20 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
 
     private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
-    private static final Identifier TEXTURE = new Identifier("textures/gui/container/villager2.png");
+    private static final Identifier TEXTURE = new Identifier("container/villager/trade_arrow");
 
     public final TradeOffer trade;
     public final String id;
     private boolean highlighted = false;
 
-    public final TexturedButtonWidget button;
+    public final ButtonWidget button;
     public final List<ClickableWidget> list;
 
     public TradeListWidgetEntry(TradeOffer trade, String id, int width) {
         this.trade = trade;
         this.id = id;
 
-        button = new TexturedButtonWidget(0, 0, width, 20, 0, 0, 0,
-                new Identifier("handbook", "empty"), button -> {
+        button = ButtonWidget.builder(Text.of(""), button -> {
             if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen)
                 screen.tradesWidget.startSharing(this);
             else {
@@ -50,7 +50,7 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
                 HandbookClient.tradeScreen.selectedEntry = this;
                 setHighlighted(true);
             }
-        });
+        }).dimensions(0, 0, width, 20).build();
         list = ImmutableList.of(button);
     }
 
@@ -84,7 +84,7 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
         context.drawItem(itemStack2, left + 37, top + 2);
         context.drawItemInSlot(tr, itemStack2, left + 37, top + 2);
 
-        context.drawTexture(TEXTURE, left + 67, top + 5, 0, 15, 171, 10, 9, 512, 256);
+        context.drawGuiTexture(TEXTURE, left + 67, top + 5, 10, 9);
 
         context.drawItem(itemStack3, left + 91, top + 2);
         context.drawItemInSlot(tr, itemStack3, left + 91, top + 2);
@@ -95,7 +95,7 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
     }
 
     private void renderTooltip(DrawContext context, int x, int y, int left) {
-        if (y > MinecraftClient.getInstance().getWindow().getScaledHeight() - 40) return;
+        if (y < 30 || y > MinecraftClient.getInstance().getWindow().getScaledHeight() - 40) return;
         ItemStack itemStack = null;
 
              if (x > left 	   && x < left + 20)  itemStack = trade.getOriginalFirstBuyItem();
