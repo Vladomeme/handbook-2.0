@@ -18,7 +18,7 @@ public class AdvancementWriter {
     @SuppressWarnings("SameReturnValue")
     public static int dumpAdvancements(String rootString) {
         if (!HandbookConfig.INSTANCE.editorMode) {
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.literal("Editor mode is disabled."));
+            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.literal("§cEditor mode is disabled."));
             return 1;
         }
         if (MinecraftClient.getInstance().getNetworkHandler() == null) return 1;

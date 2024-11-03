@@ -273,7 +273,9 @@ public class HandbookClient implements ClientModInitializer {
                                                                         IntegerArgumentType.getInteger(ctx, "Point"),
                                                                         IntegerArgumentType.getInteger(ctx, "Dimension"),
                                                                         IntegerArgumentType.getInteger(ctx, "Distance")))))))
-                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection()))))
+                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection())))
+                                .then(literal("npc_mass_delete_and_blacklist").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection(), true)))
+                                .then(literal("mass_clear_blacklist").executes(ctx -> NPCWriter.deleteBlacklist(AreaSelector.getSelection()))))
                         .then(literal("clear_trades").executes(ctx -> NPCWriter.clear()))
         ));
     }

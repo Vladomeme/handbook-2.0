@@ -20,8 +20,8 @@ public class TraderEntry extends PositionedEntry {
         this.id = NPCWriter.getID(title, position[0], position[1], position[2]);
     }
 
-    public TraderEntry(String id) {
-        super(null, null, null, null, null);
+    public TraderEntry(String id, String shard) {
+        super(null, null, null, shard, null);
         this.id = id;
     }
 

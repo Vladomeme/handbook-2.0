@@ -35,7 +35,7 @@ public class AreaSelector {
     @SuppressWarnings("SameReturnValue")
     public static int init() {
         if (!HandbookConfig.INSTANCE.editorMode) {
-            chat.addMessage(Text.literal("Editor mode is disabled."));
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
             return 1;
         }
         if (active) return 1;

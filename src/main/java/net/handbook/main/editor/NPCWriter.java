@@ -51,7 +51,18 @@ public class NPCWriter {
 
     @SuppressWarnings("SameReturnValue")
     public static int delete(int[] area) {
-        deleteInArea(area);
+        deleteInArea(area, false);
+        return 1;
+    }
+
+    public static int delete(int[] area, boolean shouldBlacklist) {
+        deleteInArea(area, shouldBlacklist);
+        return 1;
+    }
+
+    @SuppressWarnings("SameReturnValue")
+    public static int deleteBlacklist(int[] area) {
+        deleteInAreaBlacklist(area);
         return 1;
     }
 
@@ -85,7 +96,7 @@ public class NPCWriter {
 
     private static boolean shouldAdd(Entity entity, boolean manual) {
         if (!HandbookConfig.INSTANCE.editorMode && manual) {
-            chat.addMessage(Text.literal("Editor mode is disabled."));
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
             return false;
         }
         if (!entity.hasCustomName() || entity.getScoreboardTeam() == null || !entity.getScoreboardTeam().getName().equals("UNPUSHABLE_TEAM")) {
@@ -107,9 +118,9 @@ public class NPCWriter {
     }
 
     @SuppressWarnings("SameReturnValue")
-    private static void deleteInArea(int[] area) {
+    private static void deleteInArea(int[] area, boolean shouldBlacklist) {
         if (!HandbookConfig.INSTANCE.editorMode) {
-            chat.addMessage(Text.literal("Editor mode is disabled."));
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
             return;
         }
         int counter = 0;
@@ -119,6 +130,7 @@ public class NPCWriter {
                     && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
                     && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
                     && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
+            if (shouldBlacklist) blacklist.category.getEntries().add(new TraderEntry(entry.getID(), entry.getShard()));
             writer.category.getEntries().remove(entry);
             counter++;
         }
@@ -128,9 +140,32 @@ public class NPCWriter {
                 + (counter > 0 ? counter > 10 ? "What a massacre..." : "Informative and unfortunate..." : "Swing and a miss...")));
     }
 
+    @SuppressWarnings("SameReturnValue")
+    private static void deleteInAreaBlacklist(int[] area) {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
+            return;
+        }
+        int counter = 0;
+        for (TraderEntry entry : new ArrayList<>(blacklist.category.getEntries())) {
+            if (entry.getShard() == null) return;
+            int[] pos = entry.getPosition();
+            if (!(entry.getShard().equals(WaypointManager.getShard())
+                    && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
+                    && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
+                    && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
+            blacklist.category.getEntries().remove(entry);
+            counter++;
+        }
+        AreaSelector.finish();
+        if (counter > 0) blacklist.shouldUpdate = true;
+        chat.addMessage(Text.of("Removed " + counter + " NPCs from the blacklist. "
+                + (counter > 0 ? counter > 10 ? "Back to March of 1953..." : "On the road again..." : "Long have we waited...")));
+    }
+
     private static void clearTrades() {
         if (!HandbookConfig.INSTANCE.editorMode) {
-            chat.addMessage(Text.literal("Editor mode is disabled."));
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
             return;
         }
         final int[] counter = {0};
@@ -158,7 +193,7 @@ public class NPCWriter {
 
     public static void delete(TraderEntry entry) {
         if (writer.category.getEntries().remove(entry)) {
-            blacklist.category.getEntries().add(new TraderEntry(entry.getID()));
+            blacklist.category.getEntries().add(new TraderEntry(entry.getID(), WaypointManager.getShard()));
             try {
                 Files.deleteIfExists(Path.of(PATH + entry.getID() + ".txt"));
             }
