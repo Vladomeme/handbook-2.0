@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin  {
-    //todo move to entity_load event
+
     @Inject(method = "onTrackedDataSet", at = @At("TAIL"))
     public void onTrackedDataSet(TrackedData<?> data, CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enableScanner) return;

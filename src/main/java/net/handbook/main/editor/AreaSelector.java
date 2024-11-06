@@ -177,11 +177,11 @@ public class AreaSelector {
         String shard = WaypointManager.getShard();
 
         for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
-            if (!writer.category.getType().equals("area") || !writer.category.getEntries().get(0).getShard().equals(shard)) continue;
+            if (!writer.category.getType().equals("area") || !writer.entries().get(0).getShard().equals(shard)) continue;
 
             Entry nearestEntry = null;
             int shortestDistance = 999999;
-            for (Entry entry : writer.category.getEntries()) {
+            for (Entry entry : writer.entries()) {
                 int[] pos = entry.getPosition();
                 int distance = WaypointManager.getDistance(x, y, z, pos[0], pos[1], pos[2]);
                 if (distance >= shortestDistance) continue;
@@ -214,7 +214,7 @@ public class AreaSelector {
     public static int confirm(boolean save) {
         if (save) {
             nearestEntry.update(nearestEntry.getTitle(), nearestEntry.getText(), nearestEntry.getPosition(), coords);
-            writer.shouldUpdate = true;
+            writer.setUpdate();
             chat.addMessage(Text.of("Entry updated."));
         }
         nearestEntry = null;

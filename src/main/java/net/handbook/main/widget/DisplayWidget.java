@@ -233,12 +233,12 @@ public class DisplayWidget extends ClickableWidget {
                     if (!writer.category.equals(screen.activeCategory)) continue;
 
                     writer.delete(entry);
-                    writer.shouldUpdate = true;
+                    writer.setUpdate();
                 }
             }
         }
         double scroll = screen.optionsWidget.getScrollAmount();
-        screen.optionsWidget.setEntries(screen.activeCategory.getEntries(), "entry");
+        screen.filterEntries(false);
         screen.optionsWidget.setScrollAmount(scroll);
         setEntry(null);
         screen.displayButtonsState(false);

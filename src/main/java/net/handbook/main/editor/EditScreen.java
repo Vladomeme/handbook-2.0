@@ -255,7 +255,7 @@ public class EditScreen extends Screen {
                                 "", WaypointManager.getShard(), pos, area));
                     }
                 }
-                writer.shouldUpdate = true;
+                writer.setUpdate();
                 break;
             }
             client.inGameHud.getChatHud().addMessage(Text.of("Entry added."));
@@ -281,7 +281,7 @@ public class EditScreen extends Screen {
         for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
             if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
 
-            writer.shouldUpdate = true;
+            writer.setUpdate();
             break;
         }
         client.inGameHud.getChatHud().addMessage(Text.of("Entry updated."));

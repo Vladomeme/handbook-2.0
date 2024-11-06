@@ -531,6 +531,11 @@ public class WaypointManager {
         return client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
     }
 
+    @SuppressWarnings("ConstantConditions") //world can't be null
+    public static String getShardFull() {
+        return client.world.getRegistryKey().getValue().toString();
+    }
+
     private static Teleport getRegionHub(String shard) {
         switch (shard) {
             case "valley" -> {

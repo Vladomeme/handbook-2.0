@@ -34,7 +34,9 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -140,7 +142,7 @@ public class HandbookClient implements ClientModInitializer {
                             continue;
                         }
                         if (writer.category.getTitle().equals("NPC")) NPCWriter.writer = writer;
-                        for (Entry entry : writer.category.getEntries()) {
+                        for (Entry entry : writer.entries()) {
                             if (entry.hasOffers()) tradeScreen.addEntries(entry.getOffers(), entry.getID());
                         }
                     }
@@ -164,7 +166,9 @@ public class HandbookClient implements ClientModInitializer {
             }
         }
         writers.sort(null);
-        writers.forEach(writer -> writer.category.getEntries().sort(null));
+        writers.forEach(writer -> {
+            if (!writer.category.getTitle().equals("EXCLUDE")) writer.entries().sort(null);
+        });
         LOGGER.info("Loaded {} categories", writers.size());
         WaypointManager.updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
     }
@@ -218,7 +222,10 @@ public class HandbookClient implements ClientModInitializer {
         });
 
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
+            if (handler.getConnection().getAddress().toString().contains("monumenta")) {
+                if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
+                if (WaypointManager.getShardFull().contains("minecraft")) nameSpoofWarn();
+            }
         });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
@@ -307,12 +314,18 @@ public class HandbookClient implements ClientModInitializer {
         writers.clear();
     }
 
+    private static void nameSpoofWarn() {
+        client.inGameHud.getChatHud().addMessage(Text.literal("World Name Spoofing").setStyle(Style.EMPTY.withColor(Formatting.RED))
+                .append(Text.literal(" is required for Handbook to work correctly. Enable it in /peb under Technical settings.")
+                        .setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
+    }
+
     @SuppressWarnings("unused")
     private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
         for (CategoryWriter<? extends Entry> writer : writers) {
             if (!writer.category.getTitle().equals("Locations")) continue;
 
-            for (Entry entry : writer.category.getEntries()) {
+            for (Entry entry : writer.entries()) {
                 if (entry.getClearTitle().toLowerCase().contains(builder.getInput().toLowerCase()
                         .replace("/handbook add location ", ""))) builder.suggest(entry.getClearTitle());
             }

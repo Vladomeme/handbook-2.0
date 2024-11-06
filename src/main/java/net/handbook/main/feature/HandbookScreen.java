@@ -11,6 +11,8 @@ import net.handbook.main.widget.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -300,7 +302,8 @@ public class HandbookScreen extends Screen {
         context.fill(line1x, 15, line1x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
         context.fill(line2x, 15, line2x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
 
-        super.render(context, mouseX, mouseY, delta);
+        for (Element element : children())
+            ((Drawable) element).render(context, mouseX, mouseY, delta);
         if (filterWidget.filtersActive()) {
             int x = filterButton.getX();
             int y = filterButton.getY();

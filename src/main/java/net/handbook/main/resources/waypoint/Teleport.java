@@ -48,6 +48,7 @@ public enum Teleport {
     NewAntium   ("New Antium",            "ring", -450, 180, -75,  true),
     Chantry     ("Chantry of Repentance", "ring", 0,    170, 835,  true),
     SKT         ("SKT Lobby",             "ring", -530, 31,  -790, true),
+    Blue        ("Blue Lobby",            "ring", -584, 96, -280, true),
     Brown       ("Brown Lobby",           "ring", -410, 82,  74,   true),
     Portal      ("Portal Lobby",          "ring", -369, 114, -145, true),
     Sirius      ("Sirius Arena",          "ring", 211,  32,  985,  true),
@@ -57,8 +58,7 @@ public enum Teleport {
     Orentalus   ("Orentalus Bell",        "ring", 155,  206, 685,  true),
     Borealus    ("Borealus Bell",         "ring", 9,    35,  623,  true),
     //Ring unsafe
-    Ruin ("Ruin Lobby", "ring", -86,  17,  -466, false),
-    Blue ("Blue Lobby", "ring", -530, 176, -386, false);
+    Ruin ("Ruin Lobby", "ring", -86,  17,  -466, false);
 
     public final String fullName;
     public final String shard;

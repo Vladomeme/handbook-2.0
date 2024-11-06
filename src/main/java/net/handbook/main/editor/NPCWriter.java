@@ -45,6 +45,15 @@ public class NPCWriter {
 
     @SuppressWarnings("SameReturnValue")
     public static int add(Entity entity, boolean manual) {
+        if (manual) {
+            String id = getId(entity);
+            for (TraderEntry entry : new ArrayList<>(blacklist.entries())) {
+                if (!entry.getID().equals(id)) continue;
+                blacklist.entries().remove(entry);
+                blacklist.setUpdate();
+                break;
+            }
+        }
         addEntry(entity, manual);
         return 1;
     }
@@ -78,6 +87,10 @@ public class NPCWriter {
         NPCWriter.z = (int) z;
     }
 
+    public static String getId(Entity entity) {
+        return getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ());
+    }
+
     public static String getID(String title, double x, double y, double z) {
         return title.toLowerCase().replaceAll("§.", "").replaceAll("[^A-Za-z0-9]", "")
                 + ((int) x + (int) y + (int) z);
@@ -89,9 +102,9 @@ public class NPCWriter {
         if (manual) chat.addMessage(Text.of("Added new NPC: " + entity.getCustomName().getString()));
         HandbookClient.LOGGER.info("ADDING NEW NPC: {} {}", entity.getCustomName().getString(), entity.getType());
 
-        writer.category.getEntries().add(new TraderEntry(entity.getCustomName().getString(), "", "", WaypointManager.getShard(),
+        writer.entries().add(new TraderEntry(entity.getCustomName().getString(), "", "", WaypointManager.getShard(),
                 new int[]{(int) entity.getX(), (int) entity.getY(), (int) entity.getZ()}));
-        writer.shouldUpdate = true;
+        writer.setUpdate();
     }
 
     private static boolean shouldAdd(Entity entity, boolean manual) {
@@ -104,12 +117,17 @@ public class NPCWriter {
             return false;
         }
         String newID = getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ());
-        for (Entry entry : writer.category.getEntries()) {
+        for (Entry entry : writer.entries()) {
             if (!entry.getID().equals(newID)) continue;
             if (manual) chat.addMessage(Text.of("§cERROR: NPC is already added."));
             return false;
         }
-        for (Entry entry : blacklist.category.getEntries()) {
+        switch (WaypointManager.getShard()) {
+            case "plots", "zenith", "depths" -> {
+                return false;
+            }
+        }
+        for (Entry entry : blacklist.entries()) {
             if (!entry.getID().equals(newID)) continue;
             if (manual) chat.addMessage(Text.of("§cERROR: NPC is blacklisted."));
             return false;
@@ -124,18 +142,18 @@ public class NPCWriter {
             return;
         }
         int counter = 0;
-        for (TraderEntry entry : new ArrayList<>(writer.category.getEntries())) {
+        for (TraderEntry entry : new ArrayList<>(writer.entries())) {
             int[] pos = entry.getPosition();
             if (!(entry.getShard().equals(WaypointManager.getShard())
                     && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
                     && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
                     && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
-            if (shouldBlacklist) blacklist.category.getEntries().add(new TraderEntry(entry.getID(), entry.getShard()));
-            writer.category.getEntries().remove(entry);
+            if (shouldBlacklist) blacklist.entries().add(new TraderEntry(entry.getID(), entry.getShard()));
+            writer.entries().remove(entry);
             counter++;
         }
         AreaSelector.finish();
-        if (counter > 0) writer.shouldUpdate = true;
+        if (counter > 0) writer.setUpdate();
         chat.addMessage(Text.of("Deleted " + counter + " NPCs. "
                 + (counter > 0 ? counter > 10 ? "What a massacre..." : "Informative and unfortunate..." : "Swing and a miss...")));
     }
@@ -147,18 +165,18 @@ public class NPCWriter {
             return;
         }
         int counter = 0;
-        for (TraderEntry entry : new ArrayList<>(blacklist.category.getEntries())) {
+        for (TraderEntry entry : new ArrayList<>(blacklist.entries())) {
             if (entry.getShard() == null) return;
             int[] pos = entry.getPosition();
             if (!(entry.getShard().equals(WaypointManager.getShard())
                     && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
                     && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
                     && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
-            blacklist.category.getEntries().remove(entry);
+            blacklist.entries().remove(entry);
             counter++;
         }
         AreaSelector.finish();
-        if (counter > 0) blacklist.shouldUpdate = true;
+        if (counter > 0) blacklist.setUpdate();
         chat.addMessage(Text.of("Removed " + counter + " NPCs from the blacklist. "
                 + (counter > 0 ? counter > 10 ? "Back to March of 1953..." : "On the road again..." : "Long have we waited...")));
     }
@@ -175,7 +193,7 @@ public class NPCWriter {
                 if (!name.endsWith(".txt")) return;
 
                 String id = name.replace(".txt", "");
-                for (Entry entry : writer.category.getEntries()) {
+                for (Entry entry : writer.entries()) {
                     if (entry.getID().equals(id)) return;
                 }
                 try {
@@ -192,13 +210,14 @@ public class NPCWriter {
     }
 
     public static void delete(TraderEntry entry) {
-        if (writer.category.getEntries().remove(entry)) {
-            blacklist.category.getEntries().add(new TraderEntry(entry.getID(), WaypointManager.getShard()));
+        if (writer.entries().remove(entry)) {
+            blacklist.entries().add(new TraderEntry(entry.getID(), WaypointManager.getShard()));
             try {
                 Files.deleteIfExists(Path.of(PATH + entry.getID() + ".txt"));
             }
             catch (Exception ignored) {}
-            writer.shouldUpdate = true;
+            writer.setUpdate();
+            blacklist.setUpdate();
             chat.addMessage(Text.of("Entry removed and blacklisted: " + entry.getID()));
         }
         else chat.addMessage(Text.of("Failed to delete this entry"));
@@ -207,7 +226,7 @@ public class NPCWriter {
     public static void addOffers(TradeOfferList offers) {
         if (!(client.currentScreen instanceof MerchantScreen screen)) return;
 
-        for (TraderEntry entry : writer.category.getEntries()) {
+        for (TraderEntry entry : writer.entries()) {
             if (!entry.getID().equals(getID(screen.getTitle().getString(), x, y, z))) continue;
 
             NbtCompound offersNbt = new NbtCompound();
@@ -243,6 +262,7 @@ public class NPCWriter {
                 throw new RuntimeException(e);
             }
         });
+        updatedOffers.clear();
     }
 
     private static byte[] compressTrades(String text) {

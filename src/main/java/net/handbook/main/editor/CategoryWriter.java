@@ -14,6 +14,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 public class CategoryWriter<E extends Entry> implements Comparable<CategoryWriter<E>> {
 
@@ -31,7 +32,7 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
         this.category = category;
         this.path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/" +
                 category.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "") + ".json");
-        this.shouldUpdate = true;
+        this.setUpdate();
     }
 
     public Category<E> read(TypeToken<Category<E>> typeToken) {
@@ -69,6 +70,14 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
             IOUtils.closeQuietly(writer);
         }
         shouldUpdate = false;
+    }
+
+    public List<E> entries() {
+        return category.getEntries();
+    }
+
+    public void setUpdate() {
+        shouldUpdate = true;
     }
 
     @SuppressWarnings("unchecked")

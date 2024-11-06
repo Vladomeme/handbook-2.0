@@ -38,6 +38,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		List<ListWidgetEntry> normal = new ArrayList<>();
 
 		String category;
+		//todo boolean for entry type
 		if (type.equals("entry")) category = screen.activeCategory.getTitle();
 		else category = "Categories";
 

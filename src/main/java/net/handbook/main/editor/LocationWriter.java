@@ -32,14 +32,14 @@ public class LocationWriter {
         HandbookClient.LOGGER.info("ADDING NEW LOCATION: {}", name);
         chat.addMessage(Text.of("New location added: " + name + "."));
 
-        writer.category.getEntries().add(new PositionedEntry(name, "", "", WaypointManager.getShard(),
+        writer.entries().add(new PositionedEntry(name, "", "", WaypointManager.getShard(),
                 new int[]{(int) entity.getX(), (int) entity.getY(), (int) entity.getZ()}));
-        writer.shouldUpdate = true;
+        writer.setUpdate();
     }
 
     public static void delete(PositionedEntry entry) {
-        if (writer.category.getEntries().remove(entry)) {
-            writer.shouldUpdate = true;
+        if (writer.entries().remove(entry)) {
+            writer.setUpdate();
             chat.addMessage(Text.of("Entry removed: " + entry.getTitle()));
         }
         else chat.addMessage(Text.of("Failed to delete this entry"));
