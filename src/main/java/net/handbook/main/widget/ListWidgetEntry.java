@@ -9,6 +9,7 @@ import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.EditScreen;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.category.Category;
+import net.handbook.main.resources.category.MarkCategory;
 import net.handbook.main.resources.entry.BaseEntry;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
@@ -30,14 +31,14 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
 
-    private final String type;
+    private final BaseEntry.Type type;
     public final BaseEntry entry;
     private boolean highlighted = false;
 
     public final ButtonWidget button;
     public final List<ClickableWidget> list;
 
-    public ListWidgetEntry(BaseEntry entry, int width, String type) {
+    public ListWidgetEntry(BaseEntry entry, int width, BaseEntry.Type type) {
         this.entry = entry;
         this.type = type;
 
@@ -54,7 +55,7 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
         button.setPosition(left, top);
 
         String category;
-        if (type.equals("entry")) category = screen.activeCategory.getTitle();
+        if (type.equals(BaseEntry.Type.Entry)) category = screen.activeCategory.getTitle();
         else category = "Categories";
         RenderSystem.enableBlend();
         if (highlighted) {
@@ -75,22 +76,21 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     }
 
     public void markEntry() {
-        String category;
-        if (type.equals("entry")) category = screen.activeCategory.getTitle();
-        else category = "Categories";
-        if (screen.markedEntries.getMarkedEntries(category) == null)
-            screen.markedEntries.addCategory(category);
+        String name = type.equals(BaseEntry.Type.Entry) ? screen.activeCategory.getTitle() : "Categories";
+        MarkCategory category = screen.markedEntries;
+        List<String> entries = category.getMarkedEntries(name);
+
+        if (entries == null) category.addCategory(name);
         else {
-            if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
-                screen.markedEntries.getMarkedEntries(category).remove(entry.getTitle());
-            else screen.markedEntries.getMarkedEntries(category).add(entry.getTitle());
+            if (entries.contains(entry.getTitle())) entries.remove(entry.getTitle());
+            else entries.add(entry.getTitle());
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (Screen.hasShiftDown() && HandbookConfig.INSTANCE.editorMode) {
-            MinecraftClient.getInstance().setScreen(new EditScreen(entry, !type.equals("entry"),
+            MinecraftClient.getInstance().setScreen(new EditScreen(entry, type.equals(BaseEntry.Type.Category),
                     (entry instanceof Category<? extends Entry> c) ? c.getType() : screen.activeCategory.getType()));
             return true;
         }
@@ -111,13 +111,12 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
     public void updateHighlight(boolean state) {
         switch (type) {
-            case "category" -> {
+            case Category -> {
                 if (screen.selectedEntry != null)
                     screen.selectedEntry.setHighlighted(false);
                 screen.selectedEntry = this;
-
             }
-            case "entry" -> {
+            case Entry -> {
                 if (screen.displayWidget.selectedEntry != null)
                     screen.displayWidget.selectedEntry.setHighlighted(false);
                 screen.displayWidget.selectedEntry = this;

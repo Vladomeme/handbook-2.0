@@ -38,4 +38,9 @@ abstract public class BaseEntry {
     public String getImage() {
         return image;
     }
+
+    public enum Type {
+        Entry,
+        Category
+    }
 }

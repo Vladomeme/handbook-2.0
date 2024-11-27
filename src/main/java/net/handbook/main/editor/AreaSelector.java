@@ -28,7 +28,7 @@ public class AreaSelector {
     static boolean active = false;
     static int tick;
 
-    static AreaEntry nearestEntry;
+    static Entry nearestEntry;
     static CategoryWriter<? extends Entry> writer;
 
     //returns int because used in command
@@ -116,14 +116,14 @@ public class AreaSelector {
                 .append(buildClickableMessage("[Move to player]", "/handbook area move 1", "")));
         chat.addMessage(Text.literal("     " + coords[0] + ", " + coords[1] + ", " + coords[2]
                                    + "           " + coords[3] + ", " + coords[4] + ", " + coords[5]));
-        chat.addMessage(buildClickableMessage("[Save]", "/handbook area save", "Save area...")
+        chat.addMessage(buildClickableMessage("[Auto-save...]", "/handbook area save", "Auto-detect POI entry...")
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
                 .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
                         new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
                                 + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                .append(buildClickableMessage("[Exit]", "/handbook area finish", "Exit area selection")));
+                .append(buildClickableMessage("[Exit]", "/handbook area exit", "Exit area selection")));
     }
 
     public static void updateMessage() {
@@ -132,14 +132,14 @@ public class AreaSelector {
         active = false;
         chat.addMessage(Text.literal("     " + coords[0] + ", " + coords[1] + ", " + coords[2]
                 + "           " + coords[3] + ", " + coords[4] + ", " + coords[5]));
-        chat.addMessage(buildClickableMessage("[Save]", "/handbook area save", "Save area...")
+        chat.addMessage(buildClickableMessage("[Auto-save...]", "/handbook area save", "Auto-detect POI entry...")
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
                 .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
                                 new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
                                         + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                .append(buildClickableMessage("[Exit]", "/handbook area finish", "Exit area selection")));
+                .append(buildClickableMessage("[Exit]", "/handbook area exit", "Exit area selection")));
         active = true;
     }
 
@@ -168,67 +168,105 @@ public class AreaSelector {
 
     //returns int because used in command
     @SuppressWarnings("SameReturnValue")
-    public static int save() {
-        ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        if (player == null) return 1;
-        int x = (int) player.getX();
-        int y = (int) player.getY();
-        int z = (int) player.getZ();
+    public static int startSaving() {
+        ((HBMixinMethods) chat).handbook$removeLastMessages(11);
+        suggestEntry();
+        return 1;
+    }
+
+    private static void suggestEntry() {
+        updateCategory();
+        if (writer == null)
+            exitSaving(Text.of("Area saving failed. Couldn't find a category for current shard."), false);
+
+        updateEntry();
+        if (nearestEntry == null)
+            exitSaving(Text.of("Area saving failed. Couldn't find a suitable entry."), false);
+
+        sendSaveMessage();
+    }
+
+    //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
+    public static int saveArea() {
+        ((AreaEntry) nearestEntry).update(nearestEntry.getTitle(), nearestEntry.getText(), nearestEntry.getPosition(), coords);
+        writer.setUpdate();
+        exitSaving(Text.of("Entry updated."), true);
+        return 1;
+    }
+
+    //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
+    public static int retry() {
+        ((HBMixinMethods) chat).handbook$removeLastMessages(3);
+        suggestEntry();
+        return 1;
+    }
+
+    private static void updateCategory() {
         String shard = WaypointManager.getShard();
 
         for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
-            if (!writer.category.getType().equals("area") || !writer.entries().get(0).getShard().equals(shard)) continue;
+            if (writer.category.getType().equals("area") && writer.entries().get(0).getShard().equals(shard)) {
+                AreaSelector.writer = writer;
+                return;
+            }
+        }
+    }
+    private static void updateEntry() {
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        if (player == null) return;
 
-            Entry nearestEntry = null;
-            int shortestDistance = 999999;
-            for (Entry entry : writer.entries()) {
-                int[] pos = entry.getPosition();
-                int distance = WaypointManager.getDistance(x, y, z, pos[0], pos[1], pos[2]);
-                if (distance >= shortestDistance) continue;
+        int x = (int) player.getX();
+        int y = (int) player.getY();
+        int z = (int) player.getZ();
+        int minDistance = Integer.MAX_VALUE;
+        Entry nearestEntry = null;
 
-                shortestDistance = distance;
+        for (Entry entry : writer.entries()) {
+            int[] pos = entry.getPosition();
+            int distance = WaypointManager.getDistance(x, y, z, pos[0], pos[1], pos[2]);
+            if (distance < minDistance) {
+                minDistance = distance;
                 nearestEntry = entry;
             }
-            if (nearestEntry == null) return 1;
-            AreaSelector.nearestEntry = (AreaEntry) nearestEntry;
-            AreaSelector.writer = writer;
-            finish();
-            chat.addMessage(Text.literal("---------------------------------------").setStyle(Style.EMPTY.withColor(Formatting.BLUE)));
-            chat.addMessage(Text.of("Saving area to entry: " + nearestEntry.getTitle() + ". Is that right?"));
-            chat.addMessage(buildClickableMessage("[Confirm]", "/handbook area confirm", "Save area data to entry")
-                    .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                    .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
-                                    new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
-                                            + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
-                    .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                    .append(buildClickableMessage("[Cancel]", "/handbook area cancel", "Exit area selection")));
-            active = true;
-            return 1;
         }
+        AreaSelector.nearestEntry = nearestEntry;
+    }
+
+    private static void sendSaveMessage() {
+        active = false;
+        chat.addMessage(Text.literal("---------------------------------------").setStyle(Style.EMPTY.withColor(Formatting.BLUE)));
+        chat.addMessage(Text.of("Saving area to entry: " + nearestEntry.getTitle() + ". Is that right?"));
+        chat.addMessage(buildClickableMessage("[Confirm]", "/handbook area confirm", "Save area data to entry")
+                .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
+                .append(buildClickableMessage("[Retry]", "/handbook area retry", "Re-detect entry"))
+                .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
+                .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
+                                new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
+                                        + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
+                .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
+                .append(buildClickableMessage("[Cancel]", "/handbook area cancel", "Exit area selection")));
+        active = true;
+    }
+
+    //returns int because used in command
+    @SuppressWarnings("SameReturnValue")
+    public static int exitSelection() {
+        active = false;
+        ((HBMixinMethods) chat).handbook$unblockChat(11);
         return 1;
     }
 
     //returns int because used in command
     @SuppressWarnings("SameReturnValue")
-    public static int confirm(boolean save) {
-        if (save) {
-            nearestEntry.update(nearestEntry.getTitle(), nearestEntry.getText(), nearestEntry.getPosition(), coords);
-            writer.setUpdate();
-            chat.addMessage(Text.of("Entry updated."));
-        }
+    public static int exitSaving(Text message, boolean clean) {
         nearestEntry = null;
         writer = null;
         active = false;
-        ((HBMixinMethods) chat).handbook$unblockChat(3);
-        return 1;
-    }
-
-    //returns int because used in command
-    @SuppressWarnings("SameReturnValue")
-    public static int finish() {
-        active = false;
-        ((HBMixinMethods) chat).handbook$unblockChat(11);
+        if (clean) ((HBMixinMethods) chat).handbook$unblockChat(3);
+        chat.addMessage(message);
         return 1;
     }
 

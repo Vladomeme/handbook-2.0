@@ -10,6 +10,8 @@ import net.handbook.main.widget.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
@@ -203,8 +205,8 @@ public class TradeScreen extends Screen {
                     10, 30, HandbookConfig.INSTANCE.textColor, false);
             matrices.pop();
         }
-
-        super.render(context, mouseX, mouseY, delta);
+        for (Element element : children())
+            ((Drawable) element).render(context, mouseX, mouseY, delta);
         RenderSystem.disableBlend();
     }
 

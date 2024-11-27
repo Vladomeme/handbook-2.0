@@ -511,15 +511,12 @@ public class WaypointManager {
         }
     }
 
-    public static MutableText buildClickableMessage(String text, String command, String hoverText) {
-        if (hoverText.isEmpty())
-            return Text.literal(text)
-                .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
-        return Text.literal(text)
-                .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(hoverText))));
+    public static MutableText buildClickableMessage(String message, String command, String hoverText) {
+        MutableText text = Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true));
+        if (!command.isEmpty()) text.styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
+        if (!hoverText.isEmpty()) text.styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(hoverText))));
+
+        return text;
     }
 
     public static void clear() {

@@ -2,7 +2,6 @@ package net.handbook.main.widget;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.handbook.main.HandbookClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.widget.ElementListWidget;

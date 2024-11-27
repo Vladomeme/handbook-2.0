@@ -77,6 +77,7 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
     }
 
     public void setUpdate() {
+        if (!shouldUpdate) HandbookClient.LOGGER.info("Category {} will be updated on reload.", category.getClearTitle());
         shouldUpdate = true;
     }
 

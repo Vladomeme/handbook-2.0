@@ -6,6 +6,7 @@ import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.EditScreen;
 import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.category.MarkCategory;
+import net.handbook.main.resources.entry.BaseEntry;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.widget.*;
 import net.minecraft.client.MinecraftClient;
@@ -123,7 +124,7 @@ public class HandbookScreen extends Screen {
         addDrawableChild(categoriesWidget = new ListWidget(
                 maxWidth + 3, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 90 : 70), 30));
         categoriesWidget.setX(20);
-        categoriesWidget.setEntries(HandbookClient.getCategories(), "category");
+        categoriesWidget.setEntries(HandbookClient.getCategories(), BaseEntry.Type.Category);
         categoriesWidget.children().get(0).updateHighlight(true);
         activeCategory = (Category<? extends Entry>) categoriesWidget.children().get(0).entry;
 
@@ -152,7 +153,7 @@ public class HandbookScreen extends Screen {
         addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 12, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30));
         optionsWidget.setX(30 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries(), "entry");
+        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries(), BaseEntry.Type.Entry);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
@@ -432,7 +433,7 @@ public class HandbookScreen extends Screen {
         optionsWidget.setDimensions(maxWidth + 10, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60));
         optionsWidget.setPosition(30 + categoriesWidget.listWidth, 30);
         optionsWidget.listWidth = maxWidth + 10;
-        optionsWidget.setEntries(category.getEntries(), "entry");
+        optionsWidget.setEntries(category.getEntries(), BaseEntry.Type.Entry);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
         addEntry.setX(line1x + (line2x - line1x) / 2 - 20);
         searchBox.setWidth(line2x - line1x - 16);
@@ -460,10 +461,11 @@ public class HandbookScreen extends Screen {
         filterWidget.reset();
     }
 
+    //todo: sorting by the position of searched string
     public void filterEntries(boolean scheduled) {
         if (!searchBox.getText().equals(lastFilter) || !scheduled) {
             if (searchBox.getText().isEmpty() && !filterWidget.filtersActive()) {
-                optionsWidget.setEntries(activeCategory.getEntries(), "entry");
+                optionsWidget.setEntries(activeCategory.getEntries(), BaseEntry.Type.Entry);
                 lastFilter = "";
                 return;
             }
@@ -472,7 +474,7 @@ public class HandbookScreen extends Screen {
             for (Entry entry : activeCategory.getEntries()) {
                 if (!entry.getTitle().toLowerCase().contains(searchBox.getText().toLowerCase())) continue;
                 if (filterWidget.filtersActive() && !filterWidget.checkEntry(entry)) continue;
-                optionsWidget.add(entry, "entry");
+                optionsWidget.add(entry, BaseEntry.Type.Entry);
             }
             optionsWidget.setScrollAmount(0);
         }

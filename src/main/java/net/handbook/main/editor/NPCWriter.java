@@ -64,6 +64,7 @@ public class NPCWriter {
         return 1;
     }
 
+    @SuppressWarnings("SameReturnValue")
     public static int delete(int[] area, boolean shouldBlacklist) {
         deleteInArea(area, shouldBlacklist);
         return 1;
@@ -152,7 +153,7 @@ public class NPCWriter {
             writer.entries().remove(entry);
             counter++;
         }
-        AreaSelector.finish();
+        AreaSelector.exitSelection();
         if (counter > 0) writer.setUpdate();
         chat.addMessage(Text.of("Deleted " + counter + " NPCs. "
                 + (counter > 0 ? counter > 10 ? "What a massacre..." : "Informative and unfortunate..." : "Swing and a miss...")));
@@ -175,7 +176,7 @@ public class NPCWriter {
             blacklist.entries().remove(entry);
             counter++;
         }
-        AreaSelector.finish();
+        AreaSelector.exitSelection();
         if (counter > 0) blacklist.setUpdate();
         chat.addMessage(Text.of("Removed " + counter + " NPCs from the blacklist. "
                 + (counter > 0 ? counter > 10 ? "Back to March of 1953..." : "On the road again..." : "Long have we waited...")));

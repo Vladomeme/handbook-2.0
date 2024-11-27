@@ -28,7 +28,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		setRenderHeader(false, 0);
 	}
 
-	public void setEntries(List<? extends BaseEntry> entries, String type) {
+	public void setEntries(List<? extends BaseEntry> entries, BaseEntry.Type type) {
 		clearEntries();
 		setScrollAmount(0);
 
@@ -38,8 +38,8 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		List<ListWidgetEntry> normal = new ArrayList<>();
 
 		String category;
-		//todo boolean for entry type
-		if (type.equals("entry")) category = screen.activeCategory.getTitle();
+
+		if (type.equals(BaseEntry.Type.Entry)) category = screen.activeCategory.getTitle();
 		else category = "Categories";
 
 		for (BaseEntry entry : entries) {
@@ -102,7 +102,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		clearEntries();
 	}
 
-	public void add(net.handbook.main.resources.entry.Entry entry, String type) {
+	public void add(net.handbook.main.resources.entry.Entry entry, BaseEntry.Type type) {
 		addEntry(new ListWidgetEntry(entry, listWidth, type));
 	}
 }
