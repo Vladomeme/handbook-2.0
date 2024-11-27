@@ -304,7 +304,9 @@ public class HandbookClient implements ClientModInitializer {
     }
 
     public static void openLocationScreen() {
-        client.setScreen(new LocationScreen(Text.of("")));
+        if (HandbookConfig.INSTANCE.editorMode)
+            client.setScreen(new LocationScreen(Text.of("")));
+        else client.inGameHud.getChatHud().addMessage(Text.of("Can't open Location screen. Editor mode is disabled."));
     }
 
     public static List<Category<? extends Entry>> getCategories() {
