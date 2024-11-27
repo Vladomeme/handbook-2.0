@@ -92,38 +92,38 @@ public class AreaSelector {
         char[] dim = new char[]{'X', 'Y', 'Z'};
         for (int i = 0; i < 3; i++) {
             chat.addMessage(Text.literal(dim[i] + " ")
-                    .append(buildClickableMessage("[-10]", "/handbook area move 0 " + i + " -10", ""))
+                    .append(buildClickableMessage("[-10]", "/hb_internal area move 0 " + i + " -10", ""))
                     .append(Text.literal(" "))
-                    .append(buildClickableMessage("[-1]", "/handbook area move 0 " + i + " -1", ""))
+                    .append(buildClickableMessage("[-1]", "/hb_internal area move 0 " + i + " -1", ""))
                     .append(Text.literal(" "))
-                    .append(buildClickableMessage("[+1]", "/handbook area move 0 " + i + " 1", ""))
+                    .append(buildClickableMessage("[+1]", "/hb_internal area move 0 " + i + " 1", ""))
                     .append(Text.literal(" "))
-                    .append(buildClickableMessage("[+10]", "/handbook area move 0 " + i + " 10", ""))
+                    .append(buildClickableMessage("[+10]", "/hb_internal area move 0 " + i + " 10", ""))
                     .append(Text.literal("   "))
-                    .append(buildClickableMessage("[-10]", "/handbook area move 1 " + i + " -10", ""))
+                    .append(buildClickableMessage("[-10]", "/hb_internal area move 1 " + i + " -10", ""))
                     .append(Text.literal(" "))
-                    .append(buildClickableMessage("[-1]", "/handbook area move 1 " + i + " -1", ""))
+                    .append(buildClickableMessage("[-1]", "/hb_internal area move 1 " + i + " -1", ""))
                     .append(Text.literal(" "))
-                    .append(buildClickableMessage("[+1]", "/handbook area move 1 " + i + " 1", ""))
+                    .append(buildClickableMessage("[+1]", "/hb_internal area move 1 " + i + " 1", ""))
                     .append(Text.literal(" "))
-                    .append(buildClickableMessage("[+10]", "/handbook area move 1 " + i + " 10", ""))
+                    .append(buildClickableMessage("[+10]", "/hb_internal area move 1 " + i + " 10", ""))
             );
             chat.addMessage(Text.literal(" "));
         }
         chat.addMessage(Text.literal("     ")
-                .append(buildClickableMessage("[Move to player]", "/handbook area move 0", ""))
+                .append(buildClickableMessage("[Move to player]", "/hb_internal area move 0", ""))
                 .append(Text.literal("        "))
-                .append(buildClickableMessage("[Move to player]", "/handbook area move 1", "")));
+                .append(buildClickableMessage("[Move to player]", "/hb_internal area move 1", "")));
         chat.addMessage(Text.literal("     " + coords[0] + ", " + coords[1] + ", " + coords[2]
                                    + "           " + coords[3] + ", " + coords[4] + ", " + coords[5]));
-        chat.addMessage(buildClickableMessage("[Auto-save...]", "/handbook area save", "Auto-detect POI entry...")
+        chat.addMessage(buildClickableMessage("[Auto-save...]", "/hb_internal area save", "Auto-detect POI entry...")
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
                 .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
                         new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
                                 + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                .append(buildClickableMessage("[Exit]", "/handbook area exit", "Exit area selection")));
+                .append(buildClickableMessage("[Exit]", "/hb_internal area exit", "Exit area selection")));
     }
 
     public static void updateMessage() {
@@ -132,14 +132,14 @@ public class AreaSelector {
         active = false;
         chat.addMessage(Text.literal("     " + coords[0] + ", " + coords[1] + ", " + coords[2]
                 + "           " + coords[3] + ", " + coords[4] + ", " + coords[5]));
-        chat.addMessage(buildClickableMessage("[Auto-save...]", "/handbook area save", "Auto-detect POI entry...")
+        chat.addMessage(buildClickableMessage("[Auto-save...]", "/hb_internal area save", "Auto-detect POI entry...")
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
                 .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
                                 new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
                                         + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                .append(buildClickableMessage("[Exit]", "/handbook area exit", "Exit area selection")));
+                .append(buildClickableMessage("[Exit]", "/hb_internal area exit", "Exit area selection")));
         active = true;
     }
 
@@ -238,16 +238,16 @@ public class AreaSelector {
         active = false;
         chat.addMessage(Text.literal("---------------------------------------").setStyle(Style.EMPTY.withColor(Formatting.BLUE)));
         chat.addMessage(Text.of("Saving area to entry: " + nearestEntry.getTitle() + ". Is that right?"));
-        chat.addMessage(buildClickableMessage("[Confirm]", "/handbook area confirm", "Save area data to entry")
+        chat.addMessage(buildClickableMessage("[Confirm]", "/hb_internal area confirm", "Save area data to entry")
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                .append(buildClickableMessage("[Retry]", "/handbook area retry", "Re-detect entry"))
+                .append(buildClickableMessage("[Retry]", "/hb_internal area retry", "Re-detect entry"))
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
                 .append(Text.literal("[Copy]").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true).withClickEvent(
                                 new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "[" + coords[0] + ", " + coords[1] + ", " + coords[2]
                                         + ", " + coords[3] + ", " + coords[4] + ", " + coords[5] + "]"))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Copy to clipboard")))))
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
-                .append(buildClickableMessage("[Cancel]", "/handbook area cancel", "Exit area selection")));
+                .append(buildClickableMessage("[Cancel]", "/hb_internal area cancel", "Exit area selection")));
         active = true;
     }
 

@@ -237,12 +237,12 @@ public class HandbookClient implements ClientModInitializer {
     }
 
     private void registerCommands() {
+        //INTENDED FOR USER USE
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 literal("handbook")
-                        .then(literal("dump")
-                                .then(literal("advancements")
-                                        .then(argument("Root", StringArgumentType.string()).executes(ctx ->
-                                                AdvancementWriter.dumpAdvancements(StringArgumentType.getString(ctx, "Root"))))))
+                        .then(literal("dump_advancements")
+                                .then(argument("Root", StringArgumentType.string()).executes(ctx ->
+                                        AdvancementWriter.dumpAdvancements(StringArgumentType.getString(ctx, "Root")))))
                         .then(literal("add")
                                 .then(literal("location").then(argument("Name", StringArgumentType.string())
                                         .suggests(this::getSuggestions).executes(ctx ->
@@ -257,16 +257,27 @@ public class HandbookClient implements ClientModInitializer {
                                                                 new Waypoint(
                                                                         IntegerArgumentType.getInteger(ctx, "x"),
                                                                         IntegerArgumentType.getInteger(ctx, "y"),
-                                                                        IntegerArgumentType.getInteger(ctx, "z"), null), false, null))))))
+                                                                        IntegerArgumentType.getInteger(ctx, "z"),
+                                                                        null), false, null))))))
+                                .then(literal("info").executes(ctx -> WaypointManager.printInfo())))
+                        .then(literal("area")
+                                .then(literal("select").executes(ctx -> AreaSelector.init()))
+                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection())))
+                                .then(literal("npc_mass_delete_and_blacklist").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection(), true)))
+                                .then(literal("mass_clear_blacklist").executes(ctx -> NPCWriter.deleteBlacklist(AreaSelector.getSelection()))))
+                        .then(literal("clear_trades").executes(ctx -> NPCWriter.clear()))
+        ));
+        //INTERNAL
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
+                literal("hb_internal")
+                        .then(literal("waypoint")
                                 .then(literal("alternate").executes(ctx -> WaypointManager.setAltPath()))
                                 .then(literal("restore").executes(ctx -> WaypointManager.restoreWaypoints()))
                                 .then(literal("continue").executes(ctx -> WaypointManager.continuePath()))
                                 .then(literal("skip").executes(ctx ->
                                         WaypointManager.onWaypointReached(client.player, client.world)))
-                                .then(literal("path").executes(ctx -> WaypointManager.addPathToChain()))
-                                .then(literal("info").executes(ctx -> WaypointManager.printInfo())))
+                                .then(literal("path").executes(ctx -> WaypointManager.addPathToChain())))
                         .then(literal("area")
-                                .then(literal("select").executes(ctx -> AreaSelector.init()))
                                 .then(literal("save").executes(ctx -> AreaSelector.startSaving()))
                                 .then(literal("confirm").executes(ctx -> AreaSelector.saveArea()))
                                 .then(literal("retry").executes(ctx -> AreaSelector.retry()))
@@ -280,11 +291,7 @@ public class HandbookClient implements ClientModInitializer {
                                                                 AreaSelector.movePoint(
                                                                         IntegerArgumentType.getInteger(ctx, "Point"),
                                                                         IntegerArgumentType.getInteger(ctx, "Dimension"),
-                                                                        IntegerArgumentType.getInteger(ctx, "Distance")))))))
-                                .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection())))
-                                .then(literal("npc_mass_delete_and_blacklist").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection(), true)))
-                                .then(literal("mass_clear_blacklist").executes(ctx -> NPCWriter.deleteBlacklist(AreaSelector.getSelection()))))
-                        .then(literal("clear_trades").executes(ctx -> NPCWriter.clear()))
+                                                                        IntegerArgumentType.getInteger(ctx, "Distance"))))))))
         ));
     }
 

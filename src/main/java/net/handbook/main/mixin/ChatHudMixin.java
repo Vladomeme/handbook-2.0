@@ -90,7 +90,8 @@ public abstract class ChatHudMixin implements HBMixinMethods {
                     "/handbook waypoint " + x + " " + y + " " + z, "Click to set a waypoint"));
 
             return modifiedText;
-        } catch (Exception ignored) {
+        }
+        catch (Exception ignored) {
             //unlucky
             return message;
         }

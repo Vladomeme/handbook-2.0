@@ -219,19 +219,19 @@ public class WaypointManager {
         if (waypoints.peek().shouldPause() && !HandbookConfig.INSTANCE.alwaysContinue) {
             chat.addMessage(Text.of(waypoints.poll().getText()));
             chat.addMessage(buildClickableMessage("[Continue]",
-                    "/handbook waypoint continue", "Click to set the next waypoint"));
+                    "/hb_internal waypoint continue", "Click to set the next waypoint"));
             paused = true;
             return 1;
         }
         WaypointEntry waypoint = waypoints.poll();
         chat.addMessage(Text.of(waypoint.getText() + " Head to " + waypoints.peek().getClearTitle()));
         MutableText text = buildClickableMessage("[Skip]",
-                "/handbook waypoint skip", "Click to skip this waypoint");
+                "/hb_internal waypoint skip", "Click to skip this waypoint");
 
         if (waypoints.peek().inChain() && shouldSuggestPath(waypoint))
             text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
                     .append(buildClickableMessage("[Add fastest path]",
-                            "/handbook waypoint path", "Click to find fastest path"));
+                            "/hb_internal waypoint path", "Click to find fastest path"));
         chat.addMessage(text);
         if (!isInPlayableArea(getShard(), waypoints.peek().getWaypoint().x(), waypoints.peek().getWaypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
@@ -252,11 +252,11 @@ public class WaypointManager {
         paused = false;
         chat.addMessage(Text.of("Head to " + waypoints.peek().getClearTitle()));
         MutableText text = buildClickableMessage("[Skip]",
-                "/handbook waypoint skip", "Click to skip this waypoint");
+                "/hb_internal waypoint skip", "Click to skip this waypoint");
         if (waypoints.peek().inChain() && shouldSuggestPath(waypoints.peek()))
             text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
                     .append(buildClickableMessage("[Add fastest path]",
-                            "/handbook waypoint path","Click to find fastest path"));
+                            "/hb_internal waypoint path","Click to find fastest path"));
         chat.addMessage(text);
         return 1;
     }
@@ -274,7 +274,7 @@ public class WaypointManager {
     //returns int because it's used in command
     public static int printInfo() {
         if (waypoints.isEmpty()) {
-            HandbookClient.LOGGER.info("No waypoints active");
+            chat.addMessage(Text.of("No waypoints active"));
             return 1;
         }
 
@@ -282,7 +282,7 @@ public class WaypointManager {
         for (WaypointEntry waypoint : waypoints) {
             string.append(waypoint.getClearTitle()).append(" -> ");
         }
-        HandbookClient.LOGGER.info(string.substring(0, string.length() - 3));
+        chat.addMessage(Text.of(string.substring(0, string.length() - 3)));
         return 1;
     }
 
@@ -450,7 +450,7 @@ public class WaypointManager {
         }
 
         if (alt) return buildClickableMessage(text.toString(),
-                "/handbook waypoint alternate", "Click to use this route instead");
+                "/hb_internal waypoint alternate", "Click to use this route instead");
         return Text.of(text.toString());
     }
 
@@ -507,7 +507,7 @@ public class WaypointManager {
         sendRestoreMessage = false;
         if (prevShard.equals(getShard())) {
             chat.addMessage(buildClickableMessage("Restore waypoints",
-                    "/handbook waypoint restore", "Click to restore handbook waypoints"));
+                    "/hb_internal waypoint restore", "Click to restore handbook waypoints"));
         }
     }
 
