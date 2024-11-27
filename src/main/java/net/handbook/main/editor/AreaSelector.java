@@ -34,12 +34,12 @@ public class AreaSelector {
     //returns int because used in command
     @SuppressWarnings("SameReturnValue")
     public static int init() {
+        chat = MinecraftClient.getInstance().inGameHud.getChatHud();
         if (!HandbookConfig.INSTANCE.editorMode) {
             chat.addMessage(Text.literal("§cEditor mode is disabled."));
             return 1;
         }
         if (active) return 1;
-        chat = MinecraftClient.getInstance().inGameHud.getChatHud();
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player != null) {
             coords[0] = (int) player.getX();

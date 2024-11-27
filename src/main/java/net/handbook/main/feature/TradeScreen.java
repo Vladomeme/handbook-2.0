@@ -182,6 +182,10 @@ public class TradeScreen extends Screen {
         matrices.translate(0, 0, 20);
         context.drawText(tr, Text.of("Favourite"),  21, 20,
                 HandbookConfig.INSTANCE.textColor, false);
+        if (favouritesWidget.children().isEmpty())
+            context.drawText(tr, Text.of("Right click to add"),
+                    65 - tr.getWidth("Right click to add") / 2, 35,
+                    HandbookConfig.INSTANCE.textColor, false);
         if (resultsWidget.children().isEmpty())
             context.drawText(tr, Text.of("Nothing found :("),
                     197 - tr.getWidth("Nothing found :(") / 2, 35,

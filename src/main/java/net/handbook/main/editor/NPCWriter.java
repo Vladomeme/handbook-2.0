@@ -71,12 +71,6 @@ public class NPCWriter {
     }
 
     @SuppressWarnings("SameReturnValue")
-    public static int deleteBlacklist(int[] area) {
-        deleteInAreaBlacklist(area);
-        return 1;
-    }
-
-    @SuppressWarnings("SameReturnValue")
     public static int clear() {
         clearTrades();
         return 1;
@@ -157,29 +151,6 @@ public class NPCWriter {
         if (counter > 0) writer.setUpdate();
         chat.addMessage(Text.of("Deleted " + counter + " NPCs. "
                 + (counter > 0 ? counter > 10 ? "What a massacre..." : "Informative and unfortunate..." : "Swing and a miss...")));
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static void deleteInAreaBlacklist(int[] area) {
-        if (!HandbookConfig.INSTANCE.editorMode) {
-            chat.addMessage(Text.literal("§cEditor mode is disabled."));
-            return;
-        }
-        int counter = 0;
-        for (TraderEntry entry : new ArrayList<>(blacklist.entries())) {
-            if (entry.getShard() == null) return;
-            int[] pos = entry.getPosition();
-            if (!(entry.getShard().equals(WaypointManager.getShard())
-                    && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
-                    && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
-                    && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
-            blacklist.entries().remove(entry);
-            counter++;
-        }
-        AreaSelector.exitSelection();
-        if (counter > 0) blacklist.setUpdate();
-        chat.addMessage(Text.of("Removed " + counter + " NPCs from the blacklist. "
-                + (counter > 0 ? counter > 10 ? "Back to March of 1953..." : "On the road again..." : "Long have we waited...")));
     }
 
     private static void clearTrades() {
