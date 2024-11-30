@@ -34,7 +34,7 @@ public abstract class ItemDictionaryGuiMixin {
         }
     }
 
-    @Inject(method = "lambda$buildItemList$11", at = @At(value = "HEAD"))
+    @Inject(method = "lambda$buildItemList$12", at = @At(value = "HEAD"))
     public void buildItemList$click(CallbackInfo ci, @Local(argsOnly = true) DictionaryItem item) {
         if (Screen.hasShiftDown() && !Screen.hasControlDown() && !Screen.hasAltDown()) {
             HandbookClient.openTradeScreen();

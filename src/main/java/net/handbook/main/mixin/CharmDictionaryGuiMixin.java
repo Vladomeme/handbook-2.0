@@ -34,7 +34,7 @@ public abstract class CharmDictionaryGuiMixin {
         }
     }
 
-    @Inject(method = "lambda$buildCharmList$9", at = @At(value = "HEAD"))
+    @Inject(method = "lambda$buildCharmList$10", at = @At(value = "HEAD"))
     public void buildCharmList$click(CallbackInfo ci, @Local(argsOnly = true) DictionaryCharm charm) {
         if (Screen.hasShiftDown() && !Screen.hasControlDown() && !Screen.hasAltDown()) {
             HandbookClient.openTradeScreen();
