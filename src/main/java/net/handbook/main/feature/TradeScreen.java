@@ -23,6 +23,7 @@ import net.minecraft.village.TradeOfferList;
 import java.util.HashMap;
 import java.util.List;
 
+//todo: display "Sharing..." text
 @SuppressWarnings("FieldCanBeLocal")
 public class TradeScreen extends Screen {
 

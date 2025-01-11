@@ -24,6 +24,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOfferList;
 
+//todo: display "Sharing..." text
 public class HandbookScreen extends Screen {
 
     public static final HandbookScreen INSTANCE = new HandbookScreen(Text.of(""));

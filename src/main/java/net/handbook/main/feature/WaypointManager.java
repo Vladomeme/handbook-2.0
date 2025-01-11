@@ -3,6 +3,7 @@ package net.handbook.main.feature;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.mixin.PlayerListHudAccessor;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.WaypointEntry;
 import net.handbook.main.resources.waypoint.Teleport;
@@ -22,6 +23,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static net.handbook.main.resources.waypoint.Teleport.*;
 
@@ -40,6 +43,7 @@ public class WaypointManager {
     private static String prevShard;
     private static boolean sendRestoreMessage = false;
     private static final float[] beaconColor = new float[3];
+    private static final Matcher shardMatcher = Pattern.compile("(?<=shard:<).*?(?=(-\\d)?>)").matcher("");
 
     private static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
 
@@ -525,10 +529,20 @@ public class WaypointManager {
 
     @SuppressWarnings("ConstantConditions") //world can't be null
     public static String getShard() {
-        return client.world.getRegistryKey().getValue().toString().replace("monumenta:", "").split("-")[0];
+        Text header = ((PlayerListHudAccessor) client.inGameHud.getPlayerListHud()).getHeader();
+        if (header != null) {
+            if (shardMatcher.reset(header.getString()).find())
+                return shardMatcher.group();
+        }
+        String dimension = client.world.getRegistryKey().getValue().toString();
+        if (dimension.contains("monumenta")) {
+            return dimension.replace("monumenta:", "").split("-")[0];
+        }
+        HandbookClient.nameSpoofWarn();
+        return "unknown";
     }
 
-    @SuppressWarnings("ConstantConditions") //world can't be null
+    @SuppressWarnings({"ConstantConditions", "unused"}) //world can't be null
     public static String getShardFull() {
         return client.world.getRegistryKey().getValue().toString();
     }

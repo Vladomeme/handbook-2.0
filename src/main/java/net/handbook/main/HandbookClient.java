@@ -226,7 +226,6 @@ public class HandbookClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (handler.getConnection().getAddress().toString().contains("monumenta")) {
                 if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
-                if (WaypointManager.getShardFull().contains("minecraft")) nameSpoofWarn();
             }
         });
 
@@ -325,7 +324,7 @@ public class HandbookClient implements ClientModInitializer {
         writers.clear();
     }
 
-    private static void nameSpoofWarn() {
+    public static void nameSpoofWarn() {
         client.inGameHud.getChatHud().addMessage(Text.literal("World Name Spoofing").setStyle(Style.EMPTY.withColor(Formatting.RED))
                 .append(Text.literal(" is required for Handbook to work correctly. Enable it in /peb under Technical settings.")
                         .setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
