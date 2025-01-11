@@ -13,6 +13,7 @@
     "ItemDictionaryGuiMixin",
     "MerchantScreenHandlerMixin",
     "MinecraftClientMixin",
+    "PlayerListHudAccessor",
     "ResourceFinderMixin"
   ],
   "injectors": {

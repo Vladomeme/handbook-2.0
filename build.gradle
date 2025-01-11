@@ -35,7 +35,7 @@ dependencies {
     modImplementation("eu.pb4:placeholder-api:2.4.0-pre.1+1.20.4")
 	modImplementation "dev.xpple:clientarguments:1.7"
 	include "dev.xpple:clientarguments:1.7"
-	modImplementation files(".gradle/monumenta-item-dictionary-1.5.1-1.20.1.jar")
+	modImplementation files(".gradle/monumenta-item-dictionary-1.5.1.jar")
 }
 
 processResources {

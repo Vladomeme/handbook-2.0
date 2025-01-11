@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -33,7 +34,7 @@ public class HandbookConfig {
 
         Reader reader = null;
         try {
-            return new Gson().fromJson(reader = new FileReader(FILE), HandbookConfig.class);
+            return new Gson().fromJson(reader = new FileReader(FILE, StandardCharsets.UTF_8), HandbookConfig.class);
         }
         catch (Exception e) {
             HandbookClient.LOGGER.error(e.getMessage());
@@ -49,7 +50,7 @@ public class HandbookConfig {
         JsonWriter writer = null;
         try {
             if (!FILE.exists()) Files.createDirectories(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook"));
-            writer = gson.newJsonWriter(new FileWriter(FILE));
+            writer = gson.newJsonWriter(new FileWriter(FILE, StandardCharsets.UTF_8));
             writer.setIndent("    ");
             gson.toJson(gson.toJsonTree(this, HandbookConfig.class), writer);
         }

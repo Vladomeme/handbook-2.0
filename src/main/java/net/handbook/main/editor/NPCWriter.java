@@ -230,7 +230,8 @@ public class NPCWriter {
             try {
                 Files.write(Path.of(PATH + id + ".txt"), data);
                 HandbookClient.LOGGER.info("Saved trades file {}.txt", id);
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });

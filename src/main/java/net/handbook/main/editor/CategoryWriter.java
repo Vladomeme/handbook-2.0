@@ -58,7 +58,7 @@ public class CategoryWriter<E extends Entry> implements Comparable<CategoryWrite
         try {
             File file = path.toFile();
             file.getParentFile().mkdirs();
-            writer = gson.newJsonWriter(new FileWriter(file));
+            writer = gson.newJsonWriter(new FileWriter(file, StandardCharsets.UTF_8));
             writer.setIndent("    ");
             gson.toJson(category, Category.class, writer);
         }

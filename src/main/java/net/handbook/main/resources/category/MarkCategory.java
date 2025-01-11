@@ -8,6 +8,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +35,7 @@ public class MarkCategory {
         try {
             File file = new File(FabricLoader.getInstance().getConfigDir() + "/handbook", "favourite.json");
             file.getParentFile().mkdirs();
-            writer = gson.newJsonWriter(new FileWriter(file));
+            writer = gson.newJsonWriter(new FileWriter(file, StandardCharsets.UTF_8));
             writer.setIndent("    ");
             gson.toJson(this, MarkCategory.class, writer);
         } catch (Exception e) {

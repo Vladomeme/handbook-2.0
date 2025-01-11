@@ -183,7 +183,8 @@ public class HandbookClient implements ClientModInitializer {
             Files.createDirectories(Path.of(home + "/waypoints"));
             Files.createFile(Path.of(home + "/first_load"));
 
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             LOGGER.error("Failed to create handbook directories.");
             return;
         }
@@ -192,7 +193,8 @@ public class HandbookClient implements ClientModInitializer {
             Path path = Path.of(home + id.getPath().replace("handbook_default", ""));
             try {
                 Files.write(path, resource.getInputStream().readAllBytes());
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 LOGGER.error("Failed to copy handbook file: {}.", id.getPath());
             }
         });

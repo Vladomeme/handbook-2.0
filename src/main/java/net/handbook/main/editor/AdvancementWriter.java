@@ -37,10 +37,11 @@ public class AdvancementWriter {
             output.append("]}");
 
             try {
-                Files.write(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/"
+                Files.writeString(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/"
                                 + root.getAdvancement().display().get().getTitle().getString() + ".json"),
-                        output.toString().replace("\n", "").replace(",]}{", "]},{").getBytes());
-            } catch (IOException e) {
+                        output.toString().replace("\n", "").replace(",]}{", "]},{"));
+            }
+            catch (IOException e) {
                 throw new RuntimeException(e);
             }
             MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Dump successful."));
