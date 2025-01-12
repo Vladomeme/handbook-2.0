@@ -259,8 +259,16 @@ public class HandbookClient implements ClientModInitializer {
                                                                         IntegerArgumentType.getInteger(ctx, "x"),
                                                                         IntegerArgumentType.getInteger(ctx, "y"),
                                                                         IntegerArgumentType.getInteger(ctx, "z"),
-                                                                        null), false, null))))))
-                                .then(literal("info").executes(ctx -> WaypointManager.printInfo())))
+                                                                        null), false, null)))
+                                                        .then(argument("name", StringArgumentType.string()).executes(ctx ->
+                                                                WaypointManager.setWaypoint(new WaypointEntry(StringArgumentType.getString(ctx, "name"), null,
+                                                                        new Waypoint(
+                                                                                IntegerArgumentType.getInteger(ctx, "x"),
+                                                                                IntegerArgumentType.getInteger(ctx, "y"),
+                                                                                IntegerArgumentType.getInteger(ctx, "z"),
+                                                                                null), false, null))
+                                                        ))))
+                                .then(literal("info").executes(ctx -> WaypointManager.printInfo()))))
                         .then(literal("area")
                                 .then(literal("select").executes(ctx -> AreaSelector.init()))
                                 .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection())))

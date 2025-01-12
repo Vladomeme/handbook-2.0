@@ -108,8 +108,8 @@ public abstract class ChatHudMixin implements HBMixinMethods {
 
                 int[] coords = entry.getPosition();
 
-                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(WaypointManager.buildClickableMessage("[Set waypoint]",
-                        "/handbook waypoint " + coords[0] + " " + coords[1] + " " + coords[2], "Click to set a waypoint"));
+                addMessage(WaypointManager.buildClickableMessage("[Set waypoint]",
+                        "/handbook waypoint " + coords[0] + " " + coords[1] + " " + coords[2] + " \"" + POIName + "\"", "Click to set a waypoint"));
                 return;
             }
         }

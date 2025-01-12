@@ -51,7 +51,7 @@ public class WaypointManager {
         if (waypoints.isEmpty()) return;
 
         tick++;
-        if (waypoints.size() > 1) checkChain();
+        checkWaypoints();
         emitParticles();
         if (tick >= 60) tick = 0;
     }
@@ -67,7 +67,6 @@ public class WaypointManager {
 
     public static void setAreaWaypoint(int[] coords, int[] area, String title, String text) {
         setWaypoint(new WaypointEntry(title, text, new Waypoint(coords[0], coords[1], coords[2], area), false, null));
-        HandbookClient.LOGGER.info("area waypoint: {}", Arrays.toString(area));
     }
 
     //returns int because it's used in command
@@ -78,12 +77,14 @@ public class WaypointManager {
         setState(true);
         tick = 0;
 
-        if (client.world == null) return 1;
+        if (client.world == null || client.player == null) return 1;
         chat.addMessage(getFastestPath(getShard(), entry, false));
         if (!isInPlayableArea(getShard(), entry.getWaypoint().x(), entry.getWaypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED)));
         updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
+        client.world.playSound(client.player.getX(), client.player.getY(), client.player.getZ(),
+                SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundCategory.PLAYERS, 1.0f, 1.0f, false);
         return 1;
     }
 
@@ -133,16 +134,6 @@ public class WaypointManager {
         }
         distance = Math.sqrt(Math.pow(player.getX() - waypoint.x(), 2) + Math.pow(player.getY() - waypoint.y(), 2)
                 + Math.pow(player.getZ() - waypoint.z(), 2));
-        if (waypoint.area() != null) {
-            int[] area = waypoint.area();
-            if (player.getX() < Math.max(area[0], area[3]) && player.getX() > Math.min(area[0], area[3])
-                    && player.getY() < Math.max(area[1], area[4]) && player.getY() > Math.min(area[1], area[4])
-                    && player.getZ() < Math.max(area[2], area[5]) && player.getZ() > Math.min(area[2], area[5])) {
-                onWaypointReached(player, world);
-                return;
-            }
-        }
-        if (distance < 5 || (waypoints.size() > 1 && distance < 10)) onWaypointReached(player, world);
 
         double particleX = player.getX() + ((waypoint.x() - player.getX()) / distance) * ((float) tick / 3);
         double particleY = player.getY() + ((waypoint.y() - player.getY()) / distance) * ((float) tick / 3);
@@ -154,7 +145,7 @@ public class WaypointManager {
                 particleZ + (Math.random() - Math.random()) * 0.5, 0, 0, 0);
     }
 
-    @SuppressWarnings("ConstantConditions") //context.consumers() might be null
+    @SuppressWarnings("ConstantConditions") //context.consumers() is never null
     public static void renderBeacon(WorldRenderContext context) {
         if (waypoints.peek() == null || paused || !HandbookConfig.INSTANCE.renderBeacon) return;
         Waypoint waypoint = waypoints.peek().getWaypoint();
@@ -176,7 +167,7 @@ public class WaypointManager {
         matrices.pop();
     }
 
-    private static void checkChain() {
+    private static void checkWaypoints() {
         ClientWorld world = client.world;
         ClientPlayerEntity player = client.player;
         if (world == null || player == null) return;
@@ -188,18 +179,18 @@ public class WaypointManager {
                 if (player.getX() < Math.max(area[0], area[3]) && player.getX() > Math.min(area[0], area[3])
                         && player.getY() < Math.max(area[1], area[4]) && player.getY() > Math.min(area[1], area[4])
                         && player.getZ() < Math.max(area[2], area[5]) && player.getZ() > Math.min(area[2], area[5])) {
-                    if (waypointEntry.equals(waypoints.peek())) return;
-
                     while (!waypointEntry.equals(waypoints.peek())) waypoints.poll();
+                    onWaypointReached(player, world);
                     return;
                 }
             }
             int distance = (int) Math.sqrt(Math.pow(player.getX() - waypoint.x(), 2) + Math.pow(player.getY() - waypoint.y(), 2)
-                    + Math.pow(player.getZ() - waypoint.z(), 2));
-            if (!(distance < 5 || (waypoints.size() > 1 && distance < 10))) continue;
-            if (waypointEntry.equals(waypoints.peek())) return;
-            while (!waypointEntry.equals(waypoints.peek())) waypoints.poll();
-            return;
+                        + Math.pow(player.getZ() - waypoint.z(), 2));
+            if (distance < 5 || (waypoints.size() > 1 && distance < 10)) {
+                while (!waypointEntry.equals(waypoints.peek())) waypoints.poll();
+                onWaypointReached(player, world);
+                return;
+            }
         }
     }
 
@@ -211,33 +202,36 @@ public class WaypointManager {
         world.playSound(player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
 
-        if (waypoints.size() == 1) {
-            if (waypoints.peek().inChain()) {
-                chat.addMessage(Text.of(((waypoints.peek().getText() == null ||
-                        waypoints.peek().getText().isEmpty()) ? "" : (waypoints.poll().getText() + " ")) + "§aWaypoint removed."));
+        WaypointEntry waypoint = waypoints.poll();
+        if (waypoints.isEmpty()) {
+            if (waypoint.inChain()) {
+                chat.addMessage(Text.of(((waypoint.getText() == null ||
+                        waypoint.getText().isEmpty()) ? "" : (waypoint.getText() + " ")) + "§aWaypoint removed."));
             }
             else chat.addMessage(Text.of("§aWaypoint removed."));
             setState(false);
             return 1;
         }
-        if (waypoints.peek().shouldPause() && !HandbookConfig.INSTANCE.alwaysContinue) {
-            chat.addMessage(Text.of(waypoints.poll().getText()));
-            chat.addMessage(buildClickableMessage("[Continue]",
-                    "/hb_internal waypoint continue", "Click to set the next waypoint"));
-            paused = true;
-            return 1;
+        if (waypoint.shouldPause()) {
+            chat.addMessage(Text.of(waypoint.getText()));
+            if (!HandbookConfig.INSTANCE.alwaysContinue) {
+                chat.addMessage(buildClickableMessage("[Continue]",
+                        "/hb_internal waypoint continue", "Click to set the next waypoint"));
+                paused = true;
+                return 1;
+            }
         }
-        WaypointEntry waypoint = waypoints.poll();
-        chat.addMessage(Text.of(waypoint.getText() + " Head to " + waypoints.peek().getClearTitle()));
+        WaypointEntry next = waypoints.peek();
+        chat.addMessage(Text.of(waypoint.getText() + " Head to " + next.getClearTitle()));
         MutableText text = buildClickableMessage("[Skip]",
                 "/hb_internal waypoint skip", "Click to skip this waypoint");
 
-        if (waypoints.peek().inChain() && shouldSuggestPath(waypoint))
+        if (next.inChain() && shouldSuggestPath(waypoint))
             text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
                     .append(buildClickableMessage("[Add fastest path]",
                             "/hb_internal waypoint path", "Click to find fastest path"));
         chat.addMessage(text);
-        if (!isInPlayableArea(getShard(), waypoints.peek().getWaypoint().x(), waypoints.peek().getWaypoint().z()))
+        if (!isInPlayableArea(getShard(), next.getWaypoint().x(), next.getWaypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                 .setStyle(Style.EMPTY.withColor(Formatting.RED)));
         return 1;
@@ -254,10 +248,11 @@ public class WaypointManager {
                 SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 2.0f, 1.7f, false);
 
         paused = false;
-        chat.addMessage(Text.of("Head to " + waypoints.peek().getClearTitle()));
+        WaypointEntry next = waypoints.peek();
+        chat.addMessage(Text.of("Head to " + next.getClearTitle()));
         MutableText text = buildClickableMessage("[Skip]",
                 "/hb_internal waypoint skip", "Click to skip this waypoint");
-        if (waypoints.peek().inChain() && shouldSuggestPath(waypoints.peek()))
+        if (next.inChain() && shouldSuggestPath(next))
             text.append(Text.literal(" ").setStyle(Style.EMPTY.withUnderline(false)))
                     .append(buildClickableMessage("[Add fastest path]",
                             "/hb_internal waypoint path","Click to find fastest path"));
@@ -548,18 +543,12 @@ public class WaypointManager {
     }
 
     private static Teleport getRegionHub(String shard) {
-        switch (shard) {
-            case "valley" -> {
-                return Sierhaven;
-            }
-            case "isles" -> {
-                return Mistport;
-            }
-            case "ring" -> {
-                return Galengarde;
-            }
-        }
-        return Empty;
+        return switch (shard) {
+            case "valley" -> Sierhaven;
+            case "isles" ->  Mistport;
+            case "ring" -> Galengarde;
+            default -> Empty;
+        };
     }
 
     public static double getDistance() {
@@ -571,18 +560,12 @@ public class WaypointManager {
     }
 
     private static boolean isInPlayableArea(String shard, int x, int z) {
-        switch (shard) {
-            case "valley" -> {
-                return x > -1800 && x < 1720 && z > -690 && z < 800;
-            }
-            case "isles" -> {
-                return x > -2222 && x < 870 && z > -660 && z < 1900;
-            }
-            case "ring" -> {
-                return x > -1160 && x < 980 && z > -1130 && z < 1825;
-            }
-        }
-        return true;
+        return switch (shard) {
+            case "valley" -> x > -1800 && x < 1720 && z > -690 && z < 800;
+            case "isles" -> x > -2222 && x < 870 && z > -660 && z < 1900;
+            case "ring" -> x > -1160 && x < 980 && z > -1130 && z < 1825;
+            default -> true;
+        };
     }
 
     private static boolean shouldSuggestPath(WaypointEntry entry) {
