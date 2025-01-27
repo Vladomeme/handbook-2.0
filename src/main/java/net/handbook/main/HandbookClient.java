@@ -34,9 +34,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -330,12 +328,6 @@ public class HandbookClient implements ClientModInitializer {
         handbookScreen.markedEntries.write();
         writers.forEach(CategoryWriter::write);
         writers.clear();
-    }
-
-    public static void nameSpoofWarn() {
-        client.inGameHud.getChatHud().addMessage(Text.literal("World Name Spoofing").setStyle(Style.EMPTY.withColor(Formatting.RED))
-                .append(Text.literal(" is required for Handbook to work correctly. Enable it in /peb under Technical settings.")
-                        .setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
     }
 
     @SuppressWarnings("unused")

@@ -1,7 +1,6 @@
 package net.handbook.main.feature;
 
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.mixin.PlayerListHudAccessor;
 import net.handbook.main.resources.entry.Entry;
@@ -533,13 +532,19 @@ public class WaypointManager {
         if (dimension.contains("monumenta")) {
             return dimension.replace("monumenta:", "").split("-")[0];
         }
-        HandbookClient.nameSpoofWarn();
+        if (!dimension.contains("plot")) nameSpoofWarn();
         return "unknown";
     }
 
     @SuppressWarnings({"ConstantConditions", "unused"}) //world can't be null
     public static String getShardFull() {
         return client.world.getRegistryKey().getValue().toString();
+    }
+
+    private static void nameSpoofWarn() {
+        client.inGameHud.getChatHud().addMessage(Text.literal("World Name Spoofing").setStyle(Style.EMPTY.withColor(Formatting.RED))
+                .append(Text.literal(" is required for Handbook to work correctly. Enable it in /peb under Technical settings.")
+                        .setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
     }
 
     private static Teleport getRegionHub(String shard) {
