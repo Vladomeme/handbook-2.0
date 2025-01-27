@@ -22,9 +22,11 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.village.TradeOfferList;
 
-//todo: display "Sharing..." text
+import java.util.Comparator;
+
 public class HandbookScreen extends Screen {
 
     public static final HandbookScreen INSTANCE = new HandbookScreen(Text.of(""));
@@ -300,6 +302,16 @@ public class HandbookScreen extends Screen {
             context.drawText(tr, Text.of("Nothing found :("),
                     line1x + (line2x - line1x) / 2 - tr.getWidth("Nothing found :(") / 2,
                     35 + (filterWidget.active ? filterWidget.getHeight() : 0), HandbookConfig.INSTANCE.textColor, false);
+        if (shareCost.visible) {
+            context.drawText(tr, Text.of("Share..."),
+                    shareCost.getX() + (shareCost.getWidth() / 2) - tr.getWidth("Share...") / 2,
+                    shareCost.getY() - 14, HandbookConfig.INSTANCE.textColor, false);
+        }
+        if (shareGlobal.visible) {
+            context.drawText(tr, Text.of("Chat..."),
+                    shareGlobal.getX() + (shareGlobal.getWidth() / 2) - tr.getWidth("Chat...") / 2,
+                    shareGlobal.getY() - 14, HandbookConfig.INSTANCE.textColor, false);
+        }
 
         context.fill(line1x, 15, line1x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
         context.fill(line2x, 15, line2x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
@@ -462,7 +474,6 @@ public class HandbookScreen extends Screen {
         filterWidget.reset();
     }
 
-    //todo: sorting by the position of searched string
     public void filterEntries(boolean scheduled) {
         if (!searchBox.getText().equals(lastFilter) || !scheduled) {
             if (searchBox.getText().isEmpty() && !filterWidget.filtersActive()) {
@@ -470,16 +481,19 @@ public class HandbookScreen extends Screen {
                 lastFilter = "";
                 return;
             }
-
-            optionsWidget.clear();
-            for (Entry entry : activeCategory.getEntries()) {
-                if (!entry.getTitle().toLowerCase().contains(searchBox.getText().toLowerCase())) continue;
-                if (filterWidget.filtersActive() && !filterWidget.checkEntry(entry)) continue;
-                optionsWidget.add(entry, BaseEntry.Type.Entry);
-            }
-            optionsWidget.setScrollAmount(0);
+            String s = searchBox.getText().toLowerCase();
+            optionsWidget.setEntries(activeCategory.getEntries().stream()
+                    .map(entry -> new Pair<Entry, Integer>(entry, entry.getClearTitle().toLowerCase().indexOf(s)))
+                    .filter(this::applyFilter)
+                    .sorted(Comparator.comparingInt(Pair::getRight))
+                    .map(Pair::getLeft)
+                    .toList(), BaseEntry.Type.Entry);
         }
         lastFilter = searchBox.getText();
+    }
+
+    private boolean applyFilter(Pair<Entry, Integer> pair) {
+        return pair.getRight() >= 0 && (!filterWidget.filtersActive() || !filterWidget.checkEntry(pair.getLeft()));
     }
 
     @Override

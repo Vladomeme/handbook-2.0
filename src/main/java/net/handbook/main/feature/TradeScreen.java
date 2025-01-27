@@ -23,7 +23,6 @@ import net.minecraft.village.TradeOfferList;
 import java.util.HashMap;
 import java.util.List;
 
-//todo: display "Sharing..." text
 @SuppressWarnings("FieldCanBeLocal")
 public class TradeScreen extends Screen {
 
@@ -191,6 +190,16 @@ public class TradeScreen extends Screen {
             context.drawText(tr, Text.of("Nothing found :("),
                     197 - tr.getWidth("Nothing found :(") / 2, 35,
                     HandbookConfig.INSTANCE.textColor, false);
+        if (shareCost.visible) {
+            context.drawText(tr, Text.of("Share..."),
+                    shareCost.getX() + (shareCost.getWidth() / 2) - tr.getWidth("Share...") / 2,
+                    shareCost.getY() - 14, HandbookConfig.INSTANCE.textColor, false);
+        }
+        if (shareGlobal.visible) {
+            context.drawText(tr, Text.of("Chat..."),
+                    shareGlobal.getX() + (shareGlobal.getWidth() / 2) - tr.getWidth("Chat...") / 2,
+                    shareGlobal.getY() - 14, HandbookConfig.INSTANCE.textColor, false);
+        }
         matrices.pop();
 
         if (trader != null) {
