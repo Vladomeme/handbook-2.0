@@ -42,6 +42,6 @@ public class Category<E extends Entry> extends BaseEntry implements Comparable<C
 
     @Override
     public int compareTo(@NotNull Category entry) {
-        return getClearTitle().compareTo(entry.getClearTitle());
+        return getSortableTitle().compareTo(entry.getSortableTitle());
     }
 }

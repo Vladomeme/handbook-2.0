@@ -89,14 +89,15 @@ public class HandbookClient implements ClientModInitializer {
 
     @SuppressWarnings("DuplicateBranchesInSwitch")
     private void onReload(ResourceManager manager) {
+        if (HandbookConfig.INSTANCE.resetData) {
+            copyAllFiles(manager);
+            HandbookConfig.INSTANCE.resetData = false;
+            HandbookConfig.INSTANCE.write();
+        }
         if (firstLoad) {
-            if (!Files.exists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/first_load"))) copyAllFiles(manager);
-
             handbookScreen = HandbookScreen.INSTANCE;
             tradeScreen = TradeScreen.INSTANCE;
-
             WaypointManager.screen = handbookScreen;
-            HandbookConfig.read();
 
             firstLoad = false;
         }
@@ -156,7 +157,7 @@ public class HandbookClient implements ClientModInitializer {
                         continue;
                     }
                 }
-                LOGGER.info("Loaded {} category {}", type, writers.get(writers.size() - 1).category.getTitle());
+                LOGGER.info("Loaded {} category {}", type, writers.get(writers.size() - 1).category.getClearTitle());
             }
             catch (IOException | JsonSyntaxException e) {
                 LOGGER.info("Failed to read category file {}", file.toPath());
@@ -171,16 +172,19 @@ public class HandbookClient implements ClientModInitializer {
         WaypointManager.updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
     }
 
-    private void copyAllFiles(ResourceManager manager) {
-        LOGGER.info("Looks like Handbook is loaded for the first time. Copying all files...");
+    private static final Path HOME_PATH = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook");
+    private static final Path TEXTURES_PATH = Path.of(HOME_PATH + "/textures");
+    private static final Path TRADES_PATH = Path.of(HOME_PATH + "/trades");
+    private static final Path WAYPOINTS_PATH = Path.of(HOME_PATH + "/waypoints");
+
+    public static void copyAllFiles(ResourceManager manager) {
+        LOGGER.info("Copying all default Handbook 2.0 data to local storage.");
 
         Path home = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook");
         try {
-            Files.createDirectories(Path.of(home + "/textures"));
-            Files.createDirectories(Path.of(home + "/trades"));
-            Files.createDirectories(Path.of(home + "/waypoints"));
-            Files.createFile(Path.of(home + "/first_load"));
-
+            if (!Files.exists(TEXTURES_PATH)) Files.createDirectories(TEXTURES_PATH);
+            if (!Files.exists(TRADES_PATH)) Files.createDirectories(TRADES_PATH);
+            if (!Files.exists(WAYPOINTS_PATH)) Files.createDirectories(WAYPOINTS_PATH);
         }
         catch (IOException e) {
             LOGGER.error("Failed to create handbook directories.");

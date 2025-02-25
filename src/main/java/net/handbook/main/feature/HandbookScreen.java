@@ -482,7 +482,7 @@ public class HandbookScreen extends Screen {
                 return;
             }
             String s = searchBox.getText().toLowerCase();
-            optionsWidget.setEntries(activeCategory.getEntries().stream()
+            optionsWidget.setEntriesNoWidth(activeCategory.getEntries().stream()
                     .map(entry -> new Pair<Entry, Integer>(entry, entry.getClearTitle().toLowerCase().indexOf(s)))
                     .filter(this::applyFilter)
                     .sorted(Comparator.comparingInt(Pair::getRight))
@@ -512,6 +512,7 @@ public class HandbookScreen extends Screen {
         tradeList.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
+
     @SuppressWarnings("ConstantConditions")
     @Override
     public void close() {

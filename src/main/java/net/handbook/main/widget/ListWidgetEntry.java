@@ -69,10 +69,10 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
         }
         RenderSystem.disableBlend();
 
-        if (tr.getWidth(entry.getTitle()) > 150)
-            context.drawText(tr, tr.trimToWidth(entry.getTitle(), 147) + "...", left + 10, top,
+        if (tr.getWidth(entry.getDisplayTitle()) > 150)
+            context.drawText(tr, tr.trimToWidth(entry.getDisplayTitle(), 147) + "...", left + 10, top,
                     HandbookConfig.INSTANCE.textColor, false);
-        else context.drawText(tr, entry.getTitle(), left + 10, top, HandbookConfig.INSTANCE.textColor, false);
+        else context.drawText(tr, entry.getDisplayTitle(), left + 10, top, HandbookConfig.INSTANCE.textColor, false);
     }
 
     public void markEntry() {

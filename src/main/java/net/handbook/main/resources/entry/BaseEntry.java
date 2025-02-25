@@ -24,7 +24,15 @@ abstract public class BaseEntry {
     }
 
     public String getClearTitle() {
+        return title == null ? null : title.replaceAll("§.", "").replaceAll("##.", "");
+    }
+
+    public String getSortableTitle() {
         return title == null ? null : title.replaceAll("§.", "");
+    }
+
+    public String getDisplayTitle() {
+        return title == null ? null : title.replaceAll("##.", "");
     }
 
     public String getText() {

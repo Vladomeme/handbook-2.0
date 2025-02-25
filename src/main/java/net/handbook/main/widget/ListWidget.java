@@ -65,6 +65,34 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		width = maxWidth;
 	}
 
+	public void setEntriesNoWidth(List<? extends BaseEntry> entries, BaseEntry.Type type) {
+		clearEntries();
+		setScrollAmount(0);
+
+		List<ListWidgetEntry> favourite = new ArrayList<>();
+		List<ListWidgetEntry> normal = new ArrayList<>();
+
+		String category;
+
+		category = type.equals(BaseEntry.Type.Entry) ? screen.activeCategory.getTitle() : "Categories";
+
+		for (BaseEntry entry : entries) {
+			if (entry.getTitle().equals("EXCLUDE")) continue;
+
+			if (screen.markedEntries.getMarkedEntries(category) == null) {
+				screen.markedEntries.addCategory(category);
+				normal.add(new ListWidgetEntry(entry, listWidth, type));
+			}
+			else {
+				if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+					favourite.add(new ListWidgetEntry(entry, listWidth, type));
+				else normal.add(new ListWidgetEntry(entry, listWidth, type));
+			}
+		}
+		for (ListWidgetEntry entry : favourite) addEntry(entry);
+		for (ListWidgetEntry entry : normal) addEntry(entry);
+	}
+
 	@Override
 	protected int getScrollbarPositionX() {
 		return getX() + getWidth() + 3;
@@ -84,12 +112,12 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		updateScrollingState(mouseX, mouseY, button);
 		if (isMouseOver(mouseX, mouseY)) {
-			ListWidgetEntry entry = this.getEntryAtPosition(mouseX, mouseY);
+			ListWidgetEntry entry = getEntryAtPosition(mouseX, mouseY);
 			if (entry != null) {
 				if (entry.mouseClicked(mouseX, mouseY, button)) {
-					ListWidgetEntry entry2 = this.getFocused();
-					if (entry2 != entry && entry2 != null) ((ParentElement)entry2).setFocused(null);
-					this.setFocused(entry);
+					ListWidgetEntry entry2 = getFocused();
+					if (entry2 != entry && entry2 != null) ((ParentElement) entry2).setFocused(null);
+					setFocused(entry);
 					setDragging(true);
 					return true;
 				}

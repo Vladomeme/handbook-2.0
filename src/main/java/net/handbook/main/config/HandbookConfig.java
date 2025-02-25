@@ -35,12 +35,10 @@ public class HandbookConfig {
         Reader reader = null;
         try {
             return new Gson().fromJson(reader = new FileReader(FILE, StandardCharsets.UTF_8), HandbookConfig.class);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             HandbookClient.LOGGER.error(e.getMessage());
             throw new RuntimeException(e);
-        }
-        finally {
+        } finally {
             IOUtils.closeQuietly(reader);
         }
     }
@@ -73,7 +71,7 @@ public class HandbookConfig {
     public boolean autoClose = true;
     public boolean alwaysContinue = false;
     public boolean editMessages = true;
-
+    public boolean resetData = true;
     //VISUAL
     public boolean monuParticles = false;
     public boolean renderBeacon = true;
@@ -107,50 +105,51 @@ public class HandbookConfig {
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Enable scanner"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, checks all nearby NPCs and adds them to the
-                                handbook. Also records villager trades whenever you open them.""")))
+                                .description(OptionDescription.of(Text.literal(("If enabled, checks all nearby NPCs and adds " +
+                                        "them to the handbook. Also records villager trades whenever you open them."))))
                                 .binding(true, () -> enableScanner, newVal -> enableScanner = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Editor mode"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, gives you access to a bunch of options to add,
-                                edit and remove entries.""")))
+                                .description(OptionDescription.of(Text.literal("If enabled, gives you access to a " +
+                                        "bunch of options to add, edit and remove entries.")))
                                 .binding(false, () -> editorMode, newVal -> editorMode = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Quick-save trades"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, NPC trading screen will be instantly closed, but
-                                trades will be saved with a notification.""")))
+                                .description(OptionDescription.of(Text.literal("If enabled, NPC trading screen will " +
+                                        "be instantly closed, but trades will be saved with a notification.")))
                                 .binding(false, () -> quickSaveTrades, newVal -> quickSaveTrades = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Close after adding entries"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, entry editing/adding screen will be auto closed
-                                if action was successful.""")))
+                                .description(OptionDescription.of(Text.literal("If enabled, entry editing/adding " +
+                                        "screen will be auto closed if action was successful.")))
                                 .binding(true, () -> autoClose, newVal -> autoClose = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Edit chat messages"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, will add a waypoint ClickEvent to messages with
-                                correctly formatted coordinates.""")))
+                                .description(OptionDescription.of(Text.literal("If enabled, will add a waypoint " +
+                                        "ClickEvent to messages with correctly formatted coordinates.")))
                                 .binding(true, () -> editMessages, newVal -> editMessages = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Auto-continue paths"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, will not pause a waypoint path when an action
-                                 is required before continuing.""")))
+                                .description(OptionDescription.of(Text.literal("If enabled, will not pause a waypoint " +
+                                        "path when an action is required before continuing.")))
                                 .binding(false, () -> alwaysContinue, newVal -> alwaysContinue = newVal)
+                                .controller(TickBoxControllerBuilder::create).build())
+
+                        .option(Option.<Boolean>createBuilder()
+                                .name(Text.literal("Reset data"))
+                                .description(OptionDescription.of(Text.literal("Setting this to true will reset default " +
+                                        "Handbook files during the next resource reload (F3+T).")))
+                                .binding(false, () -> resetData, newVal -> resetData = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
                         .build())
 
@@ -167,9 +166,8 @@ public class HandbookConfig {
 
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.literal("Use monumenta particles"))
-                                .description(OptionDescription.of(Text.literal("""
-                                If enabled, waypoint display will use same particles as the
-                                monumenta quest compass (green particles).""")))
+                                .description(OptionDescription.of(Text.literal("If enabled, waypoint display will " +
+                                        "use same particles as the monumenta quest compass (green particles).")))
                                 .binding(false, () -> monuParticles, newVal -> monuParticles = newVal)
                                 .controller(TickBoxControllerBuilder::create).build())
 

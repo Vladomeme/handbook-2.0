@@ -47,8 +47,8 @@ public class Entry extends BaseEntry implements Comparable<Entry> {
     @Override
     public int compareTo(@NotNull Entry entry) {
         int result = 0;
-        if (getClearTitle() != null && entry.getClearTitle() != null) {
-            result = getClearTitle().compareTo(entry.getClearTitle());
+        if (getSortableTitle() != null && entry.getSortableTitle() != null) {
+            result = getSortableTitle().compareTo(entry.getSortableTitle());
             if (result != 0) return result;
         }
         if (getShard() != null && entry.getShard() != null) {
