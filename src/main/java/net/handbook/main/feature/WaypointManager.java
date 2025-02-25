@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import static net.handbook.main.resources.waypoint.Teleport.*;
 
+//todo alt path not cleared on path completion
 @SuppressWarnings("SameReturnValue")
 public class WaypointManager {
 
@@ -503,7 +504,7 @@ public class WaypointManager {
 
     public static void sendRestoreMessage() {
         sendRestoreMessage = false;
-        if (prevShard.equals(getShard())) {
+        if (prevShard != null && prevShard.equals(getShard())) {
             chat.addMessage(buildClickableMessage("Restore waypoints",
                     "/hb_internal waypoint restore", "Click to restore handbook waypoints"));
         }
