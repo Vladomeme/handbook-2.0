@@ -34,7 +34,9 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -64,6 +66,7 @@ public class HandbookClient implements ClientModInitializer {
     public static final List<CategoryWriter<? extends Entry>> writers = new ArrayList<>();
 
     static boolean firstLoad = true;
+    static int errorTimer = -1;
 
     @Override
     public void onInitializeClient() {
@@ -219,6 +222,10 @@ public class HandbookClient implements ClientModInitializer {
             if (client.currentScreen instanceof TradeScreen) tradeScreen.filterEntries();
             if (client.world != null && WaypointManager.shouldRestore())
                 WaypointManager.sendRestoreMessage();
+            if (errorTimer > -1) {
+                errorTimer--;
+                if (errorTimer == 0) writerMissingError();
+            }
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register((ctx) -> {
@@ -229,6 +236,7 @@ public class HandbookClient implements ClientModInitializer {
             if (handler.getConnection().getAddress().toString().contains("monumenta")) {
                 if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
             }
+            if (NPCWriter.writer == null) errorTimer = 100;
         });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
@@ -332,6 +340,13 @@ public class HandbookClient implements ClientModInitializer {
         handbookScreen.markedEntries.write();
         writers.forEach(CategoryWriter::write);
         writers.clear();
+    }
+
+    private static void writerMissingError() {
+        client.inGameHud.getChatHud().addMessage(Text.literal("Handbook 2.0 NPC data file is missing or invalid. Expect errors! " +
+                "You can try to restore in by setting `Reset data` in config to true and hitting F3+T. If it doesn't work, " +
+                        "please message Vladomeme on discord.")
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 
     @SuppressWarnings("unused")

@@ -15,7 +15,7 @@ public abstract class EntityMixin  {
 
     @Inject(method = "onTrackedDataSet", at = @At("TAIL"))
     public void onTrackedDataSet(TrackedData<?> data, CallbackInfo ci) {
-        if (!HandbookConfig.INSTANCE.enableScanner) return;
+        if (!HandbookConfig.INSTANCE.enableScanner || NPCWriter.writer == null) return;
 
         Entity e = ((Entity) (Object) this);
         if (e.getType().equals(EntityType.VILLAGER)) NPCWriter.add(e, false);
