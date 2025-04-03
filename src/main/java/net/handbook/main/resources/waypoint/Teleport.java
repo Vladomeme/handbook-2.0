@@ -3,13 +3,14 @@ package net.handbook.main.resources.waypoint;
 public enum Teleport {
     Empty ("Empty", "none", 0, 0,0, true),
     //Valley safe
-    Sierhaven ("Sierhaven", "valley", -765,  107, 65,   true),
-    Nyr       ("Nyr",       "valley", -140,  100, -80,  true),
-    Farr      ("Farr",      "valley", 570,   100, 190,  true),
-    Highwatch ("Highwatch", "valley", 1190,  137, -114, true),
-    Lowtide   ("Lowtide",   "valley", 710,   73,  480,  true),
-    Oceangate ("Oceangate", "valley", -1634, 122, 98,   true),
-    TaEldim   ("Ta'Eldim",  "valley", 480,   192, -350, true),
+    Sierhaven ("Sierhaven",           "valley", -765,  107, 65,   true),
+    Nyr       ("Nyr",                 "valley", -140,  100, -80,  true),
+    Farr      ("Farr",                "valley", 570,   100, 190,  true),
+    Highwatch ("Highwatch",           "valley", 1190,  137, -114, true),
+    Lowtide   ("Lowtide",             "valley", 710,   73,  480,  true),
+    Oceangate ("Oceangate",           "valley", -1634, 122, 98,   true),
+    TaEldim   ("Ta'Eldim",            "valley", 480,   192, -350, true),
+    Willows   ("Black Willows Lobby", "valley", 465,   72,  -109, true),
     //Valley unsafe
     White     ("White Lobby",               "valley", 215,  121, -155, false),
     Orange    ("Orange Lobby",              "valley", 48,   107, 220,  false),
@@ -17,7 +18,6 @@ public enum Teleport {
     LightBlue ("Light Blue Lobby",          "valley", 821,  121, -320, false),
     Yellow    ("Yellow Lobby",              "valley", 1199, 71,  110,  false),
     Corridors ("Ephemeral Corridors Lobby", "valley", 840,  85,  196,  false),
-    Willows   ("Black Willows Lobby",       "valley", 350,  56,  -171, false),
     Sanctum   ("Forsworn Sanctum Lobby",    "valley", 503,  40,  436,  false),
     Verdant   ("Verdant Remnants Lobby",    "valley", 1003, 123, 186,  false),
     //Isles safe
