@@ -118,7 +118,7 @@ public class NPCWriter {
             return false;
         }
         switch (WaypointManager.getShard()) {
-            case "playerplots", "plots", "zenith", "depths" -> {
+            case "playerplots", "plots", "guildplots", "build", "zenith", "depths" -> {
                 return false;
             }
         }
