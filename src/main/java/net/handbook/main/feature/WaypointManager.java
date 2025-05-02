@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 
 import static net.handbook.main.resources.waypoint.Teleport.*;
 
-//todo alt path not cleared on path completion
 @SuppressWarnings("SameReturnValue")
 public class WaypointManager {
 
@@ -209,6 +208,7 @@ public class WaypointManager {
                         waypoint.getText().isEmpty()) ? "" : (waypoint.getText() + " ")) + "§aWaypoint removed."));
             }
             else chat.addMessage(Text.of("§aWaypoint removed."));
+            altPath.clear();
             setState(false);
             return 1;
         }
