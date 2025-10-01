@@ -241,23 +241,24 @@ public class NPCWriter {
     private static byte[] compressTrades(String text) {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (DeflaterOutputStream outputStream = new DeflaterOutputStream(byteStream)) {
-            outputStream.write(stupidPlainLoreFix(text).getBytes());
-        } catch (IOException e) {
+            outputStream.write(goddamnLoreQuotationMarksFix(text).getBytes());
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
         return Base64.getEncoder().encode(byteStream.toByteArray());
     }
 
-    private static String stupidPlainLoreFix(String text) {
-        return text.replace("THAT.\"\"", "THAT.\\\"\"")
-                .replace("hat!\"\"", "hat!\\\"\"");
+    private static String goddamnLoreQuotationMarksFix(String text) {
+        return text.replaceAll("(?<![,\\\\\\[])\"\"(?=[,\\]])", "\\\\\"\"");
     }
 
     public static String decompressTrades(String text) {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (OutputStream outputStream = new InflaterOutputStream(byteStream)) {
             outputStream.write(Base64.getDecoder().decode(text.getBytes()));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
         return byteStream.toString(StandardCharsets.UTF_8);
