@@ -1,8 +1,10 @@
 package net.handbook.main.resources.entry;
 
 import net.handbook.main.HandbookClient;
-import net.minecraft.village.TradeOfferList;
+import net.handbook.main.resources.HandbookTradeOffer;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 public class Entry extends BaseEntry implements Comparable<Entry> {
 
@@ -32,7 +34,7 @@ public class Entry extends BaseEntry implements Comparable<Entry> {
         return false;
     }
 
-    public TradeOfferList getOffers() {
+    public List<HandbookTradeOffer> getOffers() {
         return null;
     }
 

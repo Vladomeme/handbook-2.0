@@ -2,12 +2,13 @@ package net.handbook.main.widget;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.handbook.main.resources.HandbookTradeOffer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.ParentElement;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOfferList;
+
+import java.util.List;
 
 @Environment(EnvType.CLIENT)
 public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
@@ -21,11 +22,10 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 		listWidth = width;
 		setX(left);
 
-		setRenderBackground(false);
 		setRenderHeader(false, 0);
 	}
 
-	public void setEntries(TradeOfferList trades, String id) {
+	public void setEntries(List<HandbookTradeOffer> trades, String id) {
 		clearEntries();
 
 		for (int i = 0; i < trades.size(); i++)
@@ -33,13 +33,13 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 		this.setScrollAmount(0);
 	}
 
-	public void addEntries(TradeOfferList trades, String id) {
+	public void addEntries(List<HandbookTradeOffer> trades, String id) {
 		for (int i = 0; i < trades.size(); i++)
 			addEntry(new TradeListWidgetEntry(trades.get(i), id + "&" + i, listWidth));
 		this.setScrollAmount(0);
 	}
 
-	public void addEntry(TradeOffer trade, String id) {
+	public void addEntry(HandbookTradeOffer trade, String id) {
 		addEntry(new TradeListWidgetEntry(trade, id, listWidth));
 		this.setScrollAmount(0);
 	}
@@ -49,7 +49,7 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 	}
 
 	@Override
-	protected int getScrollbarPositionX() {
+	protected int getScrollbarX() {
 		return getX() + getWidth() - 10;
 	}
 
@@ -59,8 +59,18 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 	}
 
 	@Override
+	protected void drawHeaderAndFooterSeparators(DrawContext context) {
+
+	}
+
+	@Override
+	protected void drawMenuListBackground(DrawContext context) {
+
+	}
+
+	@Override
 	protected void updateScrollingState(double mouseX, double mouseY, int button) {
-		scrolling = button == 0 && mouseX >= (double) getScrollbarPositionX() && mouseX < (double) (getScrollbarPositionX() + 6);
+		scrolling = button == 0 && mouseX >= (double) getScrollbarX() && mouseX < (double) (getScrollbarX() + 6);
 	}
 
 	@Override
@@ -71,7 +81,7 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 			if (entry != null) {
 				if (entry.mouseClicked(mouseX, mouseY, button)) {
 					TradeListWidgetEntry entry2 = getFocused();
-					if (entry2 != entry && entry2 != null) ((ParentElement) entry2).setFocused(null);
+					if (entry2 != entry && entry2 != null) entry2.setFocused(null);
 					setFocused(entry);
 					setDragging(true);
 					return true;

@@ -24,7 +24,7 @@ public class FilterWidget extends ClickableWidget {
     private TextFieldWidget shardField;
     private TextFieldWidget textField;
 
-    private final Identifier checkTexture = new Identifier("handbook", "textures/gui/sprites/check.png");
+    private final Identifier checkTexture = Identifier.of("handbook", "check");
 
     public FilterWidget(int x, int y, int width, int height) {
         super(x, y, width, height, Text.of(""));
@@ -49,7 +49,7 @@ public class FilterWidget extends ClickableWidget {
         textField.setPosition(x, y);
         y += 16;
 
-        boolean bl = HandbookClient.handbookScreen.activeCategory.getEntries().get(0).getShard() != null;
+        boolean bl = HandbookClient.handbookScreen.activeCategory.getEntries().getFirst().getShard() != null;
         if (bl) y += 1;
         shardField.visible = bl;
         shardField.active = bl;

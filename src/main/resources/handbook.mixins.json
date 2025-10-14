@@ -9,12 +9,12 @@
     "ChatHudMixin",
     "ClientPlayerInteractionManagerMixin",
     "EntityMixin",
-    "FileResourcePackProviderMixin",
     "ItemDictionaryGuiMixin",
     "MerchantScreenHandlerMixin",
     "MinecraftClientMixin",
     "PlayerListHudAccessor",
-    "ResourceFinderMixin"
+    "SpawnEggItemAccessor",
+    "StringNbtReaderInvoker"
   ],
   "injectors": {
     "defaultRequire": 1

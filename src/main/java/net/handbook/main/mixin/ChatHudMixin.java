@@ -7,17 +7,14 @@ import net.handbook.main.editor.AreaSelector;
 import net.handbook.main.feature.WaypointManager;
 import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.entry.Entry;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.text.*;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -28,44 +25,39 @@ import java.util.List;
 public abstract class ChatHudMixin implements HBMixinMethods {
 
     @Shadow @Final
-    private MinecraftClient client;
-    @Shadow @Final
     private List<ChatHudLine> messages;
     @Shadow @Final
     private List<ChatHudLine.Visible> visibleMessages;
 
+    @Shadow public abstract void addMessage(Text message);
+
     @Unique
     private static final List<Text> blockedMessages = new ArrayList<>();
 
-    @SuppressWarnings("SameParameterValue")
-    @Shadow
-    protected abstract void addMessage(Text message, @Nullable MessageSignatureData signature, int ticks, @Nullable MessageIndicator indicator, boolean refresh);
-
-    @Shadow
-    public abstract void addMessage(Text message);
-
     @Redirect(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
             at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V"))
-    public void addMessage(ChatHud instance, Text message, MessageSignatureData signature, int ticks, MessageIndicator indicator, boolean refresh) {
+            target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V"))
+    public void addMessage(ChatHud instance, ChatHudLine message) {
+        Text text = message.content();
         if (AreaSelector.isActive()) {
-            blockedMessages.add(message);
+            blockedMessages.add(text);
             return;
         }
-        if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.editMessages && message.getString().contains("Position:"))
-            message = injectWaypointClickEvent(message);
+        String string = text.getString();
+        if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.editMessages && string.contains("Position:"))
+            message = new ChatHudLine(message.creationTick(), injectWaypointClickEvent(text), message.signature(), message.indicator());
 
-        addMessage(message, signature, client.inGameHud.getTicks(), indicator, false);
+        invokeAddMessage(message);
 
         if (HandbookConfig.INSTANCE.enabled) {
-            if (message.getString().startsWith("Your bounty for"))
-                suggestBountyWaypoint(message.getString());
+            if (string.startsWith("Your bounty for"))
+                suggestBountyWaypoint(string);
         }
     }
 
     @Unique
     public Text injectWaypointClickEvent(Text message) {
-        Text text = !message.getSiblings().isEmpty() ? message.getSiblings().get(message.getSiblings().size() - 1) : message;
+        Text text = !message.getSiblings().isEmpty() ? message.getSiblings().getLast() : message;
 
         int index = text.getString().indexOf("Position:");
         String prePosition = text.getString().substring(0, index);
@@ -125,8 +117,8 @@ public abstract class ChatHudMixin implements HBMixinMethods {
     @Unique
     public void handbook$removeLastMessages(int amount) {
         for (int i = 0; i < amount; i++) {
-            this.messages.remove(0);
-            this.visibleMessages.remove(0);
+            this.messages.removeFirst();
+            this.visibleMessages.removeFirst();
         }
     }
 
@@ -137,4 +129,7 @@ public abstract class ChatHudMixin implements HBMixinMethods {
             length += section.getString().length();
         return text.getString().length() - length;
     }
+
+    @Invoker("addMessage")
+    abstract void invokeAddMessage(ChatHudLine message);
 }

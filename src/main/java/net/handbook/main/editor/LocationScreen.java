@@ -53,7 +53,7 @@ public class LocationScreen extends Screen {
 
     private void addElements() {
         addDrawableChild(textField = new TextFieldWidget(tr, centerX - 65, centerY - 15, 130, 12, Text.of("")));
-        textField.setPlaceholder(Text.of("Name").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
+        textField.setPlaceholder(Text.of("Name").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).getFirst());
 
         addDrawableChild(new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
                 centerX + 30, centerY + 6, 36, 11, "Save", button -> save()));
@@ -70,7 +70,7 @@ public class LocationScreen extends Screen {
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
         matrices.translate(0, 0, 1);
-        context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
+        context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).getFirst(),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1, HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 

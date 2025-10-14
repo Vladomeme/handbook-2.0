@@ -1,19 +1,21 @@
 package net.handbook.main.editor;
 
+import com.mojang.serialization.DataResult;
 import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.HandbookTradeOffer;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.text.Text;
-import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 
 import java.io.*;
@@ -23,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
@@ -158,25 +161,21 @@ public class NPCWriter {
             chat.addMessage(Text.literal("§cEditor mode is disabled."));
             return;
         }
-        final int[] counter = {0};
+        AtomicInteger counter = new AtomicInteger(0);
         try (Stream<Path> paths = Files.list(Path.of(PATH))) {
             paths.forEach(path -> {
-                String name = path.getFileName().toString();
-                if (!name.endsWith(".txt")) return;
-
-                String id = name.replace(".txt", "");
                 for (Entry entry : writer.entries()) {
-                    if (entry.getID().equals(id)) return;
+                    if (entry.getID().equals(path.getFileName().toString())) return;
                 }
                 try {
                     Files.delete(path);
-                    counter[0]++;
+                    counter.getAndIncrement();
                     HandbookClient.LOGGER.info("Deleted trades file: {}", path);
                 }
                 catch (Exception ignored) {}
             });
-            chat.addMessage(Text.of("Deleted " + counter[0] + " (hopefully) unused trade files. "
-                    + (counter[0] > 0 ? "Why though?" : "hm?")));
+            chat.addMessage(Text.of("Deleted " + counter.get() + " (hopefully) unused trade files. "
+                    + (counter.get() > 0 ? "Why though?" : "hm?")));
         }
         catch (Exception ignored) {}
     }
@@ -185,42 +184,47 @@ public class NPCWriter {
         if (writer.entries().remove(entry)) {
             blacklist.entries().add(new TraderEntry(entry.getID(), WaypointManager.getShard()));
             try {
-                Files.deleteIfExists(Path.of(PATH + entry.getID() + ".txt"));
+                Files.deleteIfExists(Path.of(PATH + entry.getID()));
             }
             catch (Exception ignored) {}
             writer.setUpdate();
             blacklist.setUpdate();
             chat.addMessage(Text.of("Entry removed and blacklisted: " + entry.getID()));
         }
-        else chat.addMessage(Text.of("Failed to delete this entry"));
+        else chat.addMessage(Text.of("Failed to delete entry " + entry.getID()));
     }
 
     public static void addOffers(TradeOfferList offers) {
         if (!(client.currentScreen instanceof MerchantScreen screen)) return;
 
-        for (TraderEntry entry : writer.entries()) {
-            if (!entry.getID().equals(getID(screen.getTitle().getString(), x, y, z))) continue;
+        new Thread(() -> {
+            for (TraderEntry entry : writer.entries()) {
+                if (!entry.getID().equals(getID(screen.getTitle().getString(), x, y, z))) continue;
 
-            NbtCompound offersNbt = new NbtCompound();
-            NbtList offerList = new NbtList();
-            for (TradeOffer tradeOffer : offers) {
-                NbtCompound tradeNbt = new NbtCompound();
+                ClientPlayNetworkHandler nh = MinecraftClient.getInstance().getNetworkHandler();
+                if (nh == null) {
+                    HandbookClient.LOGGER.error("[Handbook] NPCWriter.addOffers() got called outside of a game world.");
+                    return;
+                }
+                DataResult<NbtElement> dataResult = HandbookTradeOffer.LIST_CODEC.encodeStart(
+                        nh.getRegistryManager().getOps(NbtOps.INSTANCE),
+                        offers.stream().map(HandbookTradeOffer::fromTradeOffer).toList());
 
-                tradeNbt.put("buy", tradeOffer.getOriginalFirstBuyItem().writeNbt(new NbtCompound()));
-                tradeNbt.put("buyB", tradeOffer.getSecondBuyItem().writeNbt(new NbtCompound()));
-                tradeNbt.put("sell", tradeOffer.getSellItem().writeNbt(new NbtCompound()));
-                offerList.add(tradeNbt);
+                if (dataResult.isError()) {
+                    HandbookClient.LOGGER.info("[Handbook] Failed to encode NPC offers: {}", dataResult.error());
+                }
+                else {
+                    dataResult.ifSuccess(nbtElement -> {
+                        String offersString = nbtElement.asString();
+                        //todo ???
+                        //offersString.replace("\\\"", "\"").replace("\\\"", "\\\\\"").replace("\\u0027", "'");
+                        String oldOffers = entry.getOffersRaw();
+                        if (oldOffers == null || !oldOffers.equals(offersString))
+                            updatedOffers.put(entry.getID(), compressTrades(offersString));
+                    });
+                }
             }
-            offersNbt.put("Recipes", offerList);
-            String newOffers = offersNbt.toString()
-                    .replace("\\\"", "\"")
-                    .replace("\\\"", "\\\\\"")
-                    .replace("\\u0027", "'");
-            String oldOffers = entry.getOffersRaw();
-
-            if (oldOffers == null || !oldOffers.equals(newOffers))
-                updatedOffers.put(entry.getID(), compressTrades(newOffers));
-        }
+        }).start();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored") //for .mkdirs()
@@ -228,8 +232,8 @@ public class NPCWriter {
         (new File(PATH)).getParentFile().mkdirs();
         updatedOffers.forEach((id, data) -> {
             try {
-                Files.write(Path.of(PATH + id + ".txt"), data);
-                HandbookClient.LOGGER.info("Saved trades file {}.txt", id);
+                Files.write(Path.of(PATH + id), data);
+                HandbookClient.LOGGER.info("Saved trades file {}", id);
             }
             catch (IOException e) {
                 throw new RuntimeException(e);
@@ -238,22 +242,29 @@ public class NPCWriter {
         updatedOffers.clear();
     }
 
-    private static byte[] compressTrades(String text) {
+    public static byte[] compressTrades(String string) {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (DeflaterOutputStream outputStream = new DeflaterOutputStream(byteStream)) {
-            outputStream.write(goddamnLoreQuotationMarksFix(text).getBytes());
+            outputStream.write(goddamnLoreQuotationMarksFix(string).getBytes());
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return Base64.getEncoder().encode(byteStream.toByteArray());
+        return byteStream.toByteArray();
     }
 
-    private static String goddamnLoreQuotationMarksFix(String text) {
-        return text.replaceAll("(?<![,\\\\\\[])\"\"(?=[,\\]])", "\\\\\"\"");
+    public static String decompressTrades(byte[] bytes) {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try (OutputStream outputStream = new InflaterOutputStream(byteStream)) {
+            outputStream.write(bytes);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return byteStream.toString(StandardCharsets.UTF_8);
     }
 
-    public static String decompressTrades(String text) {
+    public static String decompressTradesOld(String text) {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (OutputStream outputStream = new InflaterOutputStream(byteStream)) {
             outputStream.write(Base64.getDecoder().decode(text.getBytes()));
@@ -262,5 +273,9 @@ public class NPCWriter {
             throw new RuntimeException(e);
         }
         return byteStream.toString(StandardCharsets.UTF_8);
+    }
+
+    private static String goddamnLoreQuotationMarksFix(String text) {
+        return text.replaceAll("(?<![,:\\\\\\[])\"\"(?=[,\\]])", "\\\\\"\"");
     }
 }

@@ -10,8 +10,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
@@ -60,7 +60,7 @@ public class AreaSelector {
         if (tick != 5) return;
         tick = 0;
         ClientWorld w = MinecraftClient.getInstance().world;
-        DefaultParticleType p = ParticleTypes.END_ROD;
+        SimpleParticleType p = ParticleTypes.END_ROD;
         if (w == null) return;
 
         for (int i = Math.min(coords[0], coords[3]); i < Math.max(coords[0], coords[3]); i++) {
@@ -207,7 +207,7 @@ public class AreaSelector {
         String shard = WaypointManager.getShard();
 
         for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
-            if (writer.category.getType().equals("area") && writer.entries().get(0).getShard().equals(shard)) {
+            if (writer.category.getType().equals("area") && writer.entries().getFirst().getShard().equals(shard)) {
                 AreaSelector.writer = writer;
                 return;
             }

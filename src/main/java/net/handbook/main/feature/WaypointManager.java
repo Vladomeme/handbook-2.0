@@ -41,10 +41,9 @@ public class WaypointManager {
     private static boolean paused = false;
     private static String prevShard;
     private static boolean sendRestoreMessage = false;
-    private static final float[] beaconColor = new float[3];
     private static final Matcher shardMatcher = Pattern.compile("(?<=shard:<).*?(?=(-\\d)?>)").matcher("");
 
-    private static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
+    private static final Identifier BEAM_TEXTURE = Identifier.of("textures/entity/beacon_beam.png");
 
     public static void tick() {
         if (waypoints.isEmpty()) return;
@@ -81,7 +80,6 @@ public class WaypointManager {
         if (!isInPlayableArea(getShard(), entry.getWaypoint().x(), entry.getWaypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED)));
-        updateBeaconColor(HandbookConfig.INSTANCE.beaconColor);
         client.world.playSound(client.player.getX(), client.player.getY(), client.player.getZ(),
                 SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundCategory.PLAYERS, 1.0f, 1.0f, false);
         return 1;
@@ -95,8 +93,8 @@ public class WaypointManager {
         tick = 0;
 
         if (client.world == null) return;
-        chat.addMessage(getFastestPath(getShard(), entries.get(0), true));
-        if (!isInPlayableArea(getShard(), entries.get(0).getWaypoint().x(), entries.get(0).getWaypoint().z()))
+        chat.addMessage(getFastestPath(getShard(), entries.getFirst(), true));
+        if (!isInPlayableArea(getShard(), entries.getFirst().getWaypoint().x(), entries.getFirst().getWaypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
@@ -161,7 +159,7 @@ public class WaypointManager {
         matrices.push();
         matrices.translate(beaconX, -(pos.getY() + 64), beaconZ);
         BeaconBlockEntityRenderer.renderBeam(context.matrixStack(), context.consumers(), BEAM_TEXTURE, 0, 1,
-                world.getTime(), 0, 1024, beaconColor, 0.3f, 0.3f
+                world.getTime(), 0, 1024, HandbookConfig.INSTANCE.beaconColor, 0.3f, 0.3f
         );
         matrices.pop();
     }
@@ -585,11 +583,5 @@ public class WaypointManager {
 
     public static boolean shouldRestore() {
         return sendRestoreMessage;
-    }
-
-    public static void updateBeaconColor(int color) {
-        beaconColor[0] = ((color & 16711680) >> 16) / 255.0F;
-        beaconColor[1] = ((color & '\uff00') >> 8) / 255.0F;
-        beaconColor[2] = ((color & 255)) / 255.0F;
     }
 }

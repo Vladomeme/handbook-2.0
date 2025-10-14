@@ -3,6 +3,7 @@ package net.handbook.main.feature;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.resources.HandbookTradeOffer;
 import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
@@ -15,25 +16,22 @@ import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.village.TradeOfferList;
 
 import java.util.HashMap;
 import java.util.List;
 
-@SuppressWarnings("FieldCanBeLocal")
 public class TradeScreen extends Screen {
 
     public static final TradeScreen INSTANCE = new TradeScreen(Text.of(""));
-    public final HashMap<String, TradeOfferList> offers = new HashMap<>();
+    public final HashMap<String, List<HandbookTradeOffer>> offers = new HashMap<>();
 
     private MinecraftClient client;
     private TextRenderer tr;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private HandbookButtonWidget backToHandbook;
     private TextFieldWidget searchBox;
     private TradeListWidget favouritesWidget;
@@ -94,7 +92,7 @@ public class TradeScreen extends Screen {
 
         addDrawableChild(searchBox = new TextFieldWidget(
                 tr, 131, 15, 260, 14, Text.of("")));
-        searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
+        searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).getFirst());
 
         addDrawableChild(favouritesWidget = new TradeListWidget(5, 125, screenHeight - 70, 30));
         addDrawableChild(resultsWidget = new TradeListWidget(135, 125, screenHeight - 70, 30));
@@ -163,7 +161,7 @@ public class TradeScreen extends Screen {
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
         matrices.translate(0, 0, 20);
-        context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
+        context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).getFirst(),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1,
                 HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
@@ -171,7 +169,7 @@ public class TradeScreen extends Screen {
         matrices.push();
         matrices.scale(1.25f, 1.25f, 1);
         matrices.translate(0, 0, 20);
-        context.drawText(tr, Text.of("Trade Search").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
+        context.drawText(tr, Text.of("Trade Search").getWithStyle(Style.EMPTY.withItalic(true)).getFirst(),
                 15, 3, HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
 
@@ -224,15 +222,15 @@ public class TradeScreen extends Screen {
         RenderSystem.disableBlend();
     }
 
-    public void addEntries(TradeOfferList entries, String id) {
+    public void addEntries(List<HandbookTradeOffer> entries, String id) {
         offers.put(id, entries);
     }
 
     public void filterEntries() {
-        String search = searchBox.getText();
-        if (search.equals(lastFilter)) return;
+        String searchString = searchBox.getText().toLowerCase();
+        if (searchString.equals(lastFilter)) return;
 
-        if (search.isEmpty()) {
+        if (searchString.isEmpty()) {
             offers.forEach((id, offers) -> resultsWidget.addEntries(offers, id));
             lastFilter = "";
             return;
@@ -240,12 +238,13 @@ public class TradeScreen extends Screen {
         resultsWidget.clear();
         offers.forEach((id, offers) -> {
             for (int i = 0; i < offers.size(); i++) {
-                if (offers.get(i).getOriginalFirstBuyItem().getName().getString().toLowerCase().contains(search.toLowerCase()))
-                    resultsWidget.addEntry(offers.get(i), id + "&" + i);
-                else if (offers.get(i).getSecondBuyItem().getName().getString().toLowerCase().contains(search.toLowerCase()))
-                    resultsWidget.addEntry(offers.get(i), id + "&" + i);
-                else if (offers.get(i).getSellItem().getName().getString().toLowerCase().contains(search.toLowerCase()))
-                    resultsWidget.addEntry(offers.get(i), id + "&" + i);
+                HandbookTradeOffer offer = offers.get(i);
+
+                if (offer.buyItem1().getName().getString().toLowerCase().contains(searchString)
+                || (offer.buyItem2().isPresent() && offer.buyItem2().get().getName().getString().toLowerCase().contains(searchString))
+                || offer.sellItem().getName().getString().toLowerCase().contains(searchString)) {
+                    resultsWidget.addEntry(offer, id + "&" + i);
+                }
             }
         });
         resultsWidget.setScrollAmount(0);
@@ -256,7 +255,7 @@ public class TradeScreen extends Screen {
         share.visible = false;
         cancelSharing();
 
-        lastFilter = searchBox.getText();
+        lastFilter = searchString;
     }
 
     public void setSearchText(String s) {
@@ -318,62 +317,7 @@ public class TradeScreen extends Screen {
     }
 
     public void share(String world) {
-        if (MinecraftClient.getInstance().player == null) return;
-        StringBuilder command = new StringBuilder();
-        command.append(world).append(" ");
-        ItemStack item;
-        String position = "Position: " + trader.getPosition()[0] + ", " + trader.getPosition()[1] + ", " + trader.getPosition()[2];
-        switch (shareMode) {
-            case COST -> {
-                item = selectedEntry.trade.getOriginalFirstBuyItem();
-                command.append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                item = selectedEntry.trade.getSecondBuyItem();
-                if (!item.isEmpty()) {
-                    command.append(" + ").append(item.getName().getString());
-                    if (item.getCount() != 1) command.append(" x").append(item.getCount());
-                }
-
-                item = selectedEntry.trade.getSellItem();
-                command.append(" -> ").append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                command.append(" | ").append(trader.getClearTitle()).append(" (")
-                        .append(trader.getShard()).append(")");
-            }
-            case TRADER -> {
-                item = selectedEntry.trade.getSellItem();
-                command.append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                command.append(" | ").append(trader.getClearTitle()).append(" (")
-                        .append(trader.getShard()).append(") ")
-                        .append(position);
-            }
-            case FULL -> {
-                item = selectedEntry.trade.getOriginalFirstBuyItem();
-                command.append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                item = selectedEntry.trade.getSecondBuyItem();
-                if (!item.isEmpty()) {
-                    command.append(" + ").append(item.getName().getString());
-                    if (item.getCount() != 1) command.append(" x").append(item.getCount());
-                }
-
-                item = selectedEntry.trade.getSellItem();
-                command.append(" -> ").append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                command.append(" | ").append(trader.getClearTitle()).append(" (")
-                        .append(trader.getShard()).append(") ")
-                        .append(position);
-            }
-        }
-        MinecraftClient.getInstance().player.networkHandler.sendCommand(command.toString());
-
-        MinecraftClient.getInstance().currentScreen = null;
+        trader.share(world, selectedEntry.trade, shareMode);
     }
 
     public void cancelSharing() {

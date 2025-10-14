@@ -1,0 +1,6 @@
+accessWidener	v2	 named
+accessible class net/minecraft/datafixer/fix/ItemStackComponentizationFix$StackData
+accessible method net/minecraft/datafixer/fix/ItemStackComponentizationFix$StackData <init> (Ljava/lang/String;ILcom/mojang/serialization/Dynamic;)V
+accessible method net/minecraft/datafixer/fix/ItemStackComponentizationFix fixStack (Lnet/minecraft/datafixer/fix/ItemStackComponentizationFix$StackData;Lcom/mojang/serialization/Dynamic;)V
+accessible field net/minecraft/datafixer/fix/ItemStackComponentizationFix$StackData nbt Lcom/mojang/serialization/Dynamic;
+accessible field net/minecraft/datafixer/fix/ItemStackComponentizationFix$StackData components Lcom/mojang/serialization/Dynamic;

@@ -17,8 +17,9 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.resource.Resource;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -26,11 +27,13 @@ import net.minecraft.util.Identifier;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.StringTokenizer;
 
 public class DisplayWidget extends ClickableWidget {
@@ -41,8 +44,9 @@ public class DisplayWidget extends ClickableWidget {
     private final MinecraftClient client = MinecraftClient.getInstance();
     private final TextRenderer tr = client.textRenderer;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
+    private static final String PATH = FabricLoader.getInstance().getConfigDir().toString() + "/handbook/textures/";
 
-    private Identifier id;
+    private Identifier imageID;
     private int imageWidth;
     private int imageHeight;
     public boolean renderImage = false;
@@ -58,21 +62,27 @@ public class DisplayWidget extends ClickableWidget {
 
         description = splitText(entry.getText());
 
+        if (imageID != null) {
+            client.getTextureManager().destroyTexture(imageID);
+            imageID = null;
+        }
         if (entry.hasImage()) {
             try {
-                id = new Identifier("handbook_images", entry.getImage());
-                Optional<Resource> resource = client.getResourceManager().getResource(id);
-                if (resource.isPresent()) {
-                    BufferedImage image = ImageIO.read(resource.get().getInputStream());
-                    imageWidth = image.getWidth();
-                    imageHeight = image.getHeight();
-                    renderImage = true;
-                    invalidImage = false;
-                }
-                else invalidImage = true;
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                BufferedImage image = ImageIO.read(new File(PATH + entry.getImage() + ".png"));
+                ImageIO.write(image, "png", os);
+
+                imageID = client.getTextureManager().registerDynamicTexture("handbook_images",
+                        new NativeImageBackedTexture(NativeImage.read(new ByteArrayInputStream(os.toByteArray()))));
+                imageWidth = image.getWidth();
+                imageHeight = image.getHeight();
+                renderImage = true;
+                invalidImage = false;
             }
             catch (IOException e) {
                 HandbookClient.LOGGER.error("Invalid image name in entry {}", entry.getTitle());
+                renderImage = false;
+                invalidImage = true;
             }
         }
         else renderImage = false;
@@ -148,7 +158,7 @@ public class DisplayWidget extends ClickableWidget {
             matrices.push();
             matrices.scale(scale, scale, 2);
             RenderSystem.enableBlend();
-            context.drawTexture(id, (int) ((width * 0.5) / scale), (int) (10 / scale), 0, 0,
+            context.drawTexture(imageID, (int) ((width * 0.5) / scale), (int) (10 / scale), 0, 0,
                     imageWidth, imageHeight, imageWidth, imageHeight);
             RenderSystem.disableBlend();
             matrices.pop();
@@ -202,7 +212,7 @@ public class DisplayWidget extends ClickableWidget {
             } else {
                 client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")
                         .getWithStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                Text.of("If you believe the shard is correct, enable `Spoof World Names` in /peb.")))).get(0));
+                                Text.of("If you believe the shard is correct, enable `Spoof World Names` in /peb.")))).getFirst());
             }
         }
         if (client.currentScreen == null) return;
@@ -246,7 +256,7 @@ public class DisplayWidget extends ClickableWidget {
 
     public void deleteTrade() {
         try {
-            Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + entry.getID() + ".txt"));
+            Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + entry.getID()));
         }
         catch (IOException ignored) {}
         client.inGameHud.getChatHud().addMessage(Text.of("Removed trades. Interact with the villager again to update them."));

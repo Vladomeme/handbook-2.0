@@ -8,6 +8,7 @@ import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.feature.TradeScreen;
+import net.handbook.main.resources.HandbookTradeOffer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -20,7 +21,6 @@ import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.village.TradeOffer;
 
 import java.util.List;
 
@@ -29,16 +29,16 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
 
     private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
     private final HandbookScreen screen = HandbookClient.handbookScreen;
-    private static final Identifier TEXTURE = new Identifier("container/villager/trade_arrow");
+    private static final Identifier TEXTURE = Identifier.of("container/villager/trade_arrow");
 
-    public final TradeOffer trade;
+    public final HandbookTradeOffer trade;
     public final String id;
     private boolean highlighted = false;
 
     public final ButtonWidget button;
     public final List<ClickableWidget> list;
 
-    public TradeListWidgetEntry(TradeOffer trade, String id, int width) {
+    public TradeListWidgetEntry(HandbookTradeOffer trade, String id, int width) {
         this.trade = trade;
         this.id = id;
 
@@ -74,20 +74,18 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
             else context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.tradeBackgroundColor);
         }
 
-        ItemStack itemStack1 = trade.getOriginalFirstBuyItem();
-        ItemStack itemStack2 = trade.getSecondBuyItem();
-        ItemStack itemStack3 = trade.getSellItem();
+        context.drawItem(trade.buyItem1(), left + 2, top + 2);
+        context.drawItemInSlot(tr, trade.buyItem1(), left + 2, top + 2);
 
-        context.drawItem(itemStack1, left + 2, top + 2);
-        context.drawItemInSlot(tr, itemStack1, left + 2, top + 2);
-
-        context.drawItem(itemStack2, left + 37, top + 2);
-        context.drawItemInSlot(tr, itemStack2, left + 37, top + 2);
+        trade.buyItem2().ifPresent(stack -> {
+            context.drawItem(stack, left + 37, top + 2);
+            context.drawItemInSlot(tr, stack, left + 37, top + 2);
+        });
 
         context.drawGuiTexture(TEXTURE, left + 67, top + 5, 10, 9);
 
-        context.drawItem(itemStack3, left + 91, top + 2);
-        context.drawItemInSlot(tr, itemStack3, left + 91, top + 2);
+        context.drawItem(trade.sellItem(), left + 91, top + 2);
+        context.drawItemInSlot(tr, trade.sellItem(), left + 91, top + 2);
 
         RenderSystem.disableScissor();
         if (isMouseOver(mouseX, mouseY)) renderTooltip(context, mouseX, mouseY, left);
@@ -98,11 +96,11 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
         if (y < 30 || y > MinecraftClient.getInstance().getWindow().getScaledHeight() - 40) return;
         ItemStack itemStack = null;
 
-             if (x > left 	   && x < left + 20)  itemStack = trade.getOriginalFirstBuyItem();
-        else if (x > left + 35 && x < left + 55)  itemStack = trade.getSecondBuyItem();
-        else if (x > left + 89 && x < left + 109) itemStack = trade.getSellItem();
+             if (x > left 	   && x < left + 20)  itemStack = trade.buyItem1();
+        else if (x > left + 35 && x < left + 55)  itemStack = trade.buyItem2().orElse(null);
+        else if (x > left + 89 && x < left + 109) itemStack = trade.sellItem();
 
-        if (itemStack != null && !itemStack.getName().getString().equals("Air"))
+        if (itemStack != null && !itemStack.isEmpty() && !itemStack.getName().getString().equals("Air"))
             context.drawItemTooltip(tr, itemStack, x, y);
     }
 
@@ -125,18 +123,22 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 1) markEntry();
         if (Screen.hasShiftDown()) {
-            int x = this.button.getX();
-            String text = "";
-                 if (mouseX > x 	 && mouseX < x + 20)  text = trade.getOriginalFirstBuyItem().getName().getString();
-            else if (mouseX > x + 35 && mouseX < x + 55)  text = trade.getSecondBuyItem().getName().getString();
-            else if (mouseX > x + 89 && mouseX < x + 109) text = trade.getSellItem().getName().getString();
-
             if (!(MinecraftClient.getInstance().currentScreen instanceof TradeScreen)) HandbookClient.openTradeScreen();
-            HandbookClient.tradeScreen.setSearchText(text);
+            HandbookClient.tradeScreen.setSearchText(getSelectedItemName(mouseX));
             return true;
         }
         this.button.mouseClicked(mouseX, mouseY, button);
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private String getSelectedItemName(double mouseX) {
+        int x = button.getX();
+
+        if (mouseX > x && mouseX < x + 20) return trade.buyItem1().getName().getString();
+        else if (mouseX > x + 35 && mouseX < x + 55) return trade.buyItem2().isPresent() ? trade.buyItem2().get().getName().getString() : "";
+        else if (mouseX > x + 89 && mouseX < x + 109) return trade.sellItem().getName().getString();
+
+        return "";
     }
 
     @Override

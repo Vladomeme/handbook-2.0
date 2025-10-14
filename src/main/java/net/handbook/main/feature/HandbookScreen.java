@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.EditScreen;
+import net.handbook.main.resources.HandbookTradeOffer;
 import net.handbook.main.resources.category.Category;
 import net.handbook.main.resources.category.MarkCategory;
 import net.handbook.main.resources.entry.BaseEntry;
@@ -23,9 +24,9 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
-import net.minecraft.village.TradeOfferList;
 
 import java.util.Comparator;
+import java.util.List;
 
 public class HandbookScreen extends Screen {
 
@@ -93,7 +94,7 @@ public class HandbookScreen extends Screen {
             client.inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
             return;
         }
-        activeCategory = HandbookClient.getCategories().get(0);
+        activeCategory = HandbookClient.getCategories().getFirst();
         addElements();
         super.init();
     }
@@ -128,8 +129,8 @@ public class HandbookScreen extends Screen {
                 maxWidth + 3, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 90 : 70), 30));
         categoriesWidget.setX(20);
         categoriesWidget.setEntries(HandbookClient.getCategories(), BaseEntry.Type.Category);
-        categoriesWidget.children().get(0).updateHighlight(true);
-        activeCategory = (Category<? extends Entry>) categoriesWidget.children().get(0).entry;
+        categoriesWidget.children().getFirst().updateHighlight(true);
+        activeCategory = (Category<? extends Entry>) categoriesWidget.children().getFirst().entry;
 
         maxWidth = 0;
 
@@ -143,9 +144,9 @@ public class HandbookScreen extends Screen {
                 line1x / 2 - 37, screenHeight - 30, 75, 11,
                 "Trade Search", button -> client.setScreen(HandbookClient.tradeScreen)));
 
-        if (((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries().isEmpty()) maxWidth = 110;
+        if (((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).getEntries().isEmpty()) maxWidth = 110;
         else {
-            for (Entry entry : ((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries()) {
+            for (Entry entry : ((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).getEntries()) {
                 int width = tr.getWidth(entry.getTitle());
                 if (width > maxWidth) maxWidth = width;
             }
@@ -156,7 +157,7 @@ public class HandbookScreen extends Screen {
         addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 12, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30));
         optionsWidget.setX(30 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().get(0).entry).getEntries(), BaseEntry.Type.Entry);
+        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).getEntries(), BaseEntry.Type.Entry);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
@@ -169,11 +170,11 @@ public class HandbookScreen extends Screen {
 
         addDrawableChild(searchBox = new TextFieldWidget(
                 tr, line1x + 16, 15, line2x - line1x - 16, 14, Text.of("")));
-        searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).get(0));
+        searchBox.setPlaceholder(Text.of("Search...").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).getFirst());
 
         addDrawableChild(filterButton = new TexturedButtonWidget(line1x + 2, 16, 12, 12,
-                new ButtonTextures(new Identifier("handbook", "textures/gui/sprites/filter_unfocused.png"),
-                new Identifier("handbook", "textures/gui/sprites/filter_focused.png")),
+                new ButtonTextures(Identifier.of("handbook", "filter_unfocused"),
+                Identifier.of("handbook", "filter_focused")),
                 button -> toggleFilterWidget()));
 
         addDrawableChild(filterWidget = new FilterWidget(line1x + 2, 30, 0, 0));
@@ -291,7 +292,7 @@ public class HandbookScreen extends Screen {
         matrices.push();
         matrices.scale(1.5f, 1.5f, 1);
         matrices.translate(0, 0, 1);
-        context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).get(0),
+        context.drawText(tr, Text.of("Handbook 2.0").getWithStyle(Style.EMPTY.withItalic(true)).getFirst(),
                 (int) (width / 1.5 - tr.getWidth("Handbook 2.0") * 1.5), 1,
                 HandbookConfig.INSTANCE.textColor, false);
         matrices.pop();
@@ -330,7 +331,7 @@ public class HandbookScreen extends Screen {
         RenderSystem.disableBlend();
     }
 
-    public void openTrades(TradeOfferList trades, String name) {
+    public void openTrades(List<HandbookTradeOffer> trades, String name) {
         tradesWidget.visible = true;
         tradesWidget.setName(name);
         tradeList.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
@@ -493,7 +494,7 @@ public class HandbookScreen extends Screen {
     }
 
     private boolean applyFilter(Pair<Entry, Integer> pair) {
-        return pair.getRight() >= 0 && (!filterWidget.filtersActive() || !filterWidget.checkEntry(pair.getLeft()));
+        return pair.getRight() >= 0 && (!filterWidget.filtersActive() || filterWidget.checkEntry(pair.getLeft()));
     }
 
     @Override

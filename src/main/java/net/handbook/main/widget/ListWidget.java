@@ -6,7 +6,7 @@ import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
 import net.handbook.main.resources.entry.BaseEntry;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.ParentElement;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ElementListWidget;
 
 import java.util.ArrayList;
@@ -24,7 +24,6 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 
 		listWidth = width;
 
-		setRenderBackground(false);
 		setRenderHeader(false, 0);
 	}
 
@@ -94,13 +93,23 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 	}
 
 	@Override
-	protected int getScrollbarPositionX() {
+	protected int getScrollbarX() {
 		return getX() + getWidth() + 3;
 	}
 
 	@Override
 	public int getRowWidth() {
 		return listWidth;
+	}
+
+	@Override
+	protected void drawHeaderAndFooterSeparators(DrawContext context) {
+
+	}
+
+	@Override
+	protected void drawMenuListBackground(DrawContext context) {
+
 	}
 
 	public void updateSizeShrink(int height, int y) {
@@ -116,7 +125,7 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 			if (entry != null) {
 				if (entry.mouseClicked(mouseX, mouseY, button)) {
 					ListWidgetEntry entry2 = getFocused();
-					if (entry2 != entry && entry2 != null) ((ParentElement) entry2).setFocused(null);
+					if (entry2 != entry && entry2 != null) entry2.setFocused(null);
 					setFocused(entry);
 					setDragging(true);
 					return true;
@@ -126,11 +135,13 @@ public class ListWidget extends ElementListWidget<ListWidgetEntry> {
 		return false;
 	}
 
-	public void clear() {
+	@SuppressWarnings("unused")
+    public void clear() {
 		clearEntries();
 	}
 
-	public void add(net.handbook.main.resources.entry.Entry entry, BaseEntry.Type type) {
+	@SuppressWarnings("unused")
+    public void add(net.handbook.main.resources.entry.Entry entry, BaseEntry.Type type) {
 		addEntry(new ListWidgetEntry(entry, listWidth, type));
 	}
 }

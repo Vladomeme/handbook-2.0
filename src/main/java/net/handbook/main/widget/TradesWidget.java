@@ -2,14 +2,13 @@ package net.handbook.main.widget;
 
 import net.handbook.main.HandbookClient;
 import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.resources.entry.Entry;
+import net.handbook.main.resources.entry.TraderEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 
 public class TradesWidget extends ClickableWidget {
@@ -63,63 +62,7 @@ public class TradesWidget extends ClickableWidget {
     }
 
     public void share(String world) {
-        if (MinecraftClient.getInstance().player == null) return;
-        StringBuilder command = new StringBuilder();
-        command.append(world).append(" ");
-        ItemStack item;
-        Entry entry = screen.displayWidget.getEntry();
-        String position = "Position: " + entry.getPosition()[0] + ", " + entry.getPosition()[1] + ", " + entry.getPosition()[2];
-        switch (shareMode) {
-            case COST -> {
-                item = selectedEntry.trade.getOriginalFirstBuyItem();
-                command.append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                item = selectedEntry.trade.getSecondBuyItem();
-                if (!item.isEmpty()) {
-                    command.append(" + ").append(item.getName().getString());
-                    if (item.getCount() != 1) command.append(" x").append(item.getCount());
-                }
-
-                item = selectedEntry.trade.getSellItem();
-                command.append(" -> ").append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                command.append(" | ").append(entry.getClearTitle()).append(" (")
-                        .append(entry.getShard()).append(")");
-            }
-            case TRADER -> {
-                item = selectedEntry.trade.getSellItem();
-                command.append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                command.append(" | ").append(entry.getClearTitle()).append(" (")
-                        .append(entry.getShard()).append(") ")
-                        .append(position);
-            }
-            case FULL -> {
-                item = selectedEntry.trade.getOriginalFirstBuyItem();
-                command.append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                item = selectedEntry.trade.getSecondBuyItem();
-                if (!item.isEmpty()) {
-                    command.append(" + ").append(item.getName().getString());
-                    if (item.getCount() != 1) command.append(" x").append(item.getCount());
-                }
-
-                item = selectedEntry.trade.getSellItem();
-                command.append(" -> ").append(item.getName().getString());
-                if (item.getCount() != 1) command.append(" x").append(item.getCount());
-
-                command.append(" | ").append(entry.getClearTitle()).append(" (")
-                        .append(entry.getShard()).append(") ")
-                        .append(position);
-            }
-        }
-        MinecraftClient.getInstance().player.networkHandler.sendCommand(command.toString());
-
-        MinecraftClient.getInstance().currentScreen = null;
+        ((TraderEntry) screen.displayWidget.getEntry()).share(world, selectedEntry.trade, shareMode);
     }
 
     public void cancelSharing() {
