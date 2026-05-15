@@ -113,12 +113,26 @@ public class HandbookScreen extends Screen implements ScreenWithCategoryList, Sc
         int screenWidth = client.getWindow().getScaledWidth();
 
         addDrawableChild(clearWaypoint = new TextButton(20, 2, 76, 11,
-                "Clear waypoint", button -> WaypointManager.setState(false)));
+                "Clear waypoint", button -> {
+            WaypointManager.setState(false);
+            clearWaypoint.active = false;
+            clearWaypoint.visible = false;
+            continueWaypoint.active = false;
+            continueWaypoint.visible = false;
+        }));
         clearWaypoint.active = WaypointManager.isActive();
         clearWaypoint.visible = WaypointManager.isActive();
 
         addDrawableChild(continueWaypoint = new TextButton(99, 2, 45, 11,
-                "Continue", button -> WaypointManager.continueOrSkip()));
+                "Continue", button -> {
+            WaypointManager.continueOrSkip();
+            if (!WaypointManager.isActive()) {
+                clearWaypoint.active = false;
+                clearWaypoint.visible = false;
+                continueWaypoint.active = false;
+                continueWaypoint.visible = false;
+            }
+        }));
         continueWaypoint.active = WaypointManager.isActive();
         continueWaypoint.visible = WaypointManager.isActive();
 
