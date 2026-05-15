@@ -6,6 +6,7 @@ import dev.eliux.monumentaitemdictionary.gui.charm.DictionaryCharm;
 import dev.eliux.monumentaitemdictionary.gui.item.ItemDictionaryGui;
 import dev.eliux.monumentaitemdictionary.util.ItemColors;
 import net.handbook.main.HandbookClient;
+import net.handbook.main.feature.TradeScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Style;
@@ -37,8 +38,8 @@ public abstract class CharmDictionaryGuiMixin {
     @Inject(method = "lambda$buildCharmList$10", at = @At(value = "HEAD"))
     public void buildCharmList$click(CallbackInfo ci, @Local(argsOnly = true) DictionaryCharm charm) {
         if (Screen.hasShiftDown() && !Screen.hasControlDown() && !Screen.hasAltDown()) {
-            HandbookClient.openTradeScreen();
-            HandbookClient.tradeScreen.setSearchText(charm.name);
+            TradeScreen screen =  HandbookClient.openTradeScreen();
+            if (screen != null) screen.setSearchText(charm.name);
         }
     }
 }

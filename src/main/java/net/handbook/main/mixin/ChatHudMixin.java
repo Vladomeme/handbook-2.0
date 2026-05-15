@@ -1,11 +1,11 @@
 package net.handbook.main.mixin;
 
-import net.handbook.main.HandbookClient;
+import net.handbook.main.DataManager;
 import net.handbook.main.HBMixinMethods;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.AreaSelector;
 import net.handbook.main.feature.WaypointManager;
-import net.handbook.main.resources.category.Category;
+import net.handbook.main.resources.entry.Category;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
@@ -92,13 +92,13 @@ public abstract class ChatHudMixin implements HBMixinMethods {
     @Unique
     private void suggestBountyWaypoint(String message) {
         String POIName = message.replace("Your bounty for today is ", "").replace("!", "");
-        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
-            if (!category.getClearTitle().startsWith("POI")) continue;
+        for (Category<? extends Entry> category : DataManager.getCategories()) {
+            if (!category.clearTitle().startsWith("POI")) continue;
 
-            for (Entry entry : category.getEntries()) {
-                if (!entry.getClearTitle().equals(POIName)) continue;
+            for (Entry entry : category.entries()) {
+                if (!entry.clearTitle().equals(POIName)) continue;
 
-                int[] coords = entry.getPosition();
+                int[] coords = entry.position();
 
                 addMessage(WaypointManager.buildClickableMessage("[Set waypoint]",
                         "/handbook waypoint " + coords[0] + " " + coords[1] + " " + coords[2] + " \"" + POIName + "\"", "Click to set a waypoint"));

@@ -1,5 +1,6 @@
 package net.handbook.main.mixin;
 
+import net.handbook.main.DataManager;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.NPCWriter;
 import net.minecraft.client.MinecraftClient;
@@ -23,6 +24,8 @@ public abstract class MerchantScreenHandlerMixin extends ScreenHandler {
 
     @Inject(method = "setOffers", at = @At("TAIL"))
     public void setOffers(TradeOfferList offers, CallbackInfo ci) {
+        if (!DataManager.isReady(false)) return;
+
         if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.enableScanner) NPCWriter.addOffers(offers);
         if (HandbookConfig.INSTANCE.quickSaveTrades) {
             MinecraftClient client = MinecraftClient.getInstance();

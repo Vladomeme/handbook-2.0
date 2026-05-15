@@ -1,6 +1,7 @@
 package net.handbook.main.editor;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.minecraft.advancement.AdvancementManager;
 import net.minecraft.advancement.PlacedAdvancement;
@@ -14,16 +15,18 @@ import java.util.Set;
 
 public class AdvancementWriter {
 
+    private static final MinecraftClient client = MinecraftClient.getInstance();
+
     //returns int because it's used in command
     @SuppressWarnings("SameReturnValue")
     public static int dumpAdvancements(String rootString) {
         if (!HandbookConfig.INSTANCE.editorMode) {
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.literal("§cEditor mode is disabled."));
+            client.inGameHud.getChatHud().addMessage(Text.literal("§cEditor mode is disabled."));
             return 1;
         }
-        if (MinecraftClient.getInstance().getNetworkHandler() == null) return 1;
+        if (client.getNetworkHandler() == null) return 1;
 
-        AdvancementManager manager = MinecraftClient.getInstance().getNetworkHandler().getAdvancementHandler().getManager();
+        AdvancementManager manager = client.getNetworkHandler().getAdvancementHandler().getManager();
         for (PlacedAdvancement root : manager.getRoots()) {
             if (root.getAdvancement().display().isEmpty()) continue;
 
@@ -42,13 +45,15 @@ public class AdvancementWriter {
                         output.toString().replace("\n", "").replace(",]}{", "]},{"));
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                client.inGameHud.getChatHud().addMessage(Text.of("Advancement dump failed."));
+                HandbookClient.LOGGER.error("[Handbook 2.0] Failed to write the advancement dump file.");
+                HandbookClient.LOGGER.error(e.getMessage());
             }
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("Dump successful."));
+            client.inGameHud.getChatHud().addMessage(Text.of("Dump successful."));
             return 1;
         }
 
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(Text.of("§cERROR: No advancement tree with this root."));
+        client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: No advancement tree with this root."));
         return 1;
     }
 

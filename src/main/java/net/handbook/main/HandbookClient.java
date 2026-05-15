@@ -1,18 +1,10 @@
 package net.handbook.main;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.mojang.datafixers.util.Pair;
-import com.mojang.serialization.DataResult;
-import com.mojang.serialization.Dynamic;
 import dev.xpple.clientarguments.arguments.CEntityArgument;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -24,48 +16,23 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.fabricmc.loader.api.FabricLoader;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.*;
-import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.feature.TradeScreen;
-import net.handbook.main.feature.WaypointManager;
-import net.handbook.main.mixin.SpawnEggItemAccessor;
-import net.handbook.main.resources.HandbookTradeOffer;
-import net.handbook.main.resources.category.*;
+import net.handbook.main.feature.*;
+import net.handbook.main.resources.ScreenWithFilters;
 import net.handbook.main.resources.entry.*;
 import net.handbook.main.resources.waypoint.Waypoint;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.datafixer.fix.ItemStackComponentizationFix;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.nbt.*;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.Registries;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -76,16 +43,14 @@ public class HandbookClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("handbook");
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
-    public static KeyBinding openScreen;
-    public static KeyBinding addLocation;
+    public static KeyBinding mainScreenKey;
+    public static KeyBinding tradeScreenKey;
+    @SuppressWarnings("unused")
+    public static KeyBinding mapScreenKey;
+    public static KeyBinding locationScreenKey;
 
-    public static HandbookScreen handbookScreen;
-    public static TradeScreen tradeScreen;
-    public static final List<CategoryWriter<? extends Entry>> writers = new ArrayList<>();
-
-    static boolean firstLoad = true;
     static int errorTimer = -1;
-    static boolean initializing = false;
+    public static int clickTimer;
 
     @Override
     public void onInitializeClient() {
@@ -98,7 +63,7 @@ public class HandbookClient implements ClientModInitializer {
 
             @Override
             public void reload(ResourceManager manager) {
-                onReload(manager);
+                DataManager.onReload(manager);
             }
         });
 
@@ -106,278 +71,48 @@ public class HandbookClient implements ClientModInitializer {
         registerEvents();
         registerCommands();
 
-        LOGGER.info("Handbook 2.0 loaded!");
+        LOGGER.info("Handbook 2.0 is installed!");
     }
 
-    @SuppressWarnings("DuplicateBranchesInSwitch")
-    private void onReload(ResourceManager manager) {
-        if (HandbookConfig.INSTANCE.resetData) {
-            copyAllFiles(manager);
-            HandbookConfig.INSTANCE.resetData = false;
-            HandbookConfig.INSTANCE.write();
-        }
-        if (firstLoad) {
-            handbookScreen = HandbookScreen.INSTANCE;
-            tradeScreen = TradeScreen.INSTANCE;
-            WaypointManager.screen = handbookScreen;
-
-            firstLoad = false;
-        }
-        else save();
-
-        File[] files = new File(FabricLoader.getInstance().getConfigDir() + "/handbook").listFiles();
-        if (files == null) {
-            LOGGER.error("No handbook categories found!");
-            return;
-        }
-        tradeScreen.clear();
-
-        for (File file : files) {
-            if (!file.getName().endsWith("json") || file.getName().equals("config.json")) continue;
-            try {
-                String s = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-                String type = JsonParser.parseString(s).getAsJsonObject().get("type").getAsString();
-                switch (type) {
-                    case "normal" -> {
-                        CategoryWriter<Entry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
-                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
-                        writers.add(writer);
-                    }
-                    case "positioned" -> {
-                        CategoryWriter<PositionedEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
-                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
-                        writers.add(writer);
-                        if (writer.category.getTitle().equals("Locations")) LocationWriter.writer = writer;
-                    }
-                    case "area" -> {
-                        CategoryWriter<AreaEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
-                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
-                        writers.add(writer);
-                    }
-                    case "trader" -> {
-                        CategoryWriter<TraderEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
-                        writers.add(writer);
-                        if (writer.category.getTitle().equals("EXCLUDE")) {
-                            NPCWriter.blacklist = writer;
-                            LOGGER.info("Loaded trader blacklist");
-                            continue;
-                        }
-                        if (writer.category.getTitle().equals("NPC")) NPCWriter.writer = writer;
-                    }
-                    case "waypoint" -> {
-                        CategoryWriter<WaypointEntry> writer = new CategoryWriter<>(file.toPath(), new TypeToken<>(){});
-                        if (writer.category.getTitle().equals("EXCLUDE")) continue;
-                        writers.add(writer);
-                    }
-                    case "mark" -> {
-                        LOGGER.info("Loaded marked entries data.");
-                        handbookScreen.markedEntries = (new Gson()).fromJson(
-                                Files.readString(file.toPath(), StandardCharsets.UTF_8), MarkCategory.class);
-                        continue;
-                    }
-                }
-                LOGGER.info("Loaded {} category {}", type, writers.getLast().category.getClearTitle());
-            }
-            catch (IOException | JsonSyntaxException e) {
-                LOGGER.info("Failed to read category file {}", file.toPath());
-                LOGGER.info(e.getMessage());
-            }
-        }
-        writers.sort(null);
-        writers.forEach(writer -> {
-            if (!writer.category.getTitle().equals("EXCLUDE")) writer.entries().sort(null);
-        });
-        LOGGER.info("Loaded {} categories", writers.size());
-    }
-
-    @SuppressWarnings("unused")
-    private static int convertTradeFiles() {
-        ClientPlayNetworkHandler nh = MinecraftClient.getInstance().getNetworkHandler();
-        if (nh == null) return 0;
-        DynamicRegistryManager.Immutable rm = nh.getRegistryManager();
-
-        loop:
-        for (File file : Objects.requireNonNull(TRADES_PATH.toFile().listFiles((dir, name) -> name.endsWith(".txt")))) {
-            try {
-                Path path = file.toPath();
-
-                String stringNbt = NPCWriter.decompressTradesOld(Files.readString(path));
-                stringNbt = stringNbt.replace("minecraft:sweeping", "minecraft:sweeping_edge");
-
-                NbtList offerListNbt = StringNbtReader.parse(stringNbt).getList("Recipes", 10);
-
-                List<HandbookTradeOffer> tradeOfferList = new ArrayList<>(offerListNbt.size());
-                for (NbtElement offer : offerListNbt) {
-                    NbtCompound offerNbt = (NbtCompound) offer;
-
-                    NbtCompound buyNbt = offerNbt.getCompound("buy");
-                    NbtCompound buyBNbt = offerNbt.getCompound("buyB");
-                    NbtCompound sellNbt = offerNbt.getCompound("sell");
-
-                    if (buyNbt.isEmpty() || sellNbt.isEmpty()) {
-                        LOGGER.warn("A BROKEN HANDBOOK TRADE, SKIPPING CONVERSION 1: {}", offerNbt.asString());
-                        continue loop;
-                    }
-
-                    ItemStack buyItem1 = fixStack(rm, buyNbt);
-                    ItemStack buyItem2 = buyBNbt.isEmpty() ? ItemStack.EMPTY : fixStack(rm, buyBNbt);
-                    ItemStack sellItem = fixStack(rm, sellNbt);
-
-                    if (buyItem1.isEmpty() || sellItem.isEmpty()) {
-                        LOGGER.error("A BROKEN HANDBOOK TRADE, SKIPPING CONVERSION 2: {} {} {}",
-                                buyItem1.isEmpty(), sellItem.isEmpty(), offerNbt.asString());
-                        continue loop;
-                    }
-
-                    tradeOfferList.add(new HandbookTradeOffer(buyItem1, buyItem2.isEmpty() ? Optional.empty() : Optional.of(buyItem2), sellItem));
-                }
-                DataResult<NbtElement> dataResult = HandbookTradeOffer.LIST_CODEC.encodeStart(rm.getOps(NbtOps.INSTANCE), tradeOfferList);
-                if (dataResult.isError() && dataResult.error().isPresent()) {
-                    LOGGER.error("FAILED TO RE-ENCODE OFFERS 1: {}", dataResult.error().get().message());
-                }
-                else {
-                    dataResult.ifSuccess(nbtElement -> {
-                        String offersString = nbtElement.asString();
-                        try {
-                            Files.write(Path.of(path.toString().replace(".txt", "")), NPCWriter.compressTrades(offersString));
-                        }
-                        catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                }
-            }
-            catch (CommandSyntaxException | IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        LOGGER.info("TRADE CONVERSION COMPLETED");
-        client.inGameHud.getChatHud().addMessage(Text.of("TRADE CONVERSION COMPLETED"));
-        return 1;
-    }
-
-    private static ItemStack fixStack(DynamicRegistryManager.Immutable rm, NbtCompound itemNbt) {
-        String id = itemNbt.getString("id");
-        byte count = itemNbt.getByte("Count");
-        if (id.equals("minecraft:air") || count == 0) return ItemStack.EMPTY;
-
-        //FIXES
-        //-----------------------------------------------------------
-        if (id.equals("minecraft:scute")) id = "minecraft:turtle_scute";
-
-        if (itemNbt.getCompound("tag").contains("BlockEntityTag")) {
-            if (id.equals("minecraft:shield")) {
-                itemNbt.getCompound("tag").getCompound("BlockEntityTag").putString("id", "minecraft:banner");
-            }
-            else {
-                BlockState blockState = Registries.BLOCK.get(Identifier.of(id)).getDefaultState();
-                for (BlockEntityType<?> blockEntityType : Registries.BLOCK_ENTITY_TYPE) {
-                    if (!blockEntityType.supports(blockState)) continue;
-
-                    assert blockEntityType.getRegistryEntry() != null;
-                    itemNbt.getCompound("tag").getCompound("BlockEntityTag").putString("id", blockEntityType.getRegistryEntry().getIdAsString());
-                    break;
-                }
-            }
-        }
-
-        if (itemNbt.getCompound("tag").contains("EntityTag")) {
-            Item item = Registries.ITEM.get(Identifier.of(id));
-            if (item instanceof SpawnEggItem spawnEggItem) {
-                for (Map.Entry<EntityType<? extends MobEntity>, SpawnEggItem> entry : ((SpawnEggItemAccessor) spawnEggItem).getSpawnEggs().entrySet()) {
-                    if (entry.getValue().equals(spawnEggItem)) {
-                        itemNbt.getCompound("tag").getCompound("EntityTag").putString("id", Registries.ENTITY_TYPE.getId(entry.getKey()).toString());
-                        break;
-                    }
-                }
-            }
-            else itemNbt.getCompound("tag").getCompound("EntityTag").putString("id", id);
-        }
-        //-----------------------------------------------------------
-
-        ItemStackComponentizationFix.StackData stackData = new ItemStackComponentizationFix.StackData(
-                id, count, new Dynamic<>(rm.getOps(NbtOps.INSTANCE), itemNbt));
-        ItemStackComponentizationFix.fixStack(stackData, stackData.nbt);
-
-        DataResult<? extends Pair<ItemStack, ?>> dataResult = ItemStack.CODEC.decode(stackData.finalize());
-
-        if (dataResult.isError() && dataResult.error().isPresent()) {
-            LOGGER.error("FAILED TO RE-ENCODE OFFERS 2: {}", dataResult.error().get().message());
-        }
-        return dataResult.result().isPresent() ? dataResult.result().get().getFirst() : ItemStack.EMPTY;
-    }
-
-    private static final Path HOME_PATH = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook");
-    private static final Path TEXTURES_PATH = Path.of(HOME_PATH + "/textures");
-    private static final Path TRADES_PATH = Path.of(HOME_PATH + "/trades");
-    private static final Path WAYPOINTS_PATH = Path.of(HOME_PATH + "/waypoints");
-
-    public static void copyAllFiles(ResourceManager manager) {
-        LOGGER.info("Copying all default Handbook 2.0 data to local storage.");
-
-        Path home = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook");
-        try {
-            if (!Files.exists(TEXTURES_PATH)) Files.createDirectories(TEXTURES_PATH);
-            if (!Files.exists(TRADES_PATH)) Files.createDirectories(TRADES_PATH);
-            if (!Files.exists(WAYPOINTS_PATH)) Files.createDirectories(WAYPOINTS_PATH);
-        }
-        catch (IOException e) {
-            LOGGER.error("Failed to create handbook directories.");
-            return;
-        }
-
-        manager.findResources("handbook_default", id -> true).forEach((id, resource) -> {
-            Path path = Path.of(home + id.getPath().replace("handbook_default", ""));
-            try {
-                Files.write(path, resource.getInputStream().readAllBytes());
-            }
-            catch (IOException e) {
-                LOGGER.error("Failed to copy handbook file: {}.", id.getPath());
-            }
-        });
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
     private void registerEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (openScreen.wasPressed()) {
-                if (!(client.currentScreen instanceof HandbookScreen)) openHandbookScreen();
-                while (openScreen.wasPressed()) {}
-            }
-            if (addLocation.wasPressed()) {
-                if (!(client.currentScreen instanceof LocationScreen)) openLocationScreen();
-                while (addLocation.wasPressed()) {}
-            }
+            if (resetAndReturnKey(mainScreenKey)) openHandbookScreen();
+            if (resetAndReturnKey(tradeScreenKey)) openTradeScreen();
+            //todo update part 2
+            //if (resetAndReturnKey(mapScreenKey)) openMapScreen();
+            if (resetAndReturnKey(locationScreenKey)) openLocationScreen();
+
+            if (client.world != null) NPCWriter.tick();
             WaypointManager.tick();
             if (AreaSelector.isActive()) AreaSelector.emitParticles();
-            if (client.currentScreen instanceof HandbookScreen) handbookScreen.filterEntries(true);
-            if (client.currentScreen instanceof TradeScreen) tradeScreen.filterEntries();
-            if (client.world != null && WaypointManager.shouldRestore())
-                WaypointManager.sendRestoreMessage();
-            if (errorTimer > -1) {
-                errorTimer--;
-                if (errorTimer == 0) writerMissingError();
-            }
+            if (client.currentScreen instanceof ScreenWithFilters screen) screen.scheduledFilter();
+            if (client.world != null && WaypointManager.shouldRestore()) WaypointManager.sendRestoreMessage();
+
+            if (errorTimer > -1 && --errorTimer == 0) DataManager.writerMissingError();
+            clickTimer++;
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register((ctx) -> {
             if (WaypointManager.isActive() && (WaypointManager.getDistance() > 30)) WaypointManager.renderBeacon(ctx);
         });
-
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (handler.getConnection().getAddress().toString().contains("monumenta")) {
                 if (WaypointManager.waypointsSaved()) WaypointManager.prepareRestoreMessage();
             }
             if (NPCWriter.writer == null) errorTimer = 100;
-            setTradeEntries();
+            NPCWriter.tick = -40;
+            DataManager.setTradeEntries();
         });
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> DataManager.save());
     }
 
     private void registerKeyBinds() {
-        openScreen = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
-        addLocation = KeyBindingHelper.registerKeyBinding(new KeyBinding("Add location", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "Handbook 2.0"));
+        mainScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open handbook", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_T, "Handbook 2.0"));
+        tradeScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open trades", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, "Handbook 2.0"));
+        //todo update part 2
+        //mapScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open map", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, "Handbook 2.0"));
+        locationScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Add location", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "Handbook 2.0"));
     }
 
     private void registerCommands() {
@@ -389,7 +124,7 @@ public class HandbookClient implements ClientModInitializer {
                                         AdvancementWriter.dumpAdvancements(StringArgumentType.getString(ctx, "Root")))))
                         .then(literal("add")
                                 .then(literal("location").then(argument("Name", StringArgumentType.string())
-                                        .suggests(this::getSuggestions).executes(ctx ->
+                                        .suggests(this::getLocationSuggestions).executes(ctx ->
                                                 LocationWriter.add(StringArgumentType.getString(ctx, "Name")))))
                                 .then(literal("NPC").then(argument("Target", CEntityArgument.entity()).executes(ctx ->
                                         NPCWriter.add(CEntityArgument.getEntity(ctx, "Target"), true)))))
@@ -417,7 +152,13 @@ public class HandbookClient implements ClientModInitializer {
                                 .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection())))
                                 .then(literal("npc_mass_delete_and_blacklist").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection(), true))))
                         .then(literal("clear_trades").executes(ctx -> NPCWriter.clear()))
-//                        .then(literal("convert_trades").executes(ctx -> convertTradeFiles()))
+                        .then(literal("update_npcs").executes(ctx -> NPCWriter.updateNearby(40, true))
+                                .then(argument("radius", IntegerArgumentType.integer()).executes(ctx ->
+                                        NPCWriter.updateNearby(IntegerArgumentType.getInteger(ctx, "radius"), true))))
+                        .then(literal("set_persistent").executes(ctx -> NPCWriter.setPersistency(2))
+                                .then(argument("radius", IntegerArgumentType.integer()).executes(ctx ->
+                                        NPCWriter.setPersistency(IntegerArgumentType.getInteger(ctx, "radius")))))
+//                        .then(literal("convert_trades").executes(ctx -> DataManager.convertTradeFiles()))
         ));
         //INTERNAL
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
@@ -447,67 +188,59 @@ public class HandbookClient implements ClientModInitializer {
         ));
     }
 
-    public static void openHandbookScreen() {
-        if (initializing) client.inGameHud.getChatHud().addMessage(Text.of("Handbook 2.0 is still loading."));
-        else client.setScreen(handbookScreen);
+    public static HandbookScreen openHandbookScreen() {
+        if (client.currentScreen instanceof HandbookScreen screen) return screen;
+        else if (DataManager.isReady(true)) {
+            HandbookScreen screen = new HandbookScreen();
+            client.setScreen(screen);
+            return screen;
+        }
+        return null;
     }
 
-    public static void openTradeScreen() {
-        if (initializing) client.inGameHud.getChatHud().addMessage(Text.of("Handbook 2.0 is still loading."));
-        else client.setScreen(tradeScreen);
-    }
-
-    public static void openLocationScreen() {
-        if (HandbookConfig.INSTANCE.editorMode)
-            client.setScreen(new LocationScreen(Text.of("")));
-        else client.inGameHud.getChatHud().addMessage(Text.of("Can't open Location screen. Editor mode is disabled."));
-    }
-
-    public static List<Category<? extends Entry>> getCategories() {
-        List<Category<? extends Entry>> list = new ArrayList<>();
-        writers.forEach(writer -> {
-            if (!writer.category.getTitle().equals("EXCLUDE")) list.add(writer.category);
-        });
-        return list;
-    }
-
-    public static void setTradeEntries() {
-        initializing = true;
-        new Thread(null, () -> {
-            tradeScreen.offers.clear();
-            for (Category<? extends Entry> category : getCategories()) {
-                if (!category.getType().equals("trader")) continue;
-
-                for (Entry entry : category.getEntries()) {
-                    if (entry.hasOffers()) tradeScreen.addEntries(entry.getOffers(), entry.getID());
-                }
-            }
-            initializing = false;
-        }, "Handbook2.0-Trade-Collector").start();
-    }
-
-    private static void save() {
-        NPCWriter.saveTrades();
-        handbookScreen.markedEntries.write();
-        writers.forEach(CategoryWriter::write);
-        writers.clear();
-    }
-
-    private static void writerMissingError() {
-        client.inGameHud.getChatHud().addMessage(Text.literal("Handbook 2.0 NPC data file is missing or invalid. Expect errors! " +
-                "You can try to restore in by setting `Reset data` in config to true and hitting F3+T. If it doesn't work, " +
-                        "please message Vladomeme on discord.")
-                .setStyle(Style.EMPTY.withColor(Formatting.RED)));
+    public static TradeScreen openTradeScreen() {
+        if (client.currentScreen instanceof TradeScreen screen) return screen;
+        else if (DataManager.isReady(true)) {
+            TradeScreen screen = new TradeScreen();
+            client.setScreen(screen);
+            return screen;
+        }
+        return null;
     }
 
     @SuppressWarnings("unused")
-    private CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
-        for (CategoryWriter<? extends Entry> writer : writers) {
-            if (!writer.category.getTitle().equals("Locations")) continue;
+    public static MapScreen openMapScreen() {
+        if (client.currentScreen instanceof MapScreen screen) return screen;
+        else if (DataManager.isReady(true)) {
+            MapScreen screen = new MapScreen();
+            client.setScreen(screen);
+            return screen;
+        }
+        return null;
+    }
 
+    public static void openLocationScreen() {
+        if (DataManager.isReady(true) && !(client.currentScreen instanceof LocationScreen)) {
+            if (HandbookConfig.INSTANCE.editorMode) client.setScreen(new LocationScreen(Text.of("")));
+            else client.inGameHud.getChatHud().addMessage(Text.of("Can't open New Location screen: editor mode is disabled."));
+        }
+    }
+
+    private static boolean resetAndReturnKey(KeyBinding keyBinding) {
+        boolean bl = keyBinding.wasPressed();
+        keyBinding.reset();
+        return bl;
+    }
+
+    //Gets all entry names from a standard category "Locations" and filters them to current command input
+    @SuppressWarnings("unused")
+    private CompletableFuture<Suggestions> getLocationSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
+        for (CategoryWriter<? extends Entry> writer : DataManager.writers) {
+            if (!writer.category.title().equals("Locations")) continue;
+
+            String input = builder.getInput().toLowerCase().replace("/handbook add location ", "");
             for (Entry entry : writer.entries()) {
-                if (entry.getClearTitle().toLowerCase().contains(builder.getInput().toLowerCase()
-                        .replace("/handbook add location ", ""))) builder.suggest(entry.getClearTitle());
+                if (entry.clearTitle().toLowerCase().contains(input)) builder.suggest(entry.clearTitle());
             }
         }
         return builder.buildFuture();

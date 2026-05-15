@@ -1,17 +1,17 @@
-package net.handbook.main.widget;
+package net.handbook.main.element;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.handbook.main.HandbookClient;
+import net.handbook.main.DataManager;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.editor.EditScreen;
-import net.handbook.main.feature.HandbookScreen;
-import net.handbook.main.resources.category.Category;
-import net.handbook.main.resources.category.MarkCategory;
+import net.handbook.main.resources.ScreenWithCategoryList;
+import net.handbook.main.resources.EntryType;
+import net.handbook.main.resources.ListType;
+import net.handbook.main.resources.entry.Category;
 import net.handbook.main.resources.entry.BaseEntry;
-import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -24,26 +24,27 @@ import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.text.Text;
 
 import java.util.List;
+import java.util.Objects;
 
 @Environment(EnvType.CLIENT)
 public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
-    private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-    private final HandbookScreen screen = HandbookClient.handbookScreen;
+    private final MinecraftClient client = MinecraftClient.getInstance();
+    private final TextRenderer tr = client.textRenderer;
 
-    private final BaseEntry.Type type;
+    private final ListType listType;
     public final BaseEntry entry;
     private boolean highlighted = false;
 
     public final ButtonWidget button;
     public final List<ClickableWidget> list;
 
-    public ListWidgetEntry(BaseEntry entry, int width, BaseEntry.Type type) {
+    public ListWidgetEntry(ListWidget parent, BaseEntry entry, int width, ListType listType) {
         this.entry = entry;
-        this.type = type;
+        this.listType = listType;
 
         button = ButtonWidget.builder(Text.of(""), button -> {
-            updateHighlight(true);
+            parent.updateHighlight(this, true);
             entry.mouseClicked();
         }).position(0, 0).build();
         button.setDimensions(width, 12);
@@ -54,46 +55,51 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
     public void render(DrawContext context, int index, int top, int left, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
         button.setPosition(left, top);
 
-        String category;
-        if (type.equals(BaseEntry.Type.Entry)) category = screen.activeCategory.getTitle();
-        else category = "Categories";
+        List<String> markedEntries;
+        if (client.currentScreen instanceof ScreenWithCategoryList screen && listType.equals(ListType.Entry))
+            markedEntries = DataManager.getMarkedEntries(screen.activeCategory().title());
+        else markedEntries = DataManager.getMarkedEntries("Categories");
+
         RenderSystem.enableBlend();
         if (highlighted) {
-            if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+            if (markedEntries.contains(entry.title()))
                 context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, HandbookConfig.INSTANCE.highlightFavColor);
             else context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, HandbookConfig.INSTANCE.highlightColor);
         }
         else {
-            if (screen.markedEntries.getMarkedEntries(category).contains(entry.getTitle()))
+            if (markedEntries.contains(entry.title()))
                 context.fill(left, top - 2, left + entryWidth, top + entryHeight + 2, HandbookConfig.INSTANCE.favouriteColor);
         }
         RenderSystem.disableBlend();
 
-        if (tr.getWidth(entry.getDisplayTitle()) > 150)
-            context.drawText(tr, tr.trimToWidth(entry.getDisplayTitle(), 147) + "...", left + 10, top,
+        if (tr.getWidth(entry.displayTitle()) > 150)
+            context.drawText(tr, tr.trimToWidth(entry.displayTitle(), 145) + "...", left + 10, top,
                     HandbookConfig.INSTANCE.textColor, false);
-        else context.drawText(tr, entry.getDisplayTitle(), left + 10, top, HandbookConfig.INSTANCE.textColor, false);
+        else context.drawText(tr, entry.displayTitle(), left + 10, top, HandbookConfig.INSTANCE.textColor, false);
     }
 
     public void markEntry() {
-        String name = type.equals(BaseEntry.Type.Entry) ? screen.activeCategory.getTitle() : "Categories";
-        MarkCategory category = screen.markedEntries;
-        List<String> entries = category.getMarkedEntries(name);
+        List<String> markedEntries;
+        if (client.currentScreen instanceof ScreenWithCategoryList screen && listType.equals(ListType.Entry))
+            markedEntries = DataManager.getMarkedEntries(screen.activeCategory().title());
+        else markedEntries = DataManager.getMarkedEntries("Categories");
 
-        if (entries == null) category.addCategory(name);
-        else {
-            if (entries.contains(entry.getTitle())) entries.remove(entry.getTitle());
-            else entries.add(entry.getTitle());
-        }
+        if (markedEntries.contains(entry.title())) markedEntries.remove(entry.title());
+        else markedEntries.add(entry.title());
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        EntryType type = EntryType.normal;
+        if (listType.equals(ListType.Category)) type = ((Category<?>) entry).type();
+        else if (client.currentScreen instanceof ScreenWithCategoryList screen) type = screen.activeCategory().type();
+
         if (Screen.hasShiftDown() && HandbookConfig.INSTANCE.editorMode) {
-            MinecraftClient.getInstance().setScreen(new EditScreen(entry, type.equals(BaseEntry.Type.Category),
-                    (entry instanceof Category<? extends Entry> c) ? c.getType() : screen.activeCategory.getType()));
+            EditScreen.open(entry, type, listType.equals(ListType.Category) ? null
+                    : ((ScreenWithCategoryList) Objects.requireNonNull(client.currentScreen)).activeCategory());
             return true;
         }
+
         if (button == 1) markEntry();
         else this.button.mouseClicked(mouseX, mouseY, button);
         return super.mouseClicked(mouseX, mouseY, button);
@@ -109,23 +115,11 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
         return list;
     }
 
-    public void updateHighlight(boolean state) {
-        switch (type) {
-            case Category -> {
-                if (screen.selectedEntry != null)
-                    screen.selectedEntry.setHighlighted(false);
-                screen.selectedEntry = this;
-            }
-            case Entry -> {
-                if (screen.displayWidget.selectedEntry != null)
-                    screen.displayWidget.selectedEntry.setHighlighted(false);
-                screen.displayWidget.selectedEntry = this;
-            }
-        }
-        setHighlighted(state);
-    }
-
     public void setHighlighted(boolean state) {
         highlighted = state;
+    }
+
+    public boolean isHighlighted() {
+        return highlighted;
     }
 }

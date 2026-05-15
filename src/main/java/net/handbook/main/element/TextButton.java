@@ -1,4 +1,4 @@
-package net.handbook.main.widget;
+package net.handbook.main.element;
 
 import net.handbook.main.config.HandbookConfig;
 import net.minecraft.client.MinecraftClient;
@@ -8,7 +8,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
-public class HandbookButtonWidget extends ButtonWidget {
+public class TextButton extends ButtonWidget {
 
     final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
@@ -19,7 +19,11 @@ public class HandbookButtonWidget extends ButtonWidget {
     final int height;
     final String text;
 
-    public HandbookButtonWidget(Type type, int x, int y, int width, int height, String text, PressAction onPress) {
+    public TextButton(int x, int y, int width, int height, String text, PressAction onPress) {
+        this(Type.Normal, x, y, width, height, text, onPress);
+    }
+
+    public TextButton(Type type, int x, int y, int width, int height, String text, PressAction onPress) {
         super(x, y, width, height, Text.of(""), onPress, null);
         this.type = type;
         this.x = x;

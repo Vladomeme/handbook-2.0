@@ -1,36 +1,43 @@
 package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.fabricmc.loader.api.FabricLoader;
+import net.handbook.main.DataManager;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.editor.CategoryWriter;
 import net.handbook.main.editor.EditScreen;
-import net.handbook.main.resources.HandbookTradeOffer;
-import net.handbook.main.resources.category.Category;
-import net.handbook.main.resources.category.MarkCategory;
-import net.handbook.main.resources.entry.BaseEntry;
+import net.handbook.main.editor.LocationWriter;
+import net.handbook.main.editor.NPCWriter;
+import net.handbook.main.mixin.ScreenAccessor;
+import net.handbook.main.resources.*;
+import net.handbook.main.resources.entry.Category;
 import net.handbook.main.resources.entry.Entry;
-import net.handbook.main.widget.*;
+import net.handbook.main.resources.entry.PositionEntry;
+import net.handbook.main.resources.entry.TraderEntry;
+import net.handbook.main.element.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 
-public class HandbookScreen extends Screen {
-
-    public static final HandbookScreen INSTANCE = new HandbookScreen(Text.of(""));
+public class HandbookScreen extends Screen implements ScreenWithCategoryList, ScreenWithFilters {
 
     public MinecraftClient client;
     public TextRenderer tr;
@@ -38,50 +45,52 @@ public class HandbookScreen extends Screen {
     //First column
     public ListWidget categoriesWidget;
     @SuppressWarnings("unused")
-    public HandbookButtonWidget openTradesScreen;
-    public HandbookButtonWidget addCategory;
+    public TextButton openTradesScreen;
+    @SuppressWarnings("unused")
+    public TextButton openMapScreen;
+    public TextButton addCategory;
     //Second column
     public ListWidget optionsWidget;
     public TextFieldWidget searchBox;
     public TexturedButtonWidget filterButton;
     public FilterWidget filterWidget;
-    public HandbookButtonWidget addEntry;
-    //Display widget
-    public DisplayWidget displayWidget;
-    public HandbookButtonWidget setWaypoint;
-    public HandbookButtonWidget openTrades;
-    public HandbookButtonWidget shareLocation;
-    public HandbookButtonWidget delete;
-    public HandbookButtonWidget resetTrades;
-    //Trade widget
-    public TradesWidget tradesWidget;
+    public TextButton addEntry;
+    //Entry display
+    public EntryDisplay entryDisplay;
+    public TextButton setWaypoint;
+    public TextButton openTrades;
+    public TextButton shareLocation;
+    public TextButton delete;
+    public TextButton resetTrades;
+    //Trade display
+    public TradeDisplay tradeDisplay;
     public TradeListWidget tradeList;
-    public HandbookButtonWidget back;
-    public HandbookButtonWidget shareCost;
-    public HandbookButtonWidget shareTrader;
-    public HandbookButtonWidget shareFull;
+    public TextButton back;
+    public TextButton shareCost;
+    public TextButton shareTrader;
+    public TextButton shareFull;
     //Chat selection
-    public HandbookButtonWidget shareGlobal;
-    public HandbookButtonWidget shareLocal;
-    public HandbookButtonWidget shareWorld;
-    public HandbookButtonWidget shareLFG;
-    public HandbookButtonWidget shareReply;
-    public HandbookButtonWidget shareCancel;
+    public TextButton shareGlobal;
+    public TextButton shareLocal;
+    public TextButton shareWorld;
+    public TextButton shareLFG;
+    public TextButton shareReply;
+    public TextButton shareCancel;
     //Other
-    public HandbookButtonWidget clearWaypoint;
-    public HandbookButtonWidget continueWaypoint;
+    public TextButton clearWaypoint;
+    public TextButton continueWaypoint;
 
-    public MarkCategory markedEntries;
     public Category<? extends Entry> activeCategory;
-    public ListWidgetEntry selectedEntry;
+    public TradeListWidgetEntry sharedTrade;
+    private ShareMode shareMode;
 
     public int line1x;
     public int line2x;
     private int lastKey;
     private String lastFilter = "";
 
-    private HandbookScreen(Text title) {
-        super(title);
+    public HandbookScreen() {
+        super(Text.empty());
     }
 
     @Override
@@ -89,12 +98,12 @@ public class HandbookScreen extends Screen {
         client = MinecraftClient.getInstance();
         tr = client.textRenderer;
 
-        if (HandbookClient.getCategories().isEmpty()) {
+        if (DataManager.getCategories().isEmpty()) {
             close();
-            client.inGameHud.getChatHud().addMessage(Text.of("No handbook categories found! Json files must be missing."));
+            client.inGameHud.getChatHud().addMessage(Text.of("Handbook 2.0 data is missing!"));
             return;
         }
-        activeCategory = HandbookClient.getCategories().getFirst();
+        activeCategory = DataManager.getCategories().getFirst();
         addElements();
         super.init();
     }
@@ -103,22 +112,20 @@ public class HandbookScreen extends Screen {
         int screenHeight = client.getWindow().getScaledHeight();
         int screenWidth = client.getWindow().getScaledWidth();
 
-        addDrawableChild(clearWaypoint = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                20, 2, 76, 11,
+        addDrawableChild(clearWaypoint = new TextButton(20, 2, 76, 11,
                 "Clear waypoint", button -> WaypointManager.setState(false)));
         clearWaypoint.active = WaypointManager.isActive();
         clearWaypoint.visible = WaypointManager.isActive();
 
-        addDrawableChild(continueWaypoint = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                99, 2, 45, 11,
+        addDrawableChild(continueWaypoint = new TextButton(99, 2, 45, 11,
                 "Continue", button -> WaypointManager.continueOrSkip()));
         continueWaypoint.active = WaypointManager.isActive();
         continueWaypoint.visible = WaypointManager.isActive();
 
         int maxWidth = 0;
 
-        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
-            int width = tr.getWidth(category.getTitle());
+        for (Category<? extends Entry> category : DataManager.getCategories()) {
+            int width = tr.getWidth(category.title());
             if (width > maxWidth) maxWidth = width;
         }
 
@@ -128,43 +135,43 @@ public class HandbookScreen extends Screen {
         addDrawableChild(categoriesWidget = new ListWidget(
                 maxWidth + 3, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 90 : 70), 30));
         categoriesWidget.setX(20);
-        categoriesWidget.setEntries(HandbookClient.getCategories(), BaseEntry.Type.Category);
-        categoriesWidget.children().getFirst().updateHighlight(true);
+        categoriesWidget.setEntries(DataManager.getCategories(), ListType.Category, true);
+        categoriesWidget.updateHighlight(categoriesWidget.children().getFirst(),true);
         activeCategory = (Category<? extends Entry>) categoriesWidget.children().getFirst().entry;
 
         maxWidth = 0;
 
-        addDrawableChild(addCategory = new HandbookButtonWidget(HandbookButtonWidget.Type.Positive,
-                line1x / 2 - 20, screenHeight - 45, 40, 11,
-                "Add", button -> EditScreen.open(null, true, "")));
+        addDrawableChild(addCategory = new TextButton(TextButton.Type.Positive, line1x / 2 - 20, screenHeight - 45, 40, 11,
+                "Add", button -> EditScreen.open(null, EntryType.normal, null)));
         addCategory.visible = HandbookConfig.INSTANCE.editorMode;
         addCategory.active = HandbookConfig.INSTANCE.editorMode;
 
-        addDrawableChild(openTradesScreen = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                line1x / 2 - 37, screenHeight - 30, 75, 11,
-                "Trade Search", button -> client.setScreen(HandbookClient.tradeScreen)));
+        addDrawableChild(openTradesScreen = new TextButton(line1x / 2 - 37, screenHeight - 30, 75, 11,
+                "Trades", button -> HandbookClient.openTradeScreen()));
 
-        if (((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).getEntries().isEmpty()) maxWidth = 110;
+        //todo update part 2
+//        addDrawableChild(openMapScreen = new TextButton(line1x / 2 - 37, screenHeight - 18, 75, 11,
+//                "Map", button -> HandbookClient.openMapScreen()));
+
+        if (((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).entries().isEmpty()) maxWidth = 110;
         else {
-            for (Entry entry : ((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).getEntries()) {
-                int width = tr.getWidth(entry.getTitle());
+            for (Entry entry : ((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).entries()) {
+                int width = tr.getWidth(entry.title());
                 if (width > maxWidth) maxWidth = width;
             }
-            maxWidth = Math.min(maxWidth, 150);
-            maxWidth = maxWidth + 10;
+            maxWidth = Math.min(maxWidth, 150) + 10;
         }
 
         addDrawableChild(optionsWidget = new ListWidget(
                 maxWidth + 12, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60), 30));
         optionsWidget.setX(30 + categoriesWidget.listWidth);
-        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).getEntries(), BaseEntry.Type.Entry);
+        optionsWidget.setEntries(((Category<? extends Entry>) categoriesWidget.children().getFirst().entry).entries(), ListType.Entry, true);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
 
         maxWidth = width - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
 
-        addDrawableChild(addEntry = new HandbookButtonWidget(HandbookButtonWidget.Type.Positive,
-                        line1x + (line2x - line1x) / 2 - 20, screenHeight - 45, 40, 11,
-                "Add", button -> EditScreen.open(null, false, activeCategory.getType())));
+        addDrawableChild(addEntry = new TextButton(TextButton.Type.Positive, line1x + (line2x - line1x) / 2 - 20, screenHeight - 45, 40, 11,
+                "Add", button -> EditScreen.open(null, activeCategory.type(), activeCategory)));
         addEntry.visible = HandbookConfig.INSTANCE.editorMode;
         addEntry.active = HandbookConfig.INSTANCE.editorMode;
 
@@ -181,104 +188,83 @@ public class HandbookScreen extends Screen {
         filterWidget.active = false;
         filterWidget.visible = false;
 
-        addDrawableChild(setWaypoint = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 76, 11,
-                "Set waypoint", button -> displayWidget.setWaypoint()));
+        addDrawableChild(setWaypoint = new TextButton(40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 76, 11,
+                "Set waypoint", button -> setWaypointFromDisplayed()));
 
-        addDrawableChild(shareLocation = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 76, 11,
+        addDrawableChild(shareLocation = new TextButton(40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 76, 11,
                 "Share location", button -> worldButtonsState(true)));
 
-        addDrawableChild(delete = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
-                screenWidth - 73, screenHeight - 30, 69, 11,
-                "Delete", button -> displayWidget.deleteEntry()));
+        addDrawableChild(delete = new TextButton(TextButton.Type.Negative, screenWidth - 73, screenHeight - 30, 69, 11,
+                "Delete", button -> deleteDisplayedEntry()));
 
-        addDrawableChild(resetTrades = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
-                screenWidth - 73, screenHeight - 42, 69, 11,
+        addDrawableChild(resetTrades = new TextButton(TextButton.Type.Negative, screenWidth - 73, screenHeight - 42, 69, 11,
                 "Reset trades", button -> {
             resetTrades.active = false;
             resetTrades.visible = false;
             openTrades.active = false;
             openTrades.visible = false;
-            displayWidget.deleteTrade();
+            deleteDisplayedTrade();
         }));
 
-        addDrawableChild(shareGlobal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 90, 36, 11,
+        addDrawableChild(shareGlobal = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 90, 36, 11,
                 "Global", button -> {
-            if (displayWidget.visible) displayWidget.shareLocation("g");
-            else tradesWidget.share("g");
+            if (entryDisplay.visible) shareLocation(ChatChannel.GLOBAL);
+            else shareTrade(ChatChannel.GLOBAL);
         }));
 
-        addDrawableChild(shareLocal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 78, 36, 11,
+        addDrawableChild(shareLocal = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 78, 36, 11,
                 "Local", button -> {
-            if (displayWidget.visible) displayWidget.shareLocation("l");
-            else tradesWidget.share("l");
+            if (entryDisplay.visible) shareLocation(ChatChannel.LOCAL);
+            else shareTrade(ChatChannel.LOCAL);
         }));
 
-        addDrawableChild(shareWorld = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 66, 36, 11,
+        addDrawableChild(shareWorld = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 66, 36, 11,
                 "World", button -> {
-            if (displayWidget.visible) displayWidget.shareLocation("wc");
-            else tradesWidget.share("wc");
+            if (entryDisplay.visible) shareLocation(ChatChannel.WORLD);
+            else shareTrade(ChatChannel.WORLD);
         }));
 
-        addDrawableChild(shareLFG = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 36, 11,
+        addDrawableChild(shareLFG = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 36, 11,
                 "LFG", button -> {
-            if (displayWidget.visible) displayWidget.shareLocation("lfg");
-            else tradesWidget.share("lfg");
+            if (entryDisplay.visible) shareLocation(ChatChannel.LFG);
+            else shareTrade(ChatChannel.LFG);
         }));
 
-        addDrawableChild(shareReply = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 36, 11,
+        addDrawableChild(shareReply = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 36, 11,
                 "Reply", button -> {
-            if (displayWidget.visible) displayWidget.shareLocation("r");
-            else tradesWidget.share("r");
+            if (entryDisplay.visible) shareLocation(ChatChannel.REPLY);
+            else shareTrade(ChatChannel.REPLY);
         }));
 
-        addDrawableChild(shareCancel = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 36, 11,
+        addDrawableChild(shareCancel = new TextButton(TextButton.Type.Negative, 120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 36, 11,
                 "Cancel", button -> {
-            if (displayWidget.visible) worldButtonsState(false);
-            else tradesWidget.cancelSharing();
+            if (entryDisplay.visible) worldButtonsState(false);
+            else cancelSharingTrade();
         }));
 
-        addDrawableChild(openTrades = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 76, 11,
-                "Open trades", button -> openTrades(displayWidget.getEntry().getOffers(), displayWidget.getEntry().getTitle())));
+        addDrawableChild(openTrades = new TextButton(40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 76, 11,
+                "Open trades", button -> openTrades(entryDisplay.entry().offers().entries(), entryDisplay.entry().title())));
 
-        addDrawableChild(back = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 26, 11,
+        addDrawableChild(back = new TextButton(40 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 26, 11,
                 "Back", button -> openDisplay()));
         back.active = false;
         back.visible = false;
 
-        addDrawableChild(shareCost = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 39, 11,
-                "Cost", button -> tradesWidget.selectMode(TradesWidget.Mode.COST)));
+        addDrawableChild(shareCost = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 54, 39, 11,
+                "Cost", button -> selectShareMode(ShareMode.COST)));
 
-        addDrawableChild(shareTrader = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 39, 11,
-                "Trader", button -> tradesWidget.selectMode(TradesWidget.Mode.TRADER)));
+        addDrawableChild(shareTrader = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 42, 39, 11,
+                "Trader", button -> selectShareMode(ShareMode.TRADER)));
 
-        addDrawableChild(shareFull = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 39, 11,
-                "Full", button -> tradesWidget.selectMode(TradesWidget.Mode.FULL)));
+        addDrawableChild(shareFull = new TextButton(120 + categoriesWidget.listWidth + optionsWidget.listWidth, screenHeight - 30, 39, 11,
+                "Full", button -> selectShareMode(ShareMode.FULL)));
 
         displayButtonsState(false);
         worldButtonsState(false);
         tradeButtonsState(false);
 
-        addDrawableChild(displayWidget = new DisplayWidget(
-                30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20, maxWidth, screenHeight - 40, Text.of("")));
-
-        addDrawableChild(tradesWidget = new TradesWidget(
-                30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20, maxWidth, screenHeight - 40));
-        tradesWidget.visible = false;
-        tradesWidget.active = false;
-
+        addDrawable(entryDisplay = new EntryDisplay(30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20, maxWidth, screenHeight - 40));
+        addDrawable(tradeDisplay = new TradeDisplay(30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20));
         addDrawableChild(tradeList = new TradeListWidget(10000, 130, screenHeight - 100, 50));
     }
 
@@ -317,8 +303,9 @@ public class HandbookScreen extends Screen {
         context.fill(line1x, 15, line1x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
         context.fill(line2x, 15, line2x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
 
-        for (Element element : children())
-            ((Drawable) element).render(context, mouseX, mouseY, delta);
+        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+            drawable.render(context, mouseX, mouseY, delta);
+
         if (filterWidget.filtersActive()) {
             int x = filterButton.getX();
             int y = filterButton.getY();
@@ -332,12 +319,12 @@ public class HandbookScreen extends Screen {
     }
 
     public void openTrades(List<HandbookTradeOffer> trades, String name) {
-        tradesWidget.visible = true;
-        tradesWidget.setName(name);
+        tradeDisplay.visible = true;
+        tradeDisplay.setName(name);
         tradeList.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
-        tradeList.setEntries(trades, displayWidget.getEntry().getID());
+        tradeList.setEntries(trades, entryDisplay.entry().id());
 
-        displayWidget.visible = false;
+        entryDisplay.visible = false;
         back.active = true;
         back.visible = true;
 
@@ -346,10 +333,10 @@ public class HandbookScreen extends Screen {
     }
 
     public void openDisplay() {
-        tradesWidget.visible = false;
+        tradeDisplay.visible = false;
         tradeList.setX(10000);
 
-        displayWidget.visible = true;
+        entryDisplay.visible = true;
         back.active = false;
         back.visible = false;
 
@@ -358,7 +345,7 @@ public class HandbookScreen extends Screen {
         tradeButtonsState(false);
         moveWorldButtons(120 + categoriesWidget.listWidth + optionsWidget.listWidth,
                 client.getWindow().getScaledHeight() - 30);
-        displayWidget.setEntry(displayWidget.getEntry());
+        displayEntry(entryDisplay.entry());
     }
 
     private void toggleFilterWidget() {
@@ -434,33 +421,30 @@ public class HandbookScreen extends Screen {
         int screenWidth = client.getWindow().getScaledWidth();
         int maxWidth = 0;
 
-        if (category.getEntries().isEmpty()) maxWidth = 110;
+        if (category.entries().isEmpty()) maxWidth = 110;
         else {
-            for (Entry entry : category.getEntries()) {
-                int width = tr.getWidth(entry.getTitle());
+            for (Entry entry : category.entries()) {
+                int width = tr.getWidth(entry.title());
                 if (width > maxWidth) maxWidth = width;
             }
-            maxWidth = Math.min(maxWidth, 150);
-            maxWidth = maxWidth + 10;
+            maxWidth = Math.min(maxWidth, 150) + 10;
         }
 
         optionsWidget.setDimensions(maxWidth + 10, screenHeight - (HandbookConfig.INSTANCE.editorMode ? 80 : 60));
         optionsWidget.setPosition(30 + categoriesWidget.listWidth, 30);
         optionsWidget.listWidth = maxWidth + 10;
-        optionsWidget.setEntries(category.getEntries(), BaseEntry.Type.Entry);
+        optionsWidget.setEntries(category.entries(), ListType.Entry, true);
         line2x = 29 + categoriesWidget.listWidth + optionsWidget.listWidth;
         addEntry.setX(line1x + (line2x - line1x) / 2 - 20);
         searchBox.setWidth(line2x - line1x - 16);
 
         maxWidth = screenWidth - 30 - categoriesWidget.listWidth - optionsWidget.listWidth;
 
-        displayWidget.setWidth(maxWidth);
-        displayWidget.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
-        displayWidget.setEntry(null);
-        tradesWidget.setWidth(maxWidth);
-        tradesWidget.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        entryDisplay.setWidth(maxWidth);
+        entryDisplay.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
+        displayEntry(null);
+        tradeDisplay.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
 
-        displayButtonsState(false);
         setWaypoint.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         shareLocation.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
         openTrades.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
@@ -475,20 +459,142 @@ public class HandbookScreen extends Screen {
         filterWidget.reset();
     }
 
+    public void displayEntry(Entry entry) {
+        entryDisplay.setEntry(entry);
+        displayButtonsState(false);
+        if (entry == null) return;
+
+        if (entry.shard() != null) {
+            setWaypoint.visible = true;
+            setWaypoint.active = true;
+            shareLocation.visible = true;
+            shareLocation.active = true;
+        }
+        if (entry.hasOffers()) {
+            openTrades.visible = true;
+            openTrades.active = true;
+            if (HandbookConfig.INSTANCE.editorMode) {
+                resetTrades.visible = true;
+                resetTrades.active = true;
+            }
+        }
+        if (entry.waypoints() != null) {
+            setWaypoint.visible = true;
+            setWaypoint.active = true;
+        }
+        if ((HandbookConfig.INSTANCE.editorMode)) {
+            delete.visible = true;
+            delete.active = true;
+        }
+    }
+
+    private void deleteDisplayedEntry() {
+        Entry entry = entryDisplay.entry();
+        switch (activeCategory.title()) {
+            case "Locations" -> LocationWriter.delete((PositionEntry) entry);
+            case "NPC" -> NPCWriter.delete((TraderEntry) entry);
+            default -> {
+                for (CategoryWriter<? extends Entry> writer : DataManager.writers) {
+                    if (writer.category.equals(activeCategory)) {
+                        writer.delete(entry);
+                        break;
+                    }
+                }
+            }
+        }
+        double scroll = optionsWidget.getScrollAmount();
+        filterEntries(false);
+        optionsWidget.setScrollAmount(scroll);
+        displayEntry(null);
+    }
+
+    private void deleteDisplayedTrade() {
+        try {
+            Files.deleteIfExists(Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + entryDisplay.entry().id()));
+            client.inGameHud.getChatHud().addMessage(Text.of("Removed trades. Interact with the villager again to update them."));
+        }
+        catch (IOException ignored) {}
+    }
+
+    private void shareLocation(ChatChannel chatChannel) {
+        if (client.getNetworkHandler() == null) return;
+
+        Entry entry = entryDisplay.entry();
+        String position = "Position: " + entry.position()[0] + ", " + entry.position()[1] + ", " + entry.position()[2];
+        client.getNetworkHandler().sendCommand(chatChannel.chatId + " "
+                + entry.clearTitle().replaceAll(" \\((.*?)\\)", "")
+                + " (" + entry.shard() + ") | " + position);
+
+        client.setScreen(null);
+    }
+
+    private void setWaypointFromDisplayed() {
+        Entry entry = entryDisplay.entry();
+        if (entry.waypoints() != null) {
+            client.inGameHud.getChatHud().addMessage(Text.of("Path started: " + entry.title()));
+            WaypointManager.setWaypointChain(List.of((entry.waypoints())));
+        }
+        else {
+            if (entry.shard().equals(WaypointManager.getShard())) {
+                client.inGameHud.getChatHud().addMessage(Text.of("Waypoint set: " + entry.title()));
+                WaypointManager.setWaypoint(entry);
+            }
+            else {
+                client.inGameHud.getChatHud().addMessage(Text.of("§cERROR: This waypoint belongs to a different shard.")
+                        .getWithStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                Text.of("If you believe the shard is correct, enable `Spoof World Names` in /peb.")))).getFirst());
+            }
+        }
+        client.setScreen(null);
+    }
+
+    public void startSharingTrade(TradeListWidgetEntry entry) {
+        cancelSharingTrade();
+
+        sharedTrade = entry;
+        entry.setHighlighted(true);
+
+        int buttonsY = (int) client.mouse.getY() / client.options.getGuiScale().getValue() + 24;
+
+        tradeButtonsState(true);
+        moveWorldButtons(tradeDisplay.x + 182, buttonsY + 6);
+        moveTradeButtons(tradeDisplay.x + 140, buttonsY - 18);
+        shareCancel.setPosition(tradeDisplay.x + 141, buttonsY + 12);
+        shareCancel.active = true;
+        shareCancel.visible = true;
+    }
+
+    private void selectShareMode(ShareMode mode) {
+        shareMode = mode;
+        worldButtonsState(true);
+    }
+
+    private void shareTrade(ChatChannel chatChannel) {
+        ((TraderEntry) entryDisplay.entry()).share(chatChannel, sharedTrade.trade, shareMode);
+    }
+
+    private void cancelSharingTrade() {
+        if (sharedTrade != null) sharedTrade.setHighlighted(false);
+        sharedTrade = null;
+
+        worldButtonsState(false);
+        tradeButtonsState(false);
+    }
+
     public void filterEntries(boolean scheduled) {
         if (!searchBox.getText().equals(lastFilter) || !scheduled) {
             if (searchBox.getText().isEmpty() && !filterWidget.filtersActive()) {
-                optionsWidget.setEntries(activeCategory.getEntries(), BaseEntry.Type.Entry);
+                optionsWidget.setEntries(activeCategory.entries(), ListType.Entry, true);
                 lastFilter = "";
                 return;
             }
             String s = searchBox.getText().toLowerCase();
-            optionsWidget.setEntriesNoWidth(activeCategory.getEntries().stream()
-                    .map(entry -> new Pair<Entry, Integer>(entry, entry.getClearTitle().toLowerCase().indexOf(s)))
+            optionsWidget.setEntries(activeCategory.entries().stream()
+                    .map(entry -> new Pair<Entry, Integer>(entry, entry.clearTitle().toLowerCase().indexOf(s)))
                     .filter(this::applyFilter)
                     .sorted(Comparator.comparingInt(Pair::getRight))
                     .map(Pair::getLeft)
-                    .toList(), BaseEntry.Type.Entry);
+                    .toList(), ListType.Entry, false);
         }
         lastFilter = searchBox.getText();
     }
@@ -518,9 +624,19 @@ public class HandbookScreen extends Screen {
     @Override
     public void close() {
         if (lastKey != 69) {
-            displayWidget.renderImage = false;
+            entryDisplay.renderImage = false;
             client.player.closeScreen();
             super.close();
         }
+    }
+
+    @Override
+    public Category<? extends Entry> activeCategory() {
+        return activeCategory;
+    }
+
+    @Override
+    public void scheduledFilter() {
+        filterEntries(true);
     }
 }

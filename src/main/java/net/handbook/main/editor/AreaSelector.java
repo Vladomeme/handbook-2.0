@@ -1,9 +1,10 @@
 package net.handbook.main.editor;
 
+import net.handbook.main.DataManager;
 import net.handbook.main.HBMixinMethods;
-import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.WaypointManager;
+import net.handbook.main.resources.EntryType;
 import net.handbook.main.resources.entry.AreaEntry;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
@@ -189,7 +190,7 @@ public class AreaSelector {
     //returns int because used in command
     @SuppressWarnings("SameReturnValue")
     public static int saveArea() {
-        ((AreaEntry) nearestEntry).update(nearestEntry.getTitle(), nearestEntry.getText(), nearestEntry.getPosition(), coords);
+        ((AreaEntry) nearestEntry).update(nearestEntry.title(), nearestEntry.text(), nearestEntry.position(), nearestEntry.icon(), coords);
         writer.setUpdate();
         exitSaving(Text.of("Entry updated."), true);
         return 1;
@@ -206,8 +207,8 @@ public class AreaSelector {
     private static void updateCategory() {
         String shard = WaypointManager.getShard();
 
-        for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
-            if (writer.category.getType().equals("area") && writer.entries().getFirst().getShard().equals(shard)) {
+        for (CategoryWriter<? extends Entry> writer : DataManager.writers) {
+            if (writer.category.type().equals(EntryType.area) && writer.entries().getFirst().shard().equals(shard)) {
                 AreaSelector.writer = writer;
                 return;
             }
@@ -224,7 +225,7 @@ public class AreaSelector {
         Entry nearestEntry = null;
 
         for (Entry entry : writer.entries()) {
-            int[] pos = entry.getPosition();
+            int[] pos = entry.position();
             int distance = WaypointManager.getDistance(x, y, z, pos[0], pos[1], pos[2]);
             if (distance < minDistance) {
                 minDistance = distance;
@@ -237,7 +238,7 @@ public class AreaSelector {
     private static void sendSaveMessage() {
         active = false;
         chat.addMessage(Text.literal("---------------------------------------").setStyle(Style.EMPTY.withColor(Formatting.BLUE)));
-        chat.addMessage(Text.of("Saving area to entry: " + nearestEntry.getTitle() + ". Is that right?"));
+        chat.addMessage(Text.of("Saving area to entry: " + nearestEntry.title() + ". Is that right?"));
         chat.addMessage(buildClickableMessage("[Confirm]", "/hb_internal area confirm", "Save area data to entry")
                 .append(Text.literal("   ").setStyle(Style.EMPTY.withUnderline(false)))
                 .append(buildClickableMessage("[Retry]", "/hb_internal area retry", "Re-detect entry"))

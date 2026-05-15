@@ -11,6 +11,9 @@ import java.util.Map;
 @Mixin(SpawnEggItem.class)
 public interface SpawnEggItemAccessor {
 
+    @SuppressWarnings("unused")
     @Accessor("SPAWN_EGGS")
-    Map<EntityType<? extends MobEntity>, SpawnEggItem> getSpawnEggs();
+    static Map<EntityType<? extends MobEntity>, SpawnEggItem> getSpawnEggs() {
+        throw new AssertionError();
+    }
 }

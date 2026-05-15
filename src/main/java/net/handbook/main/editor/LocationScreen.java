@@ -1,16 +1,14 @@
 package net.handbook.main.editor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.resources.category.Category;
+import net.handbook.main.mixin.ScreenAccessor;
 import net.handbook.main.resources.entry.Entry;
-import net.handbook.main.widget.HandbookButtonWidget;
+import net.handbook.main.element.TextButton;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -38,25 +36,23 @@ public class LocationScreen extends Screen {
 
     @Override
     protected void init() {
-        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
-            if (category.getTitle().equals("Locations")) {
-                addElements();
-                textField.setFocused(true);
-
-                super.init();
-                return;
-            }
+        if (LocationWriter.writer != null) {
+            addElements();
+            textField.setFocused(true);
+            super.init();
         }
-        close();
-        chat.addMessage(Text.of("\"Locations\" category not found!"));
+        else {
+            close();
+            chat.addMessage(Text.of("\"Locations\" category not found!"));
+        }
     }
 
     private void addElements() {
         addDrawableChild(textField = new TextFieldWidget(tr, centerX - 65, centerY - 15, 130, 12, Text.of("")));
         textField.setPlaceholder(Text.of("Name").getWithStyle(Style.EMPTY.withItalic(true).withColor(-10197916)).getFirst());
 
-        addDrawableChild(new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                centerX + 30, centerY + 6, 36, 11, "Save", button -> save()));
+        addDrawableChild(new TextButton(centerX + 30, centerY + 6, 36, 11,
+                "Save", button -> save()));
     }
 
     @Override
@@ -83,8 +79,8 @@ public class LocationScreen extends Screen {
                 (int) client.player.getX() + ", " + (int) client.player.getY() + ", " + (int) client.player.getZ(),
                 centerX, centerY - 30, HandbookConfig.INSTANCE.textColor);
 
-        for (Element element : children())
-            ((Drawable) element).render(context, mouseX, mouseY, delta);
+        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+            drawable.render(context, mouseX, mouseY, delta);
         matrices.pop();
         RenderSystem.disableBlend();
     }
@@ -95,18 +91,15 @@ public class LocationScreen extends Screen {
             close();
             return;
         }
-        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
-            if (!category.getTitle().equals("Locations")) continue;
-            for (Entry entry : category.getEntries()) {
-                if (entry.getTitle().equals(textField.getText())) {
-                    chat.addMessage(Text.of("Entry with that name already exists."));
-                    close();
-                    return;
-                }
+        for (Entry entry : LocationWriter.writer.entries()) {
+            if (entry.title().equals(textField.getText())) {
+                chat.addMessage(Text.of("Entry with that name already exists."));
+                close();
+                return;
             }
-            LocationWriter.addLocation(textField.getText());
-            close();
         }
+        LocationWriter.addLocation(textField.getText());
+        close();
     }
 
     @Override

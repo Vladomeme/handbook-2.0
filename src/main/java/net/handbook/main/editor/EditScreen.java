@@ -1,17 +1,17 @@
 package net.handbook.main.editor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.handbook.main.HandbookClient;
+import net.handbook.main.DataManager;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.WaypointManager;
-import net.handbook.main.resources.category.Category;
+import net.handbook.main.mixin.ScreenAccessor;
+import net.handbook.main.resources.EntryType;
 import net.handbook.main.resources.entry.*;
-import net.handbook.main.widget.HandbookButtonWidget;
+import net.handbook.main.element.TextButton;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
@@ -21,6 +21,7 @@ import net.minecraft.util.Formatting;
 
 import java.util.Arrays;
 
+//todo prevent changing of internally used categories?
 public class EditScreen extends Screen {
 
     private static final MinecraftClient client = MinecraftClient.getInstance();
@@ -28,43 +29,46 @@ public class EditScreen extends Screen {
 
     private final BaseEntry entry;
     private final boolean isCategory;
-    private final String type;
+    private final EntryType type;
+    private final Category<?> parentCategory;
 
     private TextFieldWidget typeField;
     private TextFieldWidget titleField;
     private TextFieldWidget textField;
     private TextFieldWidget positionField;
     private TextFieldWidget areaField;
-    private HandbookButtonWidget moveButton;
+    private TextFieldWidget iconField;
+    private TextButton moveButton;
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
-    private HandbookButtonWidget cancelButton;
+    private TextButton cancelButton;
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
-    private HandbookButtonWidget saveButton;
+    private TextButton saveButton;
 
     private int lastKey = 0;
     final int centerX;
     final int centerY;
 
-    public EditScreen(BaseEntry entry, boolean isCategory, String type) {
+    private EditScreen(BaseEntry entry, EntryType type, Category<?> parentCategory) {
         super(Text.of(""));
 
         this.entry = entry;
-        this.isCategory = isCategory;
+        this.isCategory = parentCategory == null;
         this.type = type;
+        this.parentCategory = parentCategory;
         this.centerX = client.getWindow().getScaledWidth() / 2;
         this.centerY = client.getWindow().getScaledHeight() / 2;
     }
 
-    public static void open(BaseEntry entry, boolean isCategory, String type) {
-        if (type.equals("waypoint")) {
-            client.inGameHud.getChatHud().addMessage(Text.of("Can't add/edit an entry of this type."));
+    public static void open(BaseEntry entry, EntryType type, Category<?> parentCategory) {
+        if (type.equals(EntryType.waypoint)) {
+            client.inGameHud.getChatHud().addMessage(Text.of("Can't add or edit an entry of this type."));
             return;
         }
-        if (type.equals("trader") && entry == null) {
+        if (type.equals(EntryType.trader) && entry == null) {
             client.inGameHud.getChatHud().addMessage(Text.of("Can't add an entry of this type."));
             return;
         }
-        client.setScreen(new EditScreen(entry, isCategory, type));
+        client.setScreen(new EditScreen(entry, type, parentCategory));
     }
 
     @Override
@@ -78,7 +82,7 @@ public class EditScreen extends Screen {
 
         addDrawableChild(typeField = new TextFieldWidget(tr, centerX - 80, centerY - 84, 160, 12, Text.of("")));
         typeField.setPlaceholder(Text.of("type").getWithStyle(style).getFirst());
-        typeField.setChangedListener(this::checkType);
+        typeField.setChangedListener(this::updateTypeColour);
         typeField.setMaxLength(9999);
 
         addDrawableChild(titleField = new TextFieldWidget(tr, centerX - 80, centerY - 68, 160, 12, Text.of("")));
@@ -99,21 +103,26 @@ public class EditScreen extends Screen {
         areaField.setChangedListener(text -> checkCoordinates(text, 6));
         areaField.setMaxLength(9999);
 
-        addDrawableChild(moveButton = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                centerX + 85, centerY - 36, 30, 11, "Here", button -> changePosition()));
+        addDrawableChild(iconField = new TextFieldWidget(tr, centerX - 80, centerY - 4, 160, 12, Text.of("")));
+        iconField.setPlaceholder(Text.of("icon").getWithStyle(style).getFirst());
+        iconField.setChangedListener(text -> checkIconPath());
+        iconField.setMaxLength(9999);
 
-        addDrawableChild(cancelButton = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
-                centerX - 60, centerY, 36, 11, "Cancel", button -> close()));
+        addDrawableChild(moveButton = new TextButton(centerX + 85, centerY - 36, 30, 11,
+                "Here", button -> changePosition()));
 
-        addDrawableChild(saveButton = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                centerX + 24, centerY, 36, 11, "Save", button -> {
+        addDrawableChild(cancelButton = new TextButton(TextButton.Type.Negative, centerX - 60, centerY + 16, 36, 11,
+                "Cancel", button -> close()));
+
+        addDrawableChild(saveButton = new TextButton(centerX + 24, centerY + 16, 36, 11,
+                "Save", button -> {
             if (isCategory) saveCategory();
             else saveEntry();
         }));
 
         setVisibility();
         if (entry == null) {
-            if (type.equals("positioned") || type.equals("area")) changePosition();
+            if (type.equals(EntryType.position) || type.equals(EntryType.area)) changePosition();
             return;
         }
 
@@ -135,44 +144,54 @@ public class EditScreen extends Screen {
             positionField.setPlaceholder(text);
             areaField.active = false;
             areaField.setPlaceholder(text);
+            iconField.active = false;
+            iconField.setPlaceholder(text);
             moveButton.active = false;
             return;
         }
         typeField.active = false;
         typeField.setPlaceholder(text);
         switch (type) {
-            case "normal", "trader" -> {
+            case normal, trader -> {
                 positionField.active = false;
                 positionField.setPlaceholder(text);
                 areaField.active = false;
                 areaField.setPlaceholder(text);
                 moveButton.active = false;
             }
-            case "positioned" -> {
+            case position -> {
                 areaField.active = false;
                 areaField.setPlaceholder(text);
             }
-            case "area" -> {}
+            case area -> {}
+        }
+        if (type.equals(EntryType.normal)) {
+            iconField.active = false;
+            iconField.setPlaceholder(text);
         }
     }
 
     private void fillFields() {
-        if (entry.getTitle() != null) titleField.setText(entry.getTitle());
+        if (entry.title() != null) titleField.setText(entry.title());
 
         if (isCategory) return;
 
-        if (entry.getText() != null) textField.setText(entry.getText());
+        if (entry.text() != null) textField.setText(entry.text());
         switch (type) {
-            case "positioned" -> {
-                int[] pos = ((Entry) entry).getPosition();
+            case position -> {
+                int[] pos = ((Entry) entry).position();
                 if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2]);
             }
-            case "area" -> {
-                int[] pos = ((Entry) entry).getPosition();
+            case area -> {
+                int[] pos = ((Entry) entry).position();
                 if (pos != null) positionField.setText(pos[0] + ", " + pos[1] + ", " + pos[2]);
-                pos = ((Entry) entry).getArea();
+                pos = ((Entry) entry).area();
                 if (pos != null) areaField.setText(pos[0] + ", " + pos[1] + ", " + pos[2] + ", " + pos[3] + ", " + pos[4] + ", " + pos[5]);
             }
+        }
+        if (iconField.active) {
+            String icon = ((Entry) entry).icon();
+            if (icon != null && !icon.isEmpty()) iconField.setText(icon);
         }
     }
 
@@ -193,8 +212,8 @@ public class EditScreen extends Screen {
 
         matrices.push();
         matrices.translate(0, 0, 1);
-        context.fill(centerX - 130, centerY - 116, centerX + 130, centerY + 15, 0, HandbookConfig.INSTANCE.tradeBackgroundColor);
-        context.drawBorder(centerX - 131, centerY - 117, 262, 133, HandbookConfig.INSTANCE.bordersColor);
+        context.fill(centerX - 130, centerY - 116, centerX + 130, centerY + 31, 0, HandbookConfig.INSTANCE.tradeBackgroundColor);
+        context.drawBorder(centerX - 131, centerY - 117, 262, 149, HandbookConfig.INSTANCE.bordersColor);
         context.drawCenteredTextWithShadow(tr, entry == null ? "Adding entry..." : "Editing entry...",
                 centerX, centerY - 109, HandbookConfig.INSTANCE.textColor);
 
@@ -208,9 +227,11 @@ public class EditScreen extends Screen {
                 HandbookConfig.INSTANCE.textColor, false);
         context.drawText(tr, Text.of("Area"), centerX - 85 - tr.getWidth("Area"), centerY - 18,
                 HandbookConfig.INSTANCE.textColor, false);
+        context.drawText(tr, Text.of("Icon"), centerX - 85 - tr.getWidth("Icon"), centerY - 2,
+                HandbookConfig.INSTANCE.textColor, false);
 
-        for (Element element : children())
-            ((Drawable) element).render(context, mouseX, mouseY, delta);
+        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+            drawable.render(context, mouseX, mouseY, delta);
         matrices.pop();
         RenderSystem.disableBlend();
     }
@@ -219,45 +240,52 @@ public class EditScreen extends Screen {
     private void saveCategory() {
         if (titleField.getText().isEmpty()) return;
         if (entry == null) {
-            String type = typeField.getText();
+            EntryType type;
+            try {
+                type = EntryType.valueOf(typeField.getText());
+            }
+            catch (IllegalArgumentException e) {
+                return;
+            }
             String title = titleField.getText();
-            if (!checkType(type)) return;
-            HandbookClient.writers.add(
+            DataManager.writers.add(
                     switch (type) {
-                        case "normal" -> new CategoryWriter<>(new Category<>(type, title));
-                        case "positioned" -> new CategoryWriter<PositionedEntry>(new Category<>(type, title));
-                        case "area" -> new CategoryWriter<AreaEntry>(new Category<>(type, title));
-                        case "trader" -> new CategoryWriter<TraderEntry>(new Category<>(type, title));
+                        case normal -> new CategoryWriter<>(new Category<>(type, title, false));
+                        case position -> new CategoryWriter<PositionEntry>(new Category<>(type, title, false));
+                        case area -> new CategoryWriter<AreaEntry>(new Category<>(type, title, false));
+                        case trader -> new CategoryWriter<TraderEntry>(new Category<>(type, title, false));
                         default -> throw new IllegalStateException("Unexpected value: " + type);
                     });
         }
-        else entry.update(titleField.getText(), entry.getText());
+        else entry.update(titleField.getText(), entry.text());
         close();
     }
 
     private void saveEntry() {
         if (titleField.getText().isEmpty()) return;
         switch (entry) {
-            case null -> {
-                for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
-                    if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
+            case null -> { //new entry
+                for (CategoryWriter<? extends Entry> writer : DataManager.writers) {
+                    if (!writer.category.equals(parentCategory)) continue;
 
                     switch (type) {
-                        case "normal" -> writer.add(new Entry(titleField.getText(), textField.getText(), ""));
-                        case "positioned" -> {
+                        case normal -> writer.add(new Entry(titleField.getText(), textField.getText(), ""));
+                        case position -> {
                             int[] pos = checkCoordinates(positionField.getText(), 3);
-                            if (pos != null) writer.add(new PositionedEntry(titleField.getText(), textField.getText(),
-                                    "", WaypointManager.getShard(), pos));
+                            if (pos != null) {
+                                writer.add(new PositionEntry(titleField.getText(), textField.getText(),
+                                            "", WaypointManager.getShard(), pos, iconField.getText().isEmpty() ? "default" : iconField.getText()));
+                            } //todo default icon name?
                         }
-                        case "area" -> {
+                        case area -> {
                             int[] pos = checkCoordinates(positionField.getText(), 3);
                             int[] area = checkCoordinates(areaField.getText(), 6);
-                            if (pos != null || area != null)
+                            if (pos != null || area != null) {
                                 writer.add(new AreaEntry(titleField.getText(), textField.getText(),
-                                        "", WaypointManager.getShard(), pos, area));
+                                        "", WaypointManager.getShard(), pos, area, iconField.getText().isEmpty() ? "default" : iconField.getText()));
+                            } //todo default icon name?
                         }
                     }
-                    writer.setUpdate();
                     break;
                 }
                 client.inGameHud.getChatHud().addMessage(Text.of("Entry added."));
@@ -265,24 +293,24 @@ public class EditScreen extends Screen {
                 return;
             }
             case AreaEntry e -> {
-                int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.getPosition();
-                int[] area = areaField.active ? checkCoordinates(areaField.getText(), 6) : e.getArea();
+                int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.position();
+                int[] area = areaField.active ? checkCoordinates(areaField.getText(), 6) : e.area();
                 if (pos == null || area == null) return;
 
-                e.update(titleField.getText(), textField.getText(), pos, area);
+                e.update(titleField.getText(), textField.getText(), pos, iconField.getText(), area);
             }
-            case PositionedEntry e -> {
-                int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.getPosition();
+            case PositionEntry e -> {
+                int[] pos = positionField.active ? checkCoordinates(positionField.getText(), 3) : e.position();
                 if (pos == null) return;
 
-                e.update(titleField.getText(), textField.getText(), pos);
+                e.update(titleField.getText(), textField.getText(), pos, iconField.getText());
             }
             case Entry e -> e.update(titleField.getText(), textField.getText());
             default -> {}
         }
 
-        for (CategoryWriter<? extends Entry> writer : HandbookClient.writers) {
-            if (!writer.category.equals(HandbookClient.handbookScreen.activeCategory)) continue;
+        for (CategoryWriter<? extends Entry> writer : DataManager.writers) {
+            if (!writer.category.equals(parentCategory)) continue;
 
             writer.setUpdate();
             break;
@@ -310,14 +338,18 @@ public class EditScreen extends Screen {
         return null;
     }
 
+    //todo checkIconPath()
+    @SuppressWarnings("EmptyMethod")
+    private void checkIconPath() {
+
+    }
+
     @SuppressWarnings("DataFlowIssue")
-    private boolean checkType(String type) {
+    private void updateTypeColour(String type) {
         if (type.equals("normal") || type.equals("positioned") || type.equals("area") || type.equals("trader")) {
             typeField.setEditableColor(Formatting.WHITE.getColorValue());
-            return true;
         }
         typeField.setEditableColor(Formatting.RED.getColorValue());
-        return false;
     }
 
     @Override

@@ -1,9 +1,10 @@
-package net.handbook.main.widget;
+package net.handbook.main.element;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.handbook.main.DataManager;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
 import net.handbook.main.feature.HandbookScreen;
@@ -23,12 +24,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.List;
+import java.util.Objects;
 
 @Environment(EnvType.CLIENT)
 public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidgetEntry> {
 
-    private final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-    private final HandbookScreen screen = HandbookClient.handbookScreen;
+    private final MinecraftClient client = MinecraftClient.getInstance();
+    private final TextRenderer tr = client.textRenderer;
     private static final Identifier TEXTURE = Identifier.of("container/villager/trade_arrow");
 
     public final HandbookTradeOffer trade;
@@ -43,11 +45,12 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
         this.id = id;
 
         button = ButtonWidget.builder(Text.of(""), button -> {
-            if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen)
-                screen.tradesWidget.startSharing(this);
-            else {
-                HandbookClient.tradeScreen.setTraderInfo(id.split("&")[0]);
-                HandbookClient.tradeScreen.selectedEntry = this;
+            if (client.currentScreen instanceof HandbookScreen screen) {
+                screen.startSharingTrade(this);
+            }
+            else if (client.currentScreen instanceof TradeScreen screen) {
+                screen.setTraderInfo(id.split("&")[0]);
+                screen.selectedEntry = this;
                 setHighlighted(true);
             }
         }).dimensions(0, 0, width, 20).build();
@@ -60,16 +63,17 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
 
         RenderSystem.enableBlend();
         if (highlighted) {
-            if (screen.markedEntries.getMarkedEntries("favTrades").contains(id))
+            if (DataManager.getMarkedEntries("favTrades").contains(id))
                 context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.highlightFavColor);
             else context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.highlightColor);
+
             context.fill(left, top + 1, left + 1, top + 19, HandbookConfig.INSTANCE.bordersColor);
             context.fill(left + 109, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.bordersColor);
             context.fill(left, top + 1, left + 110, top + 2, HandbookConfig.INSTANCE.bordersColor);
             context.fill(left, top + 18, left + 110, top + 19, HandbookConfig.INSTANCE.bordersColor);
         }
         else {
-            if (screen.markedEntries.getMarkedEntries("favTrades").contains(id))
+            if (DataManager.getMarkedEntries("favTrades").contains(id))
                 context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.favouriteColor);
             else context.fill(left, top + 1, left + 110, top + 19, HandbookConfig.INSTANCE.tradeBackgroundColor);
         }
@@ -93,7 +97,7 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
     }
 
     private void renderTooltip(DrawContext context, int x, int y, int left) {
-        if (y < 30 || y > MinecraftClient.getInstance().getWindow().getScaledHeight() - 40) return;
+        if (y < 30 || y > client.getWindow().getScaledHeight() - 40) return;
         ItemStack itemStack = null;
 
              if (x > left 	   && x < left + 20)  itemStack = trade.buyItem1();
@@ -105,26 +109,25 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
     }
 
     public void markEntry() {
-        if (screen.markedEntries.getMarkedEntries("favTrades") == null)
-            screen.markedEntries.addCategory("favTrades");
+        List<String> markedEntries = DataManager.getMarkedEntries("favTrades");
 
-        if (screen.markedEntries.getMarkedEntries("favTrades").contains(id)) {
-            screen.markedEntries.getMarkedEntries("favTrades").remove(id);
-            if (MinecraftClient.getInstance().currentScreen instanceof TradeScreen)
-                HandbookClient.tradeScreen.removeFavourite(this);
-            return;
+        int index = markedEntries.indexOf(id);
+        if (index != -1) {
+            markedEntries.remove(index);
+            if (client.currentScreen instanceof TradeScreen ts) ts.removeFavourite(this);
         }
-        screen.markedEntries.getMarkedEntries("favTrades").add(id);
-        if (MinecraftClient.getInstance().currentScreen instanceof TradeScreen)
-            HandbookClient.tradeScreen.addFavourite(new TradeListWidgetEntry(trade, id, 125));
+        else {
+            markedEntries.add(id);
+            if (client.currentScreen instanceof TradeScreen ts) ts.addFavourite(new TradeListWidgetEntry(trade, id, 125));
+        }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 1) markEntry();
         if (Screen.hasShiftDown()) {
-            if (!(MinecraftClient.getInstance().currentScreen instanceof TradeScreen)) HandbookClient.openTradeScreen();
-            HandbookClient.tradeScreen.setSearchText(getSelectedItemName(mouseX));
+            TradeScreen screen = Objects.requireNonNull(HandbookClient.openTradeScreen());
+            screen.setSearchText(getSelectedItemName(mouseX));
             return true;
         }
         this.button.mouseClicked(mouseX, mouseY, button);

@@ -11,13 +11,16 @@ import java.util.Optional;
 
 public record HandbookTradeOffer(ItemStack buyItem1, Optional<ItemStack> buyItem2, ItemStack sellItem) {
 
-    public static final Codec<HandbookTradeOffer> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ItemStack.CODEC.fieldOf("buyItem1").forGetter(HandbookTradeOffer::buyItem1),
-            ItemStack.CODEC.optionalFieldOf("buyItem2").forGetter(HandbookTradeOffer::buyItem2),
-            ItemStack.CODEC.fieldOf("sellItem").forGetter(HandbookTradeOffer::sellItem)
-    ).apply(instance, HandbookTradeOffer::new));
+    public static final Codec<List<HandbookTradeOffer>> LIST_CODEC = createCodec();
 
-    public static final Codec<List<HandbookTradeOffer>> LIST_CODEC = CODEC.listOf();
+    private static Codec<List<HandbookTradeOffer>> createCodec() {
+        Codec<HandbookTradeOffer> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                ItemStack.CODEC.fieldOf("buyItem1").forGetter(HandbookTradeOffer::buyItem1),
+                ItemStack.CODEC.optionalFieldOf("buyItem2").forGetter(HandbookTradeOffer::buyItem2),
+                ItemStack.CODEC.fieldOf("sellItem").forGetter(HandbookTradeOffer::sellItem)
+        ).apply(instance, HandbookTradeOffer::new));
+        return CODEC.listOf();
+    }
 
     public static HandbookTradeOffer fromTradeOffer(TradeOffer tradeOffer) {
         ItemStack item1 = tradeOffer.getOriginalFirstBuyItem();

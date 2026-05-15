@@ -1,18 +1,19 @@
 package net.handbook.main.feature;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.handbook.main.DataManager;
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.resources.HandbookTradeOffer;
-import net.handbook.main.resources.category.Category;
+import net.handbook.main.mixin.ScreenAccessor;
+import net.handbook.main.resources.*;
+import net.handbook.main.resources.entry.Category;
 import net.handbook.main.resources.entry.Entry;
 import net.handbook.main.resources.entry.TraderEntry;
-import net.handbook.main.widget.*;
+import net.handbook.main.element.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
@@ -21,43 +22,44 @@ import net.minecraft.text.Text;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
-public class TradeScreen extends Screen {
+public class TradeScreen extends Screen implements ScreenWithFilters {
 
-    public static final TradeScreen INSTANCE = new TradeScreen(Text.of(""));
-    public final HashMap<String, List<HandbookTradeOffer>> offers = new HashMap<>();
+    public static final HashMap<String, List<HandbookTradeOffer>> offers = new HashMap<>();
 
     private MinecraftClient client;
     private TextRenderer tr;
-    private final HandbookScreen screen = HandbookClient.handbookScreen;
 
     @SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private HandbookButtonWidget backToHandbook;
+    private TextButton openMainScreen;
+    @SuppressWarnings({"unused"})
+    private TextButton openMapScreen;
     private TextFieldWidget searchBox;
     private TradeListWidget favouritesWidget;
     private TradeListWidget resultsWidget;
-    private HandbookButtonWidget openTrader;
-    private HandbookButtonWidget share;
+    private TextButton openTrader;
+    private TextButton share;
 
-    private HandbookButtonWidget shareCost;
-    private HandbookButtonWidget shareTrader;
-    private HandbookButtonWidget shareFull;
-    private HandbookButtonWidget shareGlobal;
-    private HandbookButtonWidget shareLocal;
-    private HandbookButtonWidget shareWorld;
-    private HandbookButtonWidget shareLFG;
-    private HandbookButtonWidget shareReply;
-    private HandbookButtonWidget shareCancel;
+    private TextButton shareCost;
+    private TextButton shareTrader;
+    private TextButton shareFull;
+    private TextButton shareGlobal;
+    private TextButton shareLocal;
+    private TextButton shareWorld;
+    private TextButton shareLFG;
+    private TextButton shareReply;
+    private TextButton shareCancel;
 
     private TraderEntry trader;
     public TradeListWidgetEntry selectedEntry;
-    private TradesWidget.Mode shareMode;
+    private ShareMode shareMode;
 
     private int lastKey;
     private String lastFilter = "";
 
-    private TradeScreen(Text title) {
-        super(title);
+    public TradeScreen() {
+        super(Text.empty());
     }
 
     @Override
@@ -69,9 +71,8 @@ public class TradeScreen extends Screen {
 
         offers.forEach((id, offers) -> resultsWidget.addEntries(offers, id));
 
-        List<String> favourite = screen.markedEntries.getMarkedEntries("favTrades");
-        if (favourite == null) screen.markedEntries.addCategory("favTrades");
-        else offers.forEach((id, offers) -> {
+        List<String> favourite = DataManager.getMarkedEntries("favTrades");
+        offers.forEach((id, offers) -> {
             for (int i = 0; i < offers.size(); i++)
                 if (favourite.contains(id + "&" + i)) favouritesWidget.addEntry(offers.get(i), id + "&" + i);
         });
@@ -86,9 +87,12 @@ public class TradeScreen extends Screen {
     private void addElements() {
         int screenHeight = client.getWindow().getScaledHeight();
 
-        addDrawableChild(backToHandbook = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                40, screenHeight - 30, 50, 11,
-                "Handbook", button -> client.setScreen(HandbookClient.handbookScreen)));
+        addDrawableChild(openMainScreen = new TextButton(28, screenHeight - 30, 75, 11,
+                "Handbook", button -> HandbookClient.openHandbookScreen()));
+
+        //todo update part 2
+//        addDrawableChild(openMapScreen = new TextButton(40, screenHeight - 18, 75, 11,
+//                "Map", button -> HandbookClient.openMapScreen()));
 
         addDrawableChild(searchBox = new TextFieldWidget(
                 tr, 131, 15, 260, 14, Text.of("")));
@@ -97,53 +101,42 @@ public class TradeScreen extends Screen {
         addDrawableChild(favouritesWidget = new TradeListWidget(5, 125, screenHeight - 70, 30));
         addDrawableChild(resultsWidget = new TradeListWidget(135, 125, screenHeight - 70, 30));
 
-        addDrawableChild(openTrader = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                265, screenHeight - 42, 70, 11,
+        addDrawableChild(openTrader = new TextButton(265, screenHeight - 42, 70, 11,
                 "Open trader", button -> openTrader()));
         openTrader.active = false;
         openTrader.visible = false;
 
-        addDrawableChild(share = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                265, screenHeight - 30, 70, 11,
+        addDrawableChild(share = new TextButton(265, screenHeight - 30, 70, 11,
                 "Share", button -> startSharing()));
         share.active = false;
         share.visible = false;
 
-        addDrawableChild(shareGlobal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                380, screenHeight - 90, 36, 11,
-                "Global", button -> share("g")));
+        addDrawableChild(shareGlobal = new TextButton(380, screenHeight - 90, 36, 11,
+                "Global", button -> share(ChatChannel.GLOBAL)));
 
-        addDrawableChild(shareLocal = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                380, screenHeight - 78, 36, 11,
-                "Local", button -> share("l")));
+        addDrawableChild(shareLocal = new TextButton(380, screenHeight - 78, 36, 11,
+                "Local", button -> share(ChatChannel.LOCAL)));
 
-        addDrawableChild(shareWorld = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                380, screenHeight - 66, 36, 11,
-                "World", button -> share("wc")));
+        addDrawableChild(shareWorld = new TextButton(380, screenHeight - 66, 36, 11,
+                "World", button -> share(ChatChannel.WORLD)));
 
-        addDrawableChild(shareLFG = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                380, screenHeight - 54, 36, 11,
-                "LFG", button -> share("lfg")));
+        addDrawableChild(shareLFG = new TextButton(380, screenHeight - 54, 36, 11,
+                "LFG", button -> share(ChatChannel.LFG)));
 
-        addDrawableChild(shareReply = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                380, screenHeight - 42, 36, 11,
-                "Reply", button -> share("r")));
+        addDrawableChild(shareReply = new TextButton(380, screenHeight - 42, 36, 11,
+                "Reply", button -> share(ChatChannel.REPLY)));
 
-        addDrawableChild(shareCost = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                340, screenHeight - 78, 39, 11,
-                "Cost", button -> selectMode(TradesWidget.Mode.COST)));
+        addDrawableChild(shareCost = new TextButton(340, screenHeight - 78, 39, 11,
+                "Cost", button -> selectMode(ShareMode.COST)));
 
-        addDrawableChild(shareTrader = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                340, screenHeight - 66, 39, 11,
-                "Trader", button -> selectMode(TradesWidget.Mode.TRADER)));
+        addDrawableChild(shareTrader = new TextButton(340, screenHeight - 66, 39, 11,
+                "Trader", button -> selectMode(ShareMode.TRADER)));
 
-        addDrawableChild(shareFull = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal,
-                340, screenHeight - 54, 39, 11,
-                "Full", button -> selectMode(TradesWidget.Mode.FULL)));
+        addDrawableChild(shareFull = new TextButton(340, screenHeight - 54, 39, 11,
+                "Full", button -> selectMode(ShareMode.FULL)));
 
-        addDrawableChild(shareCancel = new HandbookButtonWidget(HandbookButtonWidget.Type.Negative,
-                342, screenHeight - 30, 36, 11,
-                "Cancel", button -> {
+        addDrawableChild(shareCancel = new TextButton(TextButton.Type.Negative,
+                342, screenHeight - 30, 36, 11, "Cancel", button -> {
             worldButtonsState(false);
             tradeButtonsState(false);
         }));
@@ -206,23 +199,23 @@ public class TradeScreen extends Screen {
 
             matrices.push();
             matrices.scale(1.75f, 1.75f, 1);
-            context.drawText(tr, trader.getTitle(), 5, 0, 16777215, true);
+            context.drawText(tr, trader.title(), 5, 0, 16777215, true);
             matrices.pop();
 
-            context.drawText(tr, "Shard: " + (trader.getShard() != null ? trader.getShard() : "unknown"),
+            context.drawText(tr, "Shard: " + (trader.shard() != null ? trader.shard() : "unknown"),
                     10, 20, HandbookConfig.INSTANCE.textColor, false);
 
-            int[] coords = trader.getPosition();
+            int[] coords = trader.position();
             context.drawText(tr, "Position: " + (coords != null ? coords[0] + ", " + coords[1] + ", " + coords[2] : "unknown"),
                     10, 30, HandbookConfig.INSTANCE.textColor, false);
             matrices.pop();
         }
-        for (Element element : children())
-            ((Drawable) element).render(context, mouseX, mouseY, delta);
+        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+            drawable.render(context, mouseX, mouseY, delta);
         RenderSystem.disableBlend();
     }
 
-    public void addEntries(List<HandbookTradeOffer> entries, String id) {
+    public static void addEntries(List<HandbookTradeOffer> entries, String id) {
         offers.put(id, entries);
     }
 
@@ -264,11 +257,11 @@ public class TradeScreen extends Screen {
 
     public void setTraderInfo(String id) {
         cancelSharing();
-        for (Category<? extends Entry> category : HandbookClient.getCategories()) {
-            if (!category.getType().equals("trader") || category.getTitle().equals("EXCLUDE")) continue;
+        for (Category<? extends Entry> category : DataManager.getCategories()) {
+            if (!category.type().equals(EntryType.trader) || category.hidden()) continue;
 
-            for (Entry entry : category.getEntries()) {
-                if (!entry.getID().equals(id)) continue;
+            for (Entry entry : category.entries()) {
+                if (!entry.id().equals(id)) continue;
 
                 trader = (TraderEntry) entry;
                 openTrader.active = true;
@@ -287,9 +280,9 @@ public class TradeScreen extends Screen {
     private void openTrader() {
         if (trader == null) return;
 
-        HandbookClient.openHandbookScreen();
+        HandbookScreen screen = Objects.requireNonNull(HandbookClient.openHandbookScreen());
         screen.openDisplay();
-        screen.displayWidget.setEntry(trader);
+        screen.displayEntry(trader);
     }
 
     public void removeFavourite(TradeListWidgetEntry entry) {
@@ -300,10 +293,6 @@ public class TradeScreen extends Screen {
         favouritesWidget.children().add(entry);
     }
 
-    public void clear() {
-        if (resultsWidget != null) resultsWidget.clear();
-    }
-
     public void startSharing() {
         worldButtonsState(false);
         tradeButtonsState(true);
@@ -311,13 +300,13 @@ public class TradeScreen extends Screen {
         shareCancel.visible = true;
     }
 
-    public void selectMode(TradesWidget.Mode mode) {
+    public void selectMode(ShareMode mode) {
         shareMode = mode;
         worldButtonsState(true);
     }
 
-    public void share(String world) {
-        trader.share(world, selectedEntry.trade, shareMode);
+    public void share(ChatChannel chatChannel) {
+        trader.share(chatChannel, selectedEntry.trade, shareMode);
     }
 
     public void cancelSharing() {
@@ -375,5 +364,10 @@ public class TradeScreen extends Screen {
             client.player.closeScreen();
             super.close();
         }
+    }
+
+    @Override
+    public void scheduledFilter() {
+        filterEntries();
     }
 }

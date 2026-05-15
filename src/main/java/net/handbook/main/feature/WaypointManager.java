@@ -32,7 +32,6 @@ public class WaypointManager {
 
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final ChatHud chat = client.inGameHud.getChatHud();
-    public static HandbookScreen screen;
 
     private static final Queue<WaypointEntry> waypoints = new LinkedList<>();
     private static final List<WaypointEntry> altPath = new ArrayList<>();
@@ -55,8 +54,8 @@ public class WaypointManager {
     }
 
     public static void setWaypoint(Entry entry) {
-        if (entry.getArea() == null) setWaypoint(entry.getPosition(), entry.getTitle(), entry.getText());
-        else setAreaWaypoint(entry.getPosition(), entry.getArea(), entry.getTitle(), entry.getText());
+        if (entry.area() == null) setWaypoint(entry.position(), entry.title(), entry.text());
+        else setAreaWaypoint(entry.position(), entry.area(), entry.title(), entry.text());
     }
 
     public static void setWaypoint(int[] coords, String title, String text) {
@@ -77,7 +76,7 @@ public class WaypointManager {
 
         if (client.world == null || client.player == null) return 1;
         chat.addMessage(getFastestPath(getShard(), entry, false));
-        if (!isInPlayableArea(getShard(), entry.getWaypoint().x(), entry.getWaypoint().z()))
+        if (!isInPlayableArea(getShard(), entry.waypoint().x(), entry.waypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED)));
         client.world.playSound(client.player.getX(), client.player.getY(), client.player.getZ(),
@@ -94,20 +93,15 @@ public class WaypointManager {
 
         if (client.world == null) return;
         chat.addMessage(getFastestPath(getShard(), entries.getFirst(), true));
-        if (!isInPlayableArea(getShard(), entries.getFirst().getWaypoint().x(), entries.getFirst().getWaypoint().z()))
+        if (!isInPlayableArea(getShard(), entries.getFirst().waypoint().x(), entries.getFirst().waypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 
     public static void setState(boolean state) {
-        if (screen.clearWaypoint == null) return;
         if (!state) waypoints.clear();
         paused = false;
         prevShard = getShard();
-        screen.clearWaypoint.visible = state;
-        screen.clearWaypoint.active = state;
-        screen.continueWaypoint.visible = state;
-        screen.continueWaypoint.active = state;
     }
 
     public static void continueOrSkip() {
@@ -119,7 +113,7 @@ public class WaypointManager {
         if (tick > 40 || paused) return;
 
         if (waypoints.peek() == null) return;
-        Waypoint waypoint = waypoints.peek().getWaypoint();
+        Waypoint waypoint = waypoints.peek().waypoint();
         if (waypoint == null) return;
 
         ClientWorld world = client.world;
@@ -145,11 +139,11 @@ public class WaypointManager {
     @SuppressWarnings("ConstantConditions") //context.consumers() is never null
     public static void renderBeacon(WorldRenderContext context) {
         if (waypoints.peek() == null || paused || !HandbookConfig.INSTANCE.renderBeacon) return;
-        Waypoint waypoint = waypoints.peek().getWaypoint();
+        Waypoint waypoint = waypoints.peek().waypoint();
         if (waypoint == null) return;
 
         ClientWorld world = client.world;
-        Vec3d pos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+        Vec3d pos = client.gameRenderer.getCamera().getPos();
         if (world == null) return;
 
         double beaconX = distance < 150 ? (double) waypoint.x() - pos.getX() : ((waypoint.x() - pos.getX()) / distance) * 150;
@@ -170,7 +164,7 @@ public class WaypointManager {
         if (world == null || player == null) return;
 
         for (WaypointEntry waypointEntry : waypoints) {
-            Waypoint waypoint = waypointEntry.getWaypoint();
+            Waypoint waypoint = waypointEntry.waypoint();
             if (waypoint.area() != null) {
                 int[] area = waypoint.area();
                 if (player.getX() < Math.max(area[0], area[3]) && player.getX() > Math.min(area[0], area[3])
@@ -202,8 +196,8 @@ public class WaypointManager {
         WaypointEntry waypoint = waypoints.poll();
         if (waypoints.isEmpty()) {
             if (waypoint.inChain()) {
-                chat.addMessage(Text.of(((waypoint.getText() == null ||
-                        waypoint.getText().isEmpty()) ? "" : (waypoint.getText() + " ")) + "§aWaypoint removed."));
+                chat.addMessage(Text.of(((waypoint.text() == null ||
+                        waypoint.text().isEmpty()) ? "" : (waypoint.text() + " ")) + "§aWaypoint removed."));
             }
             else chat.addMessage(Text.of("§aWaypoint removed."));
             altPath.clear();
@@ -211,7 +205,7 @@ public class WaypointManager {
             return 1;
         }
         if (waypoint.shouldPause()) {
-            chat.addMessage(Text.of(waypoint.getText()));
+            chat.addMessage(Text.of(waypoint.text()));
             if (!HandbookConfig.INSTANCE.alwaysContinue) {
                 chat.addMessage(buildClickableMessage("[Continue]",
                         "/hb_internal waypoint continue", "Click to set the next waypoint"));
@@ -220,7 +214,7 @@ public class WaypointManager {
             }
         }
         WaypointEntry next = waypoints.peek();
-        chat.addMessage(Text.of(waypoint.getText() + " Head to " + next.getClearTitle()));
+        chat.addMessage(Text.of(waypoint.text() + " Head to " + next.clearTitle()));
         MutableText text = buildClickableMessage("[Skip]",
                 "/hb_internal waypoint skip", "Click to skip this waypoint");
 
@@ -229,7 +223,7 @@ public class WaypointManager {
                     .append(buildClickableMessage("[Add fastest path]",
                             "/hb_internal waypoint path", "Click to find fastest path"));
         chat.addMessage(text);
-        if (!isInPlayableArea(getShard(), next.getWaypoint().x(), next.getWaypoint().z()))
+        if (!isInPlayableArea(getShard(), next.waypoint().x(), next.waypoint().z()))
             chat.addMessage(Text.literal("! Waypoint is not in the overworld area. !")
                 .setStyle(Style.EMPTY.withColor(Formatting.RED)));
         return 1;
@@ -247,7 +241,7 @@ public class WaypointManager {
 
         paused = false;
         WaypointEntry next = waypoints.peek();
-        chat.addMessage(Text.of("Head to " + next.getClearTitle()));
+        chat.addMessage(Text.of("Head to " + next.clearTitle()));
         MutableText text = buildClickableMessage("[Skip]",
                 "/hb_internal waypoint skip", "Click to skip this waypoint");
         if (next.inChain() && shouldSuggestPath(next))
@@ -277,7 +271,7 @@ public class WaypointManager {
 
         StringBuilder string = new StringBuilder();
         for (WaypointEntry waypoint : waypoints) {
-            string.append(waypoint.getClearTitle()).append(" -> ");
+            string.append(waypoint.clearTitle()).append(" -> ");
         }
         chat.addMessage(Text.of(string.substring(0, string.length() - 3)));
         return 1;
@@ -287,7 +281,7 @@ public class WaypointManager {
         ClientPlayerEntity player = client.player;
         if (player == null) return Text.of("");
 
-        Waypoint waypoint = entry.getWaypoint();
+        Waypoint waypoint = entry.waypoint();
         int x = waypoint.x();
         int y = waypoint.y();
         int z = waypoint.z();
@@ -469,7 +463,7 @@ public class WaypointManager {
                 return 1;
             }
             WaypointEntry target = altPath.stream().toList().get(altPath.size() - 1);
-            while (!waypoints.peek().getTitle().equals(target.getTitle())) waypoints.poll();
+            while (!waypoints.peek().title().equals(target.title())) waypoints.poll();
             List<WaypointEntry> remainingPath = waypoints.stream().toList();
             waypoints.clear();
             waypoints.addAll(altPath);
@@ -529,7 +523,11 @@ public class WaypointManager {
         }
         String dimension = client.world.getRegistryKey().getValue().toString();
         if (dimension.contains("monumenta")) {
-            return dimension.replace("monumenta:", "").split("-")[0];
+            int index = dimension.indexOf('-');
+
+            if (index == -1)
+                return dimension.substring(10);
+            else return dimension.substring(10, index);
         }
         if (!dimension.contains("plot")) nameSpoofWarn();
         return "unknown";

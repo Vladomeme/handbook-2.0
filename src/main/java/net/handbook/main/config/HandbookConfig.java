@@ -14,10 +14,7 @@ import net.minecraft.text.Text;
 import org.apache.commons.io.IOUtils;
 
 import java.awt.*;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.Reader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,10 +32,13 @@ public class HandbookConfig {
         Reader reader = null;
         try {
             return new Gson().fromJson(reader = new FileReader(FILE, StandardCharsets.UTF_8), HandbookConfig.class);
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
+            HandbookClient.LOGGER.error("[Handbook 2.0] Failed to read the config file. All values will be reset to default.");
             HandbookClient.LOGGER.error(e.getMessage());
-            throw new RuntimeException(e);
-        } finally {
+            return new HandbookConfig().write();
+        }
+        finally {
             IOUtils.closeQuietly(reader);
         }
     }
@@ -53,15 +53,16 @@ public class HandbookConfig {
             gson.toJson(gson.toJsonTree(this, HandbookConfig.class), writer);
         }
         catch (Exception e) {
-            HandbookClient.LOGGER.error("Couldn't save config");
+            HandbookClient.LOGGER.error("[Handbook 2.0] Failed to save config.");
             HandbookClient.LOGGER.error(e.getMessage());
-            throw new RuntimeException(e);
         }
         finally {
             IOUtils.closeQuietly(writer);
         }
         return this;
     }
+
+    public String dataVersion = "1.0.0"; //do not change
 
     //GENERAL
     public boolean enabled = true;

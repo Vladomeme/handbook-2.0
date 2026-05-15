@@ -6,29 +6,29 @@ public class WaypointEntry extends Entry {
 
     WaypointEntry[] waypoints;
     final Waypoint waypoint;
-    final boolean pause;
-    boolean chain = false;
+    final boolean shouldPause;
+    boolean inChain = false;
     final String id;
 
-    public WaypointEntry(String title, String text, Waypoint waypoint, boolean pause, String id) {
+    public WaypointEntry(String title, String text, Waypoint waypoint, boolean shouldPause, String id) {
         super(title, text, null);
         this.waypoints = new WaypointEntry[]{this};
         this.waypoint = waypoint;
-        this.pause = pause;
+        this.shouldPause = shouldPause;
         this.id = id;
     }
 
     @Override
-    public WaypointEntry[] getWaypoints() {
+    public WaypointEntry[] waypoints() {
         return waypoints;
     }
 
     @Override
-    public String getID() {
+    public String id() {
         return id;
     }
 
-    public Waypoint getWaypoint() {
+    public Waypoint waypoint() {
         return waypoint;
     }
 
@@ -37,15 +37,15 @@ public class WaypointEntry extends Entry {
     }
 
     public WaypointEntry markAsChain() {
-        chain = true;
+        inChain = true;
         return this;
     }
 
     public boolean inChain() {
-        return chain;
+        return inChain;
     }
 
     public boolean shouldPause() {
-        return pause;
+        return shouldPause;
     }
 }

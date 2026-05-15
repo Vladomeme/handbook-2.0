@@ -1,8 +1,9 @@
-package net.handbook.main.widget;
+package net.handbook.main.element;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
+import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.resources.EntryType;
 import net.handbook.main.resources.entry.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -14,6 +15,8 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+
+import java.util.Objects;
 
 public class FilterWidget extends ClickableWidget {
 
@@ -49,22 +52,23 @@ public class FilterWidget extends ClickableWidget {
         textField.setPosition(x, y);
         y += 16;
 
-        boolean bl = HandbookClient.handbookScreen.activeCategory.getEntries().getFirst().getShard() != null;
+        HandbookScreen screen = Objects.requireNonNull((HandbookScreen) client.currentScreen);
+
+        boolean bl = screen.activeCategory.entries().getFirst().shard() != null;
         if (bl) y += 1;
         shardField.visible = bl;
         shardField.active = bl;
         shardField.setPosition(x, y);
         if (bl) y += 16;
 
-        bl = HandbookClient.handbookScreen.activeCategory.getType().equals("trader");
+        bl = screen.activeCategory.type().equals(EntryType.trader);
         if (bl) y += 1;
         traderCheckbox.visible = bl;
         traderCheckbox.active = bl;
         traderCheckbox.setPosition(x + 83, y);
         if (bl) y += 19;
 
-        width = Math.max(107 + tr.getWidth("Trader "),
-                HandbookClient.handbookScreen.line2x - HandbookClient.handbookScreen.line1x - 4);
+        width = Math.max(107 + tr.getWidth("Trader "), screen.line2x - screen.line1x - 4);
         height = y - getY() + 1;
     }
 
@@ -122,15 +126,15 @@ public class FilterWidget extends ClickableWidget {
     }
 
     private void onUpdate() {
-        HandbookClient.handbookScreen.filterEntries(false);
+        if (client.currentScreen instanceof HandbookScreen screen) screen.filterEntries(false);
     }
 
     @SuppressWarnings("RedundantIfStatement")
     public boolean checkEntry(Entry entry) {
         //text check
-        if (!textField.getText().isEmpty() && (entry.getText() == null || !entry.getText().contains(textField.getText()))) return false;
+        if (!textField.getText().isEmpty() && (entry.text() == null || !entry.text().contains(textField.getText()))) return false;
         //shard check
-        if (!shardField.getText().isEmpty() && (entry.getShard() == null || !entry.getShard().contains(shardField.getText()))) return false;
+        if (!shardField.getText().isEmpty() && (entry.shard() == null || !entry.shard().contains(shardField.getText()))) return false;
         //trader check
         if (traderCheckbox.isChecked() && !entry.hasOffers()) return false;
 

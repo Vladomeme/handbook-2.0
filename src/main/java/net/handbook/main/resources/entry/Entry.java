@@ -1,10 +1,9 @@
 package net.handbook.main.resources.entry;
 
-import net.handbook.main.HandbookClient;
-import net.handbook.main.resources.HandbookTradeOffer;
+import net.handbook.main.feature.HandbookScreen;
+import net.handbook.main.resources.HandbookTradeOfferList;
+import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 public class Entry extends BaseEntry implements Comparable<Entry> {
 
@@ -14,19 +13,29 @@ public class Entry extends BaseEntry implements Comparable<Entry> {
 
     @Override
     public void mouseClicked() {
-        HandbookClient.handbookScreen.displayWidget.setEntry(this);
-        HandbookClient.handbookScreen.openDisplay();
+        if (MinecraftClient.getInstance().currentScreen instanceof HandbookScreen screen) {
+            screen.displayEntry(this);
+            screen.openDisplay();
+        }
     }
 
-    public String getShard() {
+    public String shard() {
         return null;
     }
 
-    public int[] getPosition() {
+    public int[] position() {
         return null;
     }
 
-    public int[] getArea() {
+    public String icon() {
+        return null;
+    }
+
+    public int[] area() {
+        return null;
+    }
+
+    public HandbookTradeOfferList offers() {
         return null;
     }
 
@@ -34,31 +43,27 @@ public class Entry extends BaseEntry implements Comparable<Entry> {
         return false;
     }
 
-    public List<HandbookTradeOffer> getOffers() {
+    public String id() {
         return null;
     }
 
-    public String getID() {
-        return null;
-    }
-
-    public WaypointEntry[] getWaypoints() {
+    public WaypointEntry[] waypoints() {
         return null;
     }
 
     @Override
     public int compareTo(@NotNull Entry entry) {
         int result = 0;
-        if (getSortableTitle() != null && entry.getSortableTitle() != null) {
-            result = getSortableTitle().compareTo(entry.getSortableTitle());
+        if (sortableTitle() != null && entry.sortableTitle() != null) {
+            result = sortableTitle().compareTo(entry.sortableTitle());
             if (result != 0) return result;
         }
-        if (getShard() != null && entry.getShard() != null) {
-            result = getShard().compareTo(entry.getShard());
+        if (shard() != null && entry.shard() != null) {
+            result = shard().compareTo(entry.shard());
             if (result != 0) return result;
         }
-        if (getID() != null && entry.getID() != null) {
-            return getID().compareTo(entry.getID());
+        if (id() != null && entry.id() != null) {
+            return id().compareTo(entry.id());
         }
         return result;
     }

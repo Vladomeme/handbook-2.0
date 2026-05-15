@@ -1,4 +1,4 @@
-package net.handbook.main.widget;
+package net.handbook.main.element;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -76,6 +76,7 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		updateScrollingState(mouseX, mouseY, button);
+		if (scrolling) return true;
 		if (isMouseOver(mouseX, mouseY)) {
 			TradeListWidgetEntry entry = getEntryAtPosition(mouseX, mouseY);
 			if (entry != null) {
@@ -97,13 +98,13 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 		if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
 		else if (button == 0 && scrolling) {
 			if (mouseY < (double) getY()) setScrollAmount(0.0);
-			else if (mouseY > (double)this.getBottom()) setScrollAmount(getMaxScroll());
+			else if (mouseY > (double) getBottom()) setScrollAmount(getMaxScroll());
 			else {
-				double d = Math.max(1, this.getMaxScroll());
-				int i = this.height;
+				double d = Math.max(1, getMaxScroll());
+				int i = height;
 				int j = MathHelper.clamp((int) ((float) (i * i) / (float) getMaxPosition()), 32, i - 8);
 				double e = Math.max(1.0, d / (double) (i - j));
-				setScrollAmount(getScrollAmount() + deltaY * e);
+				setScrollAmount(getScrollAmount() + deltaY * e / 2);
 			}
 			return true;
 		}

@@ -1,12 +1,8 @@
 plugins {
-	id 'fabric-loom' version '1.8-SNAPSHOT'
+ 	id 'fabric-loom' version '1.16-SNAPSHOT'
 	id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
-
-archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
@@ -53,13 +49,11 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-	withSourcesJar()
+	//withSourcesJar()
 }
 
-jar {
-	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
-	}
+remapJar {
+	archiveFileName = project.property("archives_base_name") + "-" + project.property("mod_version") + ".jar"
 }
 
 publishing {

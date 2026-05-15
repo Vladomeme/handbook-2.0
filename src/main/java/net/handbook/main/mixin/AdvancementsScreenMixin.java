@@ -2,7 +2,7 @@ package net.handbook.main.mixin;
 
 import net.handbook.main.HandbookClient;
 import net.handbook.main.config.HandbookConfig;
-import net.handbook.main.widget.HandbookButtonWidget;
+import net.handbook.main.element.TextButton;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.advancement.AdvancementsScreen;
@@ -17,13 +17,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AdvancementsScreenMixin extends Screen {
 
     @Unique
-    HandbookButtonWidget button;
+    TextButton button;
 
     @Inject(method = "init", at = @At("TAIL"))
     public void init(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
-        addDrawableChild(button = new HandbookButtonWidget(HandbookButtonWidget.Type.Normal, width - 51, 1,
-                50, 11, "Handbook", button -> HandbookClient.openHandbookScreen()));
+        addDrawableChild(button = new TextButton(width - 51, 1, 50, 11,
+                "Handbook", button -> HandbookClient.openHandbookScreen()));
     }
 
     @Inject(method = "render", at = @At("TAIL"))

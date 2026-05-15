@@ -7,14 +7,16 @@
     "AdvancementsScreenMixin",
     "CharmDictionaryGuiMixin",
     "ChatHudMixin",
+    "ClickableWidgetMixin",
     "ClientPlayerInteractionManagerMixin",
     "EntityMixin",
     "ItemDictionaryGuiMixin",
     "MerchantScreenHandlerMixin",
     "MinecraftClientMixin",
     "PlayerListHudAccessor",
+    "ScreenAccessor",
     "SpawnEggItemAccessor",
-    "StringNbtReaderInvoker"
+    "StringNbtReaderAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
