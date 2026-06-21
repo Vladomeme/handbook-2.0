@@ -92,7 +92,9 @@ public class EntryDisplay extends EmptyWidget implements Drawable {
         matrices.translate(getX(), getY(), 1);
 
         matrices.push();
-        matrices.scale(1.75f, 1.75f, 1);
+        float width = tr.getWidth(entry.title());
+        float titleScale = Math.max(width < (getWidth() - 10) / 1.75 ? 1.75f : (getWidth() - 10) / width, 1);
+        matrices.scale(titleScale, titleScale, 1);
         context.drawText(tr, entry.title(), 5, 0, 16777215, true);
         matrices.pop();
 

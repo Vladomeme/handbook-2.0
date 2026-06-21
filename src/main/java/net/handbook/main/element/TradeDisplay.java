@@ -14,12 +14,14 @@ public class TradeDisplay implements Drawable {
     public boolean visible = false;
     public int x;
     private final int y;
+    private int width;
 
     private String name;
 
-    public TradeDisplay(int x, int y) {
+    public TradeDisplay(int x, int y, int width) {
         this.x = x;
         this.y = y;
+        this.width = width;
     }
 
     @Override
@@ -29,7 +31,9 @@ public class TradeDisplay implements Drawable {
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         matrices.translate(x, y, 100);
-        matrices.scale(1.75f, 1.75f, 1);
+        float titleWidth = tr.getWidth(name);
+        float titleScale = Math.max(titleWidth < (this.width - 10) / 1.75 ? 1.75f : (this.width - 10) / titleWidth, 1);
+        matrices.scale(titleScale, titleScale, 1);
 
         context.drawText(tr, name, 5, 0, 16777215, true);
 
@@ -42,5 +46,9 @@ public class TradeDisplay implements Drawable {
 
     public void setX(int x) {
         this.x = x;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
     }
 }

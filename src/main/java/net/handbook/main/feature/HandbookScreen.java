@@ -281,7 +281,7 @@ public class HandbookScreen extends Screen implements ScreenWithCategoryList, Sc
         tradeButtonsState(false);
 
         addDrawable(entryDisplay = new EntryDisplay(30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20, maxWidth, screenHeight - 40));
-        addDrawable(tradeDisplay = new TradeDisplay(30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20));
+        addDrawable(tradeDisplay = new TradeDisplay(30 + categoriesWidget.listWidth + optionsWidget.listWidth, 20, maxWidth));
         addDrawableChild(tradeList = new TradeListWidget(10000, 130, screenHeight - 100, 50));
     }
 
@@ -479,6 +479,7 @@ public class HandbookScreen extends Screen implements ScreenWithCategoryList, Sc
         entryDisplay.setWidth(maxWidth);
         entryDisplay.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
         displayEntry(null);
+        tradeDisplay.setWidth(maxWidth);
         tradeDisplay.setX(30 + categoriesWidget.listWidth + optionsWidget.listWidth);
 
         setWaypoint.setX(40 + categoriesWidget.listWidth + optionsWidget.listWidth);
