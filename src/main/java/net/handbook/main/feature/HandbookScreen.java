@@ -28,6 +28,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 
@@ -88,6 +89,7 @@ public class HandbookScreen extends Screen implements ScreenWithCategoryList, Sc
     public int line2x;
     private int lastKey;
     private String lastFilter = "";
+    private boolean spoofingWarn;
 
     public HandbookScreen() {
         super(Text.empty());
@@ -105,6 +107,7 @@ public class HandbookScreen extends Screen implements ScreenWithCategoryList, Sc
         }
         activeCategory = DataManager.getCategories().getFirst();
         addElements();
+        spoofingWarn = WaypointManager.getShard().equals("unknown");
         super.init();
     }
 
@@ -329,7 +332,26 @@ public class HandbookScreen extends Screen implements ScreenWithCategoryList, Sc
             context.fill(x, y + 11, x + 12, y + 12, HandbookConfig.INSTANCE.favouriteColor);
         }
         matrices.pop();
+        if (spoofingWarn && !entryDisplay.visible && !tradeDisplay.visible) displaySpoofingWarn(context);
         RenderSystem.disableBlend();
+    }
+
+    private void displaySpoofingWarn(DrawContext context) {
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(entryDisplay.getX(), entryDisplay.getY(), 1);
+
+        matrices.push();
+        matrices.scale(1.75f, 1.75f, 1);
+        context.drawText(tr, Text.literal("World Name Spoofing").setStyle(Style.EMPTY.withColor(Formatting.RED))
+                .append(Text.literal(" is required.").setStyle(Style.EMPTY.withColor(Formatting.WHITE))), 5, 0, 16777215, true);
+        matrices.pop();
+
+        context.drawText(tr, Text.literal("Enable it in /peb under Technical settings.").setStyle(Style.EMPTY.withColor(Formatting.WHITE)),
+                10, 20, 16777215, true);
+        context.drawText(tr, Text.literal("Ignore if in playerplots, build etc.").setStyle(Style.EMPTY.withColor(Formatting.WHITE)),
+                10, 30, 16777215, true);
+        matrices.pop();
     }
 
     public void openTrades(List<HandbookTradeOffer> trades, String name) {
