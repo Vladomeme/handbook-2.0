@@ -18,6 +18,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.world.chunk.WorldChunk;
@@ -40,6 +41,7 @@ public class NPCWriter {
 
     public static CategoryWriter<TraderEntry> writer;
     public static CategoryWriter<TraderEntry> blacklist;
+    private static final List<EntryCandidate> candidates = new ArrayList<>();
     public static final HashMap<String, byte[]> updatedOffers = new HashMap<>();
 
     public static int tick = 0;
@@ -60,7 +62,7 @@ public class NPCWriter {
                 break;
             }
         }
-        addEntry(entity, manual);
+        tryAdd(entity, manual);
         return 1;
     }
 
@@ -78,6 +80,7 @@ public class NPCWriter {
 
     @SuppressWarnings("SameReturnValue")
     public static int clear() {
+        candidates.clear();
         clearTrades();
         return 1;
     }
@@ -104,12 +107,32 @@ public class NPCWriter {
             String shard = WaypointManager.getShard();
             if (shard.equals("valley") || shard.equals("isles") || shard.equals("ring")) updateNearby(40, false);
         }
+        if (!candidates.isEmpty()) tickCandidates();
     }
 
-    private static void addEntry(Entity entity, boolean manual) {
+    private static void tickCandidates() {
+        Iterator<EntryCandidate> iterator = candidates.iterator();
+        while (iterator.hasNext()) {
+            EntryCandidate candidate = iterator.next();
+            if (candidate.ticksRemaining == 0) {
+                if (candidate.entity.getBlockPos().equals(candidate.pos)) addEntry(candidate.entity);
+                iterator.remove();
+            }
+            else candidate.ticksRemaining--;
+        }
+    }
+
+    private static void tryAdd(Entity entity, boolean manual) {
         if (!shouldAdd(entity, manual)) return;
 
-        if (manual) chat.addMessage(Text.of("Added new NPC: " + entity.getCustomName().getString()));
+        if (manual) {
+            chat.addMessage(Text.of("Added new NPC: " + entity.getCustomName().getString()));
+            addEntry(entity);
+        }
+        else candidates.add(new EntryCandidate(entity));
+    }
+
+    private static void addEntry(Entity entity) {
         HandbookClient.LOGGER.info("[Handbook 2.0] New NPC added: {} {}", entity.getCustomName().getString(), entity.getType());
 
         writer.add(new TraderEntry(entity.getCustomName().getString(), "", "", WaypointManager.getShard(),
@@ -406,5 +429,19 @@ public class NPCWriter {
 
     private static String goddamnLoreQuotationMarksFix(String text) {
         return text.replaceAll("(?<![,:\\\\\\[])\"\"(?=[,\\]])", "\\\\\"\"");
+    }
+
+    //Potential new entries are added as candidates, and their position is checked again after 5 seconds
+    //This should prevent the addition of teleporting, moving quest NPCs
+    private static class EntryCandidate {
+        Entity entity;
+        BlockPos pos;
+        byte ticksRemaining;
+
+        EntryCandidate(Entity entity) {
+            this.entity = entity;
+            this.pos = new BlockPos(entity.getBlockPos());
+            this.ticksRemaining = 100;
+        }
     }
 }
