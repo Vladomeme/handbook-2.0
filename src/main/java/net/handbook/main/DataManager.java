@@ -48,6 +48,7 @@ public class DataManager {
     static boolean firstLoad = true;
     static boolean tradesLoaded = false;
     static boolean loading = false;
+    static boolean shouldUpdateMarked = false;
 
     static void onReload(ResourceManager manager) {
         if (HandbookConfig.INSTANCE.resetData) {
@@ -415,6 +416,11 @@ public class DataManager {
         return markedEntries.computeIfAbsent(name, s -> new ArrayList<>());
     }
 
+    //sets the marked entry data file to be updated during the next save
+    public static void updateMarked() {
+        shouldUpdateMarked = true;
+    }
+
     //todo combine methods into read(path, typeToken)?
     static HashMap<String, List<String>> readMarkedEntries() {
         Path path = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/favourite.json");
@@ -486,7 +492,10 @@ public class DataManager {
     static void save() {
         if (isReady(false)) {
             NPCWriter.saveTrades();
-            writeMarkedEntries();
+            if (shouldUpdateMarked) {
+                writeMarkedEntries();
+                shouldUpdateMarked = false;
+            }
             writers.forEach(CategoryWriter::write);
             writers.clear();
         }

@@ -86,6 +86,7 @@ public class ListWidgetEntry extends ElementListWidget.Entry<ListWidgetEntry> {
 
         if (markedEntries.contains(entry.title())) markedEntries.remove(entry.title());
         else markedEntries.add(entry.title());
+        DataManager.updateMarked();
     }
 
     @Override

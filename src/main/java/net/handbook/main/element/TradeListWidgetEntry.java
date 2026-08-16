@@ -120,6 +120,7 @@ public class TradeListWidgetEntry extends ElementListWidget.Entry<TradeListWidge
             markedEntries.add(id);
             if (client.currentScreen instanceof TradeScreen ts) ts.addFavourite(new TradeListWidgetEntry(trade, id, 125));
         }
+        DataManager.updateMarked();
     }
 
     @Override
