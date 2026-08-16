@@ -41,7 +41,7 @@ public class NPCWriter {
 
     public static CategoryWriter<TraderEntry> writer;
     public static CategoryWriter<TraderEntry> blacklist;
-    private static final List<EntryCandidate> candidates = new ArrayList<>();
+    private static final HashMap<UUID, EntryCandidate> candidates = new HashMap<>();
     public static final HashMap<String, byte[]> updatedOffers = new HashMap<>();
 
     public static int tick = 0;
@@ -111,7 +111,7 @@ public class NPCWriter {
     }
 
     private static void tickCandidates() {
-        Iterator<EntryCandidate> iterator = candidates.iterator();
+        Iterator<EntryCandidate> iterator = candidates.values().iterator();
         while (iterator.hasNext()) {
             EntryCandidate candidate = iterator.next();
             if (candidate.ticksRemaining == 0) {
@@ -129,7 +129,7 @@ public class NPCWriter {
             chat.addMessage(Text.of("Added new NPC: " + entity.getCustomName().getString()));
             addEntry(entity);
         }
-        else candidates.add(new EntryCandidate(entity));
+        else candidates.put(entity.getUuid(), new EntryCandidate(entity));
     }
 
     private static void addEntry(Entity entity) {
@@ -284,6 +284,11 @@ public class NPCWriter {
 
     @SuppressWarnings("SameReturnValue")
     public static int setPersistency(int radius) {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
+            return 1;
+        }
+
         int radiusSquared = radius * radius;
         String shard = WaypointManager.getShard();
 
@@ -303,6 +308,30 @@ public class NPCWriter {
                 }
             }
         }
+        return 1;
+    }
+
+    @SuppressWarnings("SameReturnValue")
+    public static int removeDuplicates() {
+        if (!HandbookConfig.INSTANCE.editorMode) {
+            chat.addMessage(Text.literal("§cEditor mode is disabled."));
+            return 1;
+        }
+
+        Set<String> ids = new HashSet<>();
+        int count = 0;
+
+        writer.lock();
+        for (TraderEntry entry : writer.entries()) {
+            boolean isNew = ids.add(entry.id());
+            if (!isNew) {
+                writer.delete(entry);
+                count++;
+            }
+        }
+        writer.unlock();
+        chat.addMessage(Text.literal("Removed " + count + " duplicate trader entries."));
+
         return 1;
     }
 
@@ -434,8 +463,8 @@ public class NPCWriter {
     //Potential new entries are added as candidates, and their position is checked again after 5 seconds
     //This should prevent the addition of teleporting, moving quest NPCs
     private static class EntryCandidate {
-        Entity entity;
-        BlockPos pos;
+        final Entity entity;
+        final BlockPos pos;
         byte ticksRemaining;
 
         EntryCandidate(Entity entity) {

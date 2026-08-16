@@ -82,7 +82,7 @@ public class HandbookClient implements ClientModInitializer {
             //if (resetAndReturnKey(mapScreenKey)) openMapScreen();
             if (resetAndReturnKey(locationScreenKey)) openLocationScreen();
 
-            if (client.world != null) NPCWriter.tick();
+            if (client.world != null && HandbookConfig.INSTANCE.enableScanner) NPCWriter.tick();
             WaypointManager.tick();
             if (AreaSelector.isActive()) AreaSelector.emitParticles();
             if (client.currentScreen instanceof ScreenWithFilters screen) screen.scheduledFilter();
@@ -158,6 +158,7 @@ public class HandbookClient implements ClientModInitializer {
                         .then(literal("set_persistent").executes(ctx -> NPCWriter.setPersistency(2))
                                 .then(argument("radius", IntegerArgumentType.integer()).executes(ctx ->
                                         NPCWriter.setPersistency(IntegerArgumentType.getInteger(ctx, "radius")))))
+                        .then(literal("remove_dupes").executes(ctx -> NPCWriter.removeDuplicates()))
 //                        .then(literal("convert_trades").executes(ctx -> DataManager.convertTradeFiles()))
         ));
         //INTERNAL
