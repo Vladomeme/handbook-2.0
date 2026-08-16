@@ -152,7 +152,7 @@ public class HandbookClient implements ClientModInitializer {
                                 .then(literal("npc_mass_delete").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection())))
                                 .then(literal("npc_mass_delete_and_blacklist").executes(ctx -> NPCWriter.delete(AreaSelector.getSelection(), true))))
                         .then(literal("clear_trades").executes(ctx -> NPCWriter.clear()))
-                        .then(literal("update_npcs").executes(ctx -> NPCWriter.updateNearby(40, true))
+                        .then(literal("update_npcs").executes(ctx -> NPCWriter.updateNearby(32, true))
                                 .then(argument("radius", IntegerArgumentType.integer()).executes(ctx ->
                                         NPCWriter.updateNearby(IntegerArgumentType.getInteger(ctx, "radius"), true))))
                         .then(literal("set_persistent").executes(ctx -> NPCWriter.setPersistency(2))

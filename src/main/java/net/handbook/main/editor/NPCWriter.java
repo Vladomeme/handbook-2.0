@@ -41,8 +41,10 @@ public class NPCWriter {
 
     public static CategoryWriter<TraderEntry> writer;
     public static CategoryWriter<TraderEntry> blacklist;
-    private static final HashMap<UUID, EntryCandidate> candidates = new HashMap<>();
-    public static final HashMap<String, byte[]> updatedOffers = new HashMap<>();
+    private static final Map<UUID, EntryCandidate> candidates = new HashMap<>();
+    public static final Map<String, byte[]> updatedOffers = new HashMap<>();
+    private static Set<String> idSet;
+    private static Set<String> blacklistIdSet;
 
     public static int tick = 0;
 
@@ -58,6 +60,7 @@ public class NPCWriter {
             String id = getId(entity);
             for (TraderEntry entry : new ArrayList<>(blacklist.entries())) {
                 if (!entry.id().equals(id)) continue;
+                if (blacklistIdSet != null) blacklistIdSet.remove(entry.id());
                 blacklist.delete(entry);
                 break;
             }
@@ -105,7 +108,7 @@ public class NPCWriter {
         if (tick == 60) {
             tick = 0;
             String shard = WaypointManager.getShard();
-            if (shard.equals("valley") || shard.equals("isles") || shard.equals("ring")) updateNearby(40, false);
+            if (shard.equals("valley") || shard.equals("isles") || shard.equals("ring")) updateNearby(32, false);
         }
         if (!candidates.isEmpty()) tickCandidates();
     }
@@ -126,17 +129,24 @@ public class NPCWriter {
         if (!shouldAdd(entity, manual)) return;
 
         if (manual) {
-            chat.addMessage(Text.of("Added new NPC: " + entity.getCustomName().getString()));
+            chat.addMessage(Text.of("New NPC entry added: " + entity.getCustomName().getString()));
             addEntry(entity);
         }
         else candidates.put(entity.getUuid(), new EntryCandidate(entity));
     }
 
     private static void addEntry(Entity entity) {
-        HandbookClient.LOGGER.info("[Handbook 2.0] New NPC added: {} {}", entity.getCustomName().getString(), entity.getType());
+        HandbookClient.LOGGER.info("[Handbook 2.0] New NPC entry added: {} {}", entity.getCustomName().getString(), entity.getType());
 
-        writer.add(new TraderEntry(entity.getCustomName().getString(), "", "", WaypointManager.getShard(),
-                new int[]{(int) entity.getX(), (int) entity.getY(), (int) entity.getZ()}));
+        TraderEntry entry = new TraderEntry(entity.getCustomName().getString(), "", "", WaypointManager.getShard(),
+                new int[]{(int) entity.getX(), (int) entity.getY(), (int) entity.getZ()});
+        if (idSet != null) idSet.add(entry.id());
+        writer.add(entry);
+    }
+
+    private static boolean removeEntry(Entry entry) {
+        if (idSet != null) idSet.remove(entry.id());
+        return writer.delete(entry);
     }
 
     private static boolean shouldAdd(Entity entity, boolean manual) {
@@ -149,16 +159,16 @@ public class NPCWriter {
             return false;
         }
         String newID = getID(entity.getCustomName().getString(), entity.getX(), entity.getY(), entity.getZ());
-        for (Entry entry : writer.entries()) { //todo hash ids
-            if (!entry.id().equals(newID)) continue;
-            if (manual) chat.addMessage(Text.of("§cERROR: NPC is already added."));
+        if (idSet == null) createIdSets();
+        if (idSet.contains(newID)) {
+            if (manual) chat.addMessage(Text.of("§cERROR: an entry for this NPC already exists."));
             return false;
         }
         if (writer.addLog != null) {
             for (Entry entry : writer.addLog) {
                 if (!entry.id().equals(newID)) continue;
                 if (manual)
-                    chat.addMessage(Text.of("§cERROR: NPC is already added (waiting for writer to be unlocked)."));
+                    chat.addMessage(Text.of("§cERROR: an entry for this NPC already exists (waiting for writer to be unlocked)."));
                 return false;
             }
         }
@@ -167,12 +177,19 @@ public class NPCWriter {
                 return false;
             }
         }
-        for (Entry entry : blacklist.entries()) {
-            if (!entry.id().equals(newID)) continue;
+        if (blacklistIdSet.contains(newID)) {
             if (manual) chat.addMessage(Text.of("§cERROR: NPC is blacklisted."));
             return false;
         }
         return true;
+    }
+
+    private static void createIdSets() {
+        idSet = new HashSet<>();
+        for (Entry entry : writer.entries()) idSet.add(entry.id());
+
+        blacklistIdSet = new HashSet<>();
+        for (Entry entry : blacklist.entries()) blacklistIdSet.add(entry.id());
     }
 
     @SuppressWarnings("SameReturnValue")
@@ -188,8 +205,11 @@ public class NPCWriter {
                     && pos[0] < Math.max(area[0], area[3]) && pos[0] > Math.min(area[0], area[3])
                     && pos[1] < Math.max(area[1], area[4]) && pos[1] > Math.min(area[1], area[4])
                     && pos[2] < Math.max(area[2], area[5]) && pos[2] > Math.min(area[2], area[5]))) continue;
-            if (shouldBlacklist) blacklist.add(new TraderEntry(entry.id(), entry.shard()));
-            writer.delete(entry);
+            if (shouldBlacklist) {
+                blacklist.add(new TraderEntry(entry.id(), entry.shard()));
+                if (blacklistIdSet != null) blacklistIdSet.add(entry.id());
+            }
+            removeEntry(entry);
             counter++;
         }
         AreaSelector.exitSelection();
@@ -203,6 +223,10 @@ public class NPCWriter {
 
     @SuppressWarnings("SameReturnValue")
     public static int updateNearby(int radius, boolean manual) {
+        if (radius > 40 && manual) {
+            chat.addMessage(Text.of("§cMaximum safe radius for automatic updates is 40!"));
+            return 1;
+        }
         int radiusSquared = radius * radius;
         String shard = WaypointManager.getShard();
 
@@ -258,7 +282,10 @@ public class NPCWriter {
                                 break;
                             }
                         }
-                        if (!exists) writer.add(newEntry);
+                        if (!exists) {
+                            if (idSet != null) idSet.add(newEntry.id());
+                            writer.add(newEntry);
+                        }
 
                         Path newPath = Path.of(FabricLoader.getInstance().getConfigDir() + "/handbook/trades/" + newEntry.id());
                         if (!Files.exists(newPath)) {
@@ -268,16 +295,16 @@ public class NPCWriter {
                             }
                             catch (IOException e) {
                                 HandbookClient.LOGGER.error("[Handbook 2.0] Failed to rename trade file {}", oldPath);
-                                writer.delete(entry);
+                                removeEntry(entry);
                                 continue loop;
                             }
                         }
-                        writer.delete(entry);
+                        removeEntry(entry);
                         continue loop;
                     }
                 }
             }
-            writer.delete(entry);
+            removeEntry(entry);
         }
         return 1;
     }
@@ -325,7 +352,7 @@ public class NPCWriter {
         for (TraderEntry entry : writer.entries()) {
             boolean isNew = ids.add(entry.id());
             if (!isNew) {
-                writer.delete(entry);
+                removeEntry(entry);
                 count++;
             }
         }
@@ -360,7 +387,8 @@ public class NPCWriter {
     }
 
     public static void delete(TraderEntry entry) {
-        if (writer.delete(entry)) {
+        if (removeEntry(entry)) {
+            if (blacklistIdSet != null) blacklistIdSet.add(entry.id());
             blacklist.add(new TraderEntry(entry.id(), WaypointManager.getShard()));
             try {
                 Files.deleteIfExists(Path.of(PATH + entry.id()));
