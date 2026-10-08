@@ -39,7 +39,7 @@ public abstract class CharmDictionaryGuiMixin {
     public void buildCharmList$click(CallbackInfo ci, @Local(argsOnly = true) DictionaryCharm charm) {
         if (Screen.hasShiftDown() && !Screen.hasControlDown() && !Screen.hasAltDown()) {
             TradeScreen screen =  HandbookClient.openTradeScreen();
-            if (screen != null) screen.setSearchText(charm.name);
+            if (screen != null) screen.setSearchText(charm.name());
         }
     }
 }

@@ -39,7 +39,7 @@ public abstract class ItemDictionaryGuiMixin {
     public void buildItemList$click(CallbackInfo ci, @Local(argsOnly = true) DictionaryItem item) {
         if (Screen.hasShiftDown() && !Screen.hasControlDown() && !Screen.hasAltDown()) {
             TradeScreen screen = HandbookClient.openTradeScreen();
-            if (screen != null) screen.setSearchText(item.name);
+            if (screen != null) screen.setSearchText(item.name());
         }
     }
 }
