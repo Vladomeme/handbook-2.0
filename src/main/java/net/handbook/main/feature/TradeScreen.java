@@ -210,7 +210,7 @@ public class TradeScreen extends Screen implements ScreenWithFilters {
                     10, 30, HandbookConfig.INSTANCE.textColor, false);
             matrices.pop();
         }
-        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+        for (Drawable drawable : ((ScreenAccessor) this).hb$drawables())
             drawable.render(context, mouseX, mouseY, delta);
         RenderSystem.disableBlend();
     }

@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MinecraftClientMixin {
 
     @Inject(method = "disconnect()V", at = @At("TAIL"))
-    public void handleDisconnection(CallbackInfo ci) {
+    public void hb$handleDisconnection(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
         if (WaypointManager.isActive()) {
             WaypointManager.saveWaypoints();

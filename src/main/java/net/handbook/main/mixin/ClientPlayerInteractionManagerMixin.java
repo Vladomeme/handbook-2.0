@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ClientPlayerInteractionManagerMixin {
 
     @Inject(method = "interactEntity", at = @At("HEAD"))
-    public void interactEntity(PlayerEntity player, Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+    public void hb$interactEntity(PlayerEntity player, Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         if (!HandbookConfig.INSTANCE.enabled) return;
         NPCWriter.setCoordinates(entity.getX(), entity.getY(), entity.getZ());
     }

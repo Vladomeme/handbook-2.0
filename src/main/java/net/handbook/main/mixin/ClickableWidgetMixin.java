@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ClickableWidgetMixin implements HBMixinMethods {
 
     @Inject(method = "playDownSound", at = @At("HEAD"), cancellable = true)
-    public void playDownSound(SoundManager soundManager, CallbackInfo ci) {
+    public void hb$playDownSound(SoundManager soundManager, CallbackInfo ci) {
         Screen currentScreen = MinecraftClient.getInstance().currentScreen;
         if (currentScreen instanceof HandbookScreen
                 || currentScreen instanceof TradeScreen

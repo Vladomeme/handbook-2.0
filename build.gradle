@@ -29,7 +29,7 @@ dependencies {
 	modImplementation("eu.pb4:placeholder-api:2.4.2+1.21")
 	modImplementation "dev.xpple:clientarguments:1.9"
 	include "dev.xpple:clientarguments:1.9"
-	modImplementation files(".gradle/monumenta-item-dictionary-1.5.1.jar")
+	modImplementation files(".gradle/monumenta-item-dictionary-1.21.1-1.6.2.jar")
 }
 
 loom {

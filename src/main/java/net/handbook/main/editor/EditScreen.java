@@ -230,7 +230,7 @@ public class EditScreen extends Screen {
         context.drawText(tr, Text.of("Icon"), centerX - 85 - tr.getWidth("Icon"), centerY - 2,
                 HandbookConfig.INSTANCE.textColor, false);
 
-        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+        for (Drawable drawable : ((ScreenAccessor) this).hb$drawables())
             drawable.render(context, mouseX, mouseY, delta);
         matrices.pop();
         RenderSystem.disableBlend();

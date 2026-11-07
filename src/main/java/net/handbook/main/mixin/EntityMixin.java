@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class EntityMixin  {
 
     @Inject(method = "onTrackedDataSet", at = @At("TAIL"))
-    public void onTrackedDataSet(TrackedData<?> data, CallbackInfo ci) {
+    public void hb$onTrackedDataSet(TrackedData<?> data, CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enableScanner || NPCWriter.writer == null) return;
 
         Entity e = ((Entity) (Object) this);

@@ -13,7 +13,7 @@ public interface SpawnEggItemAccessor {
 
     @SuppressWarnings("unused")
     @Accessor("SPAWN_EGGS")
-    static Map<EntityType<? extends MobEntity>, SpawnEggItem> getSpawnEggs() {
+    static Map<EntityType<? extends MobEntity>, SpawnEggItem> hb$getSpawnEggs() {
         throw new AssertionError();
     }
 }

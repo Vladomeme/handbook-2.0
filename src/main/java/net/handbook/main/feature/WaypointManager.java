@@ -516,7 +516,7 @@ public class WaypointManager {
 
     @SuppressWarnings("ConstantConditions") //world can't be null
     public static String getShard() {
-        Text header = ((PlayerListHudAccessor) client.inGameHud.getPlayerListHud()).getHeader();
+        Text header = ((PlayerListHudAccessor) client.inGameHud.getPlayerListHud()).hb$getHeader();
         if (header != null) {
             if (shardMatcher.reset(header.getString()).find())
                 return shardMatcher.group();

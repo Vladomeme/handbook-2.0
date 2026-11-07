@@ -11,5 +11,5 @@ import java.util.List;
 public interface ScreenAccessor {
 
     @Accessor("drawables")
-    List<Drawable> drawables();
+    List<Drawable> hb$drawables();
 }

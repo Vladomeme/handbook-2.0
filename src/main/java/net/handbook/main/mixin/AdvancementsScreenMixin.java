@@ -20,14 +20,14 @@ public abstract class AdvancementsScreenMixin extends Screen {
     TextButton button;
 
     @Inject(method = "init", at = @At("TAIL"))
-    public void init(CallbackInfo ci) {
+    public void hb$init(CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
         addDrawableChild(button = new TextButton(width - 51, 1, 50, 11,
                 "Handbook", button -> HandbookClient.openHandbookScreen()));
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    public void render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    public void hb$render(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (!HandbookConfig.INSTANCE.enabled) return;
         button.render(context, mouseX, mouseY, delta);
     }

@@ -37,7 +37,7 @@ public abstract class ChatHudMixin implements HBMixinMethods {
     @Redirect(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
             at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/hud/ChatHud;addMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V"))
-    public void addMessage(ChatHud instance, ChatHudLine message) {
+    public void hb$addMessage(ChatHud instance, ChatHudLine message) {
         Text text = message.content();
         if (AreaSelector.isActive()) {
             blockedMessages.add(text);

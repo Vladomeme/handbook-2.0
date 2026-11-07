@@ -63,7 +63,7 @@ public class TraderEntry extends PositionEntry {
                 StringNbtReader nbtReader = new StringNbtReader(new StringReader(currentString));
                 @SuppressWarnings("DataFlowIssue")
                 DataResult<Pair<List<HandbookTradeOffer>, NbtElement>> decodingResult = HandbookTradeOffer.LIST_CODEC.decode(
-                        new Dynamic<>(nh.getRegistryManager().getOps(NbtOps.INSTANCE), ((StringNbtReaderAccessor) nbtReader).parseList()));
+                        new Dynamic<>(nh.getRegistryManager().getOps(NbtOps.INSTANCE), ((StringNbtReaderAccessor) nbtReader).hb$parseList()));
 
                 if (decodingResult.result().isEmpty()) return HandbookTradeOfferList.EMPTY;
 

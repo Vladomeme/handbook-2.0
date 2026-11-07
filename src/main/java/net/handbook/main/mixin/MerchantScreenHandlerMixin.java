@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MerchantScreenHandlerMixin extends ScreenHandler {
 
     @Inject(method = "setOffers", at = @At("TAIL"))
-    public void setOffers(TradeOfferList offers, CallbackInfo ci) {
+    public void hb$setOffers(TradeOfferList offers, CallbackInfo ci) {
         if (!DataManager.isReady(false)) return;
 
         if (HandbookConfig.INSTANCE.enabled && HandbookConfig.INSTANCE.enableScanner) NPCWriter.addOffers(offers);

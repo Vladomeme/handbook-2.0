@@ -170,7 +170,7 @@ public class MapScreen extends Screen implements ScreenWithCategoryList, ScreenW
         context.fill(line1x, 15, line1x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
         context.fill(line2x, 15, line2x + 1, height - 10, 100, HandbookConfig.INSTANCE.bordersColor);
 
-        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+        for (Drawable drawable : ((ScreenAccessor) this).hb$drawables())
             drawable.render(context, mouseX, mouseY, delta);
         matrices.pop();
         RenderSystem.disableBlend();

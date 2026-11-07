@@ -79,7 +79,7 @@ public class LocationScreen extends Screen {
                 (int) client.player.getX() + ", " + (int) client.player.getY() + ", " + (int) client.player.getZ(),
                 centerX, centerY - 30, HandbookConfig.INSTANCE.textColor);
 
-        for (Drawable drawable : ((ScreenAccessor) this).drawables())
+        for (Drawable drawable : ((ScreenAccessor) this).hb$drawables())
             drawable.render(context, mouseX, mouseY, delta);
         matrices.pop();
         RenderSystem.disableBlend();

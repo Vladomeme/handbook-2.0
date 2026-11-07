@@ -9,5 +9,5 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface StringNbtReaderAccessor {
 
     @Invoker("parseList")
-    NbtElement parseList();
+    NbtElement hb$parseList();
 }
