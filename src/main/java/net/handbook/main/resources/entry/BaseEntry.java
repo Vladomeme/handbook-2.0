@@ -43,7 +43,7 @@ abstract public class BaseEntry {
     }
 
     public String text() {
-        return text;
+        return text != null ? text : "";
     }
 
     public String image() {
