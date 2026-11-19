@@ -5,11 +5,13 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "AdvancementsScreenMixin",
+    "CharmButtonWidgetMixin",
     "CharmDictionaryGuiMixin",
     "ChatHudMixin",
     "ClientPlayerInteractionManagerMixin",
     "EntityMixin",
     "FileResourcePackProviderMixin",
+    "ItemButtonWidgetMixin",
     "ItemDictionaryGuiMixin",
     "MerchantScreenHandlerMixin",
     "MinecraftClientMixin",

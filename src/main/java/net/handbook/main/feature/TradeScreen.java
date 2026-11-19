@@ -225,7 +225,7 @@ public class TradeScreen extends Screen {
     }
 
     public void addEntries(TradeOfferList entries, String id) {
-        offers.put(id, entries);
+        if (entries != null) offers.put(id, entries);
     }
 
     public void filterEntries() {

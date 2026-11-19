@@ -28,8 +28,10 @@ public class TradeListWidget extends ElementListWidget<TradeListWidgetEntry> {
 	public void setEntries(TradeOfferList trades, String id) {
 		clearEntries();
 
-		for (int i = 0; i < trades.size(); i++)
-			addEntry(new TradeListWidgetEntry(trades.get(i), id + "&" + i, listWidth));
+		if (trades != null) {
+			for (int i = 0; i < trades.size(); i++)
+				addEntry(new TradeListWidgetEntry(trades.get(i), id + "&" + i, listWidth));
+		}
 		this.setScrollAmount(0);
 	}
 

@@ -317,8 +317,9 @@ public class HandbookClient implements ClientModInitializer {
         client.setScreen(handbookScreen);
     }
 
-    public static void openTradeScreen() {
+    public static TradeScreen openTradeScreen() {
         client.setScreen(tradeScreen);
+        return tradeScreen;
     }
 
     public static void openLocationScreen() {
